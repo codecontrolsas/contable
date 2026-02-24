@@ -170,6 +170,10 @@ model Company {
   // Remitos de Recepcion
   receivingNotes      ReceivingNote[]
 
+  // Depreciación de equipos
+  vehicleDepreciations VehicleDepreciation[]
+  assetValueAdjustments AssetValueAdjustment[]
+
   @@map("companies")
 }
 
@@ -257,6 +261,10 @@ model Account {
   settingsAsWhGananciasSuffered AccountingSettings[] @relation("WhGananciasSufferedAccount")
   settingsAsWhIibbSuffered      AccountingSettings[] @relation("WhIibbSufferedAccount")
   settingsAsWhSussSuffered      AccountingSettings[] @relation("WhSussSufferedAccount")
+  settingsAsFixedAsset          AccountingSettings[] @relation("FixedAssetAccount")
+  settingsAsAccumulatedDepr     AccountingSettings[] @relation("AccumulatedDepreciationAccount")
+  settingsAsDepreciationExpense AccountingSettings[] @relation("DepreciationExpenseAccount")
+  settingsAsAssetDisposalGL     AccountingSettings[] @relation("AssetDisposalGainLossAccount")
   recurringEntryLines           RecurringEntryLine[]
 
   @@unique([companyId, code])
@@ -295,6 +303,10 @@ model JournalEntry {
   reversalOf      JournalEntry[]      @relation("ReversalOriginal")
   reversalEntry   JournalEntry?       @relation("ReversalLink", fields: [reversalEntryId], references: [id], onDelete: SetNull)
   reversedBy_     JournalEntry[]      @relation("ReversalLink")
+
+  // Relaciones con depreciación de equipos
+  depreciationEntries DepreciationScheduleEntry[]
+  valueAdjustments    AssetValueAdjustment[]
 
   @@unique([companyId, number])
   @@map("journal_entries")
@@ -371,6 +383,17 @@ model AccountingSettings {
   withholdingGananciasSufferedAccount Account? @relation("WhGananciasSufferedAccount", fields: [withholdingGananciasSufferedAccountId], references: [id])
   withholdingIibbSufferedAccount      Account? @relation("WhIibbSufferedAccount", fields: [withholdingIibbSufferedAccountId], references: [id])
   withholdingSussSufferedAccount      Account? @relation("WhSussSufferedAccount", fields: [withholdingSussSufferedAccountId], references: [id])
+
+  // Cuentas de Activos Fijos (equipos / bienes de uso)
+  fixedAssetAccountId              String? @map("fixed_asset_account_id") @db.Uuid
+  accumulatedDepreciationAccountId String? @map("accumulated_depreciation_account_id") @db.Uuid
+  depreciationExpenseAccountId     String? @map("depreciation_expense_account_id") @db.Uuid
+  assetDisposalGainLossAccountId   String? @map("asset_disposal_gain_loss_account_id") @db.Uuid
+
+  fixedAssetAccount              Account? @relation("FixedAssetAccount", fields: [fixedAssetAccountId], references: [id])
+  accumulatedDepreciationAccount Account? @relation("AccumulatedDepreciationAccount", fields: [accumulatedDepreciationAccountId], references: [id])
+  depreciationExpenseAccount     Account? @relation("DepreciationExpenseAccount", fields: [depreciationExpenseAccountId], references: [id])
+  assetDisposalGainLossAccount   Account? @relation("AssetDisposalGainLossAccount", fields: [assetDisposalGainLossAccountId], references: [id])
 
   createdAt               DateTime @default(now()) @map("created_at")
   updatedAt               DateTime @updatedAt @map("updated_at")
@@ -1536,6 +1559,21 @@ enum Currency {
   @@map("currency")
 }
 
+enum DepreciationMethod {
+  STRAIGHT_LINE
+  DECLINING_BALANCE
+
+  @@map("depreciation_method")
+}
+
+enum DepreciationStatus {
+  ACTIVE
+  COMPLETED
+  SUSPENDED
+
+  @@map("depreciation_status")
+}
+
 model Vehicle {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   createdAt DateTime @default(now()) @map("created_at")
@@ -1610,6 +1648,10 @@ model Vehicle {
 
   // Documentos del vehículo
   documents EquipmentDocument[]
+
+  // Depreciación
+  depreciation     VehicleDepreciation?
+  valueAdjustments AssetValueAdjustment[]
 
   @@unique([companyId, internNumber])
   @@unique([companyId, domain])
@@ -3188,4 +3230,104 @@ model ProjectionDocumentLink {
   @@index([expenseId])
   @@index([purchaseOrderId])
   @@map("projection_document_links")
+}
+
+// ============================================
+// DEPRECIACIÓN DE EQUIPOS
+// ============================================
+
+model VehicleDepreciation {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  vehicleId String  @unique @map("vehicle_id") @db.Uuid
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  method DepreciationMethod @default(STRAIGHT_LINE)
+  status DepreciationStatus @default(ACTIVE)
+
+  // Valores
+  grossValue     Decimal @map("gross_value") @db.Decimal(15, 2)
+  salvageValue   Decimal @default(0) @map("salvage_value") @db.Decimal(15, 2)
+  currentBookValue Decimal @map("current_book_value") @db.Decimal(15, 2)
+
+  // Vida útil
+  usefulLifeMonths Int       @map("useful_life_months")
+  startDate        DateTime  @map("start_date")
+  endDate          DateTime? @map("end_date")
+
+  // Para saldo decreciente
+  depreciationRate Decimal? @map("depreciation_rate") @db.Decimal(5, 2)
+
+  // Tracking
+  totalDepreciated     Decimal   @default(0) @map("total_depreciated") @db.Decimal(15, 2)
+  lastDepreciationDate DateTime? @map("last_depreciation_date")
+
+  // Auditoría
+  companyId String  @map("company_id") @db.Uuid
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy String  @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relaciones
+  scheduleEntries DepreciationScheduleEntry[]
+
+  @@index([companyId])
+  @@index([status])
+  @@map("vehicle_depreciations")
+}
+
+model DepreciationScheduleEntry {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  depreciationId String              @map("depreciation_id") @db.Uuid
+  depreciation   VehicleDepreciation @relation(fields: [depreciationId], references: [id], onDelete: Cascade)
+
+  periodNumber      Int      @map("period_number")
+  scheduledDate     DateTime @map("scheduled_date")
+  amount            Decimal  @map("amount") @db.Decimal(15, 2)
+  accumulatedAmount Decimal  @map("accumulated_amount") @db.Decimal(15, 2)
+  bookValueAfter    Decimal  @map("book_value_after") @db.Decimal(15, 2)
+
+  // Contabilización
+  isPosted       Boolean       @default(false) @map("is_posted")
+  journalEntryId String?       @map("journal_entry_id") @db.Uuid
+  journalEntry   JournalEntry? @relation(fields: [journalEntryId], references: [id])
+  postedDate     DateTime?     @map("posted_date")
+  postedBy       String?       @map("posted_by")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([depreciationId, periodNumber])
+  @@index([depreciationId])
+  @@index([isPosted])
+  @@index([scheduledDate])
+  @@map("depreciation_schedule_entries")
+}
+
+model AssetValueAdjustment {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  vehicleId String  @map("vehicle_id") @db.Uuid
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  date             DateTime
+  previousValue    Decimal  @map("previous_value") @db.Decimal(15, 2)
+  newValue         Decimal  @map("new_value") @db.Decimal(15, 2)
+  differenceAmount Decimal  @map("difference_amount") @db.Decimal(15, 2)
+  reason           String
+
+  // Contabilización
+  journalEntryId String?       @map("journal_entry_id") @db.Uuid
+  journalEntry   JournalEntry? @relation(fields: [journalEntryId], references: [id])
+
+  companyId String  @map("company_id") @db.Uuid
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy String  @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([vehicleId])
+  @@index([companyId])
+  @@map("asset_value_adjustments")
 }

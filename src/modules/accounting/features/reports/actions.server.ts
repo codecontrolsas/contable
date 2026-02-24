@@ -890,3 +890,155 @@ export async function getDocumentEntryTraceability(
     throw error;
   }
 }
+
+// ============================================
+// REPORTE: Registro de Bienes de Uso
+// ============================================
+
+export async function getFixedAssetsRegister(companyId: string) {
+  const { userId } = await auth();
+  if (!userId) throw new Error('No autenticado');
+
+  try {
+    const vehicles = await prisma.vehicle.findMany({
+      where: {
+        companyId,
+        depreciation: { isNot: null },
+      },
+      select: {
+        id: true,
+        internNumber: true,
+        domain: true,
+        year: true,
+        isActive: true,
+        type: { select: { name: true } },
+        brand: { select: { name: true } },
+        model: { select: { name: true } },
+        depreciation: {
+          select: {
+            method: true,
+            status: true,
+            grossValue: true,
+            salvageValue: true,
+            currentBookValue: true,
+            totalDepreciated: true,
+            usefulLifeMonths: true,
+            startDate: true,
+            endDate: true,
+          },
+        },
+      },
+      orderBy: { internNumber: 'asc' },
+    });
+
+    const items = vehicles.map((v) => {
+      const dep = v.depreciation!;
+      const grossValue = Number(dep.grossValue);
+      const totalDepreciated = Number(dep.totalDepreciated);
+      const currentBookValue = Number(dep.currentBookValue);
+      const percentDepreciated = grossValue > 0 ? Math.round((totalDepreciated / grossValue) * 100) : 0;
+
+      return {
+        vehicleId: v.id,
+        internNumber: v.internNumber,
+        domain: v.domain,
+        year: v.year,
+        typeName: v.type?.name ?? null,
+        brandName: v.brand?.name ?? null,
+        modelName: v.model?.name ?? null,
+        isActive: v.isActive,
+        method: dep.method,
+        status: dep.status,
+        grossValue,
+        salvageValue: Number(dep.salvageValue),
+        totalDepreciated,
+        currentBookValue,
+        usefulLifeMonths: dep.usefulLifeMonths,
+        startDate: dep.startDate,
+        endDate: dep.endDate,
+        percentDepreciated,
+      };
+    });
+
+    const totals = {
+      grossValue: items.reduce((sum, i) => sum + i.grossValue, 0),
+      totalDepreciated: items.reduce((sum, i) => sum + i.totalDepreciated, 0),
+      currentBookValue: items.reduce((sum, i) => sum + i.currentBookValue, 0),
+    };
+
+    return { items, totals, count: items.length };
+  } catch (error) {
+    logger.error('Error al obtener registro de bienes de uso', { data: { error, companyId, userId } });
+    throw error;
+  }
+}
+
+// ============================================
+// REPORTE: Depreciaciones del Período
+// ============================================
+
+export async function getPeriodDepreciations(companyId: string, fromDate: Date, toDate: Date) {
+  const { userId } = await auth();
+  if (!userId) throw new Error('No autenticado');
+
+  try {
+    const from = new Date(fromDate);
+    from.setHours(0, 0, 0, 0);
+    const to = new Date(toDate);
+    to.setHours(23, 59, 59, 999);
+
+    const entries = await prisma.depreciationScheduleEntry.findMany({
+      where: {
+        isPosted: true,
+        postedDate: { gte: from, lte: to },
+        depreciation: {
+          companyId,
+        },
+      },
+      select: {
+        periodNumber: true,
+        scheduledDate: true,
+        amount: true,
+        accumulatedAmount: true,
+        postedDate: true,
+        journalEntry: {
+          select: { id: true, number: true },
+        },
+        depreciation: {
+          select: {
+            vehicle: {
+              select: {
+                id: true,
+                internNumber: true,
+                domain: true,
+                type: { select: { name: true } },
+              },
+            },
+          },
+        },
+      },
+      orderBy: [{ postedDate: 'asc' }, { periodNumber: 'asc' }],
+    });
+
+    const items = entries.map((e) => ({
+      vehicleId: e.depreciation.vehicle.id,
+      vehicleLabel: e.depreciation.vehicle.internNumber || e.depreciation.vehicle.domain || '-',
+      typeName: e.depreciation.vehicle.type?.name ?? null,
+      periodNumber: e.periodNumber,
+      scheduledDate: e.scheduledDate,
+      amount: Number(e.amount),
+      accumulatedAmount: Number(e.accumulatedAmount),
+      postedDate: e.postedDate,
+      entryNumber: e.journalEntry?.number ?? null,
+      entryId: e.journalEntry?.id ?? null,
+    }));
+
+    const totalAmount = items.reduce((sum, i) => sum + i.amount, 0);
+    const vehicleCount = new Set(items.map((i) => i.vehicleId)).size;
+
+    return { items, totalAmount: Math.round(totalAmount * 100) / 100, vehicleCount, count: items.length };
+  } catch (error) {
+    logger.error('Error al obtener depreciaciones del período', { data: { error, companyId, userId } });
+    throw error;
+  }
+}

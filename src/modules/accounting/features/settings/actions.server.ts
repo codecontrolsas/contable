@@ -50,6 +50,11 @@ export async function saveAccountingSettings(
     withholdingGananciasSufferedAccountId?: string | null;
     withholdingIibbSufferedAccountId?: string | null;
     withholdingSussSufferedAccountId?: string | null;
+    // Cuentas de Activos Fijos
+    fixedAssetAccountId?: string | null;
+    accumulatedDepreciationAccountId?: string | null;
+    depreciationExpenseAccountId?: string | null;
+    assetDisposalGainLossAccountId?: string | null;
   }
 ) {
   const { userId } = await auth();

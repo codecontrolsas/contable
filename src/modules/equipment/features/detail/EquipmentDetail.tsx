@@ -23,6 +23,7 @@ import { _EquipmentHeader } from './components/_EquipmentHeader';
 import { _EquipmentDetailTabs, type EquipmentDetailTab } from './components/_EquipmentDetailTabs';
 import { _EquipmentQR } from './components/_EquipmentQR';
 import { EquipmentDocumentsList } from '@/modules/documents/features/equipment-documents/list';
+import { _DepreciationTab } from '@/modules/equipment/features/depreciation/components/_DepreciationTab';
 
 interface Props {
   id: string;
@@ -291,6 +292,14 @@ export async function EquipmentDetail({ id, tab = 'info' }: Props) {
         {/* Tab: Documentos */}
         <UrlTabsContent value="documents" className="mt-4">
           <EquipmentDocumentsList vehicleId={id} />
+        </UrlTabsContent>
+
+        {/* Tab: Depreciación */}
+        <UrlTabsContent value="depreciation" className="mt-4">
+          <_DepreciationTab
+            vehicleId={id}
+            vehiclePrice={vehicle.price ? Number(vehicle.price) : null}
+          />
         </UrlTabsContent>
 
           {/* Tab: QR (solo si está activo) */}

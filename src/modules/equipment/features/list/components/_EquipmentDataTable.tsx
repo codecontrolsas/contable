@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { AlertCircle, CheckCircle2, Circle, Clock, Plus, XCircle } from 'lucide-react';
+import { AlertCircle, Calculator, CheckCircle2, Circle, Clock, Plus, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
@@ -50,6 +50,7 @@ import {
   type VehicleTypeOption,
 } from '../actions.server';
 import { getColumns } from '../columns';
+import { _BulkDepreciationDialog } from './_BulkDepreciationDialog';
 
 // Iconos para estados
 const statusIcons = {
@@ -87,6 +88,7 @@ export function _EquipmentDataTable({
 
   // Dialog states
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [bulkDepreciationOpen, setBulkDepreciationOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<EquipmentListItem | null>(null);
   const [terminationReason, setTerminationReason] = useState<VehicleTerminationReason>('SALE');
 
@@ -216,15 +218,24 @@ export function _EquipmentDataTable({
     },
   ];
 
-  // Botón de nuevo equipo para el toolbar (solo si tiene permiso de crear)
-  const toolbarActions = permissions.canCreate ? (
-    <Button asChild data-testid="new-equipment-button">
-      <Link href="/dashboard/equipment/new">
-        <Plus className="mr-2 h-4 w-4" />
-        Nuevo Equipo
-      </Link>
-    </Button>
-  ) : null;
+  // Botones del toolbar
+  const toolbarActions = (
+    <div className="flex gap-2">
+      <Button variant="outline" onClick={() => setBulkDepreciationOpen(true)}>
+        <Calculator className="mr-2 h-4 w-4" />
+        <span className="hidden sm:inline">Contabilizar Depreciaciones</span>
+        <span className="sm:hidden">Deprec.</span>
+      </Button>
+      {permissions.canCreate && (
+        <Button asChild data-testid="new-equipment-button">
+          <Link href="/dashboard/equipment/new">
+            <Plus className="mr-2 h-4 w-4" />
+            Nuevo Equipo
+          </Link>
+        </Button>
+      )}
+    </div>
+  );
 
   return (
     <div className="space-y-4">
@@ -309,6 +320,12 @@ export function _EquipmentDataTable({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog de contabilización masiva de depreciaciones */}
+      <_BulkDepreciationDialog
+        open={bulkDepreciationOpen}
+        onOpenChange={setBulkDepreciationOpen}
+      />
     </div>
   );
 }

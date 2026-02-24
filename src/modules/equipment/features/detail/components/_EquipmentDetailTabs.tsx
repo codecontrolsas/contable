@@ -1,6 +1,6 @@
 'use client';
 
-import { DollarSign, FileText, QrCode, Truck, Users } from 'lucide-react';
+import { Calculator, DollarSign, FileText, QrCode, Truck, Users } from 'lucide-react';
 
 import {
   UrlTabs,
@@ -8,7 +8,7 @@ import {
   UrlTabsTrigger,
 } from '@/shared/components/ui/url-tabs';
 
-export type EquipmentDetailTab = 'info' | 'contract' | 'assignment' | 'contractors' | 'documents' | 'qr';
+export type EquipmentDetailTab = 'info' | 'contract' | 'assignment' | 'contractors' | 'documents' | 'depreciation' | 'qr';
 
 interface Props {
   vehicleId: string;
@@ -27,7 +27,7 @@ export function _EquipmentDetailTabs({ vehicleId, currentTab, contractorCount, i
       className="w-full"
     >
       {/* Mobile: 2 columnas, Desktop: 5-6 columnas según si está activo */}
-      <UrlTabsList className={`grid w-full grid-cols-2 gap-1 h-auto sm:gap-0 sm:h-10 ${isActive ? 'sm:grid-cols-6' : 'sm:grid-cols-5'}`}>
+      <UrlTabsList className={`grid w-full grid-cols-2 gap-1 h-auto sm:gap-0 sm:h-10 ${isActive ? 'sm:grid-cols-7' : 'sm:grid-cols-6'}`}>
         <UrlTabsTrigger value="info" className="flex items-center justify-center gap-2 py-2 sm:py-1.5">
           <Truck className="h-4 w-4" />
           <span className="hidden sm:inline">Información</span>
@@ -52,6 +52,11 @@ export function _EquipmentDetailTabs({ vehicleId, currentTab, contractorCount, i
           <FileText className="h-4 w-4" />
           <span className="hidden sm:inline">Documentos</span>
           <span className="sm:hidden text-xs">Docs</span>
+        </UrlTabsTrigger>
+        <UrlTabsTrigger value="depreciation" className="flex items-center justify-center gap-2 py-2 sm:py-1.5">
+          <Calculator className="h-4 w-4" />
+          <span className="hidden sm:inline">Depreciación</span>
+          <span className="sm:hidden text-xs">Deprec.</span>
         </UrlTabsTrigger>
         {isActive && (
           <UrlTabsTrigger value="qr" className="flex items-center justify-center gap-2 py-2 sm:py-1.5">

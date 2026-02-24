@@ -131,6 +131,13 @@ MONTHLY, BIMONTHLY, QUARTERLY, SEMIANNUAL, ANNUAL
 | Libro Diario | Todos los asientos POSTED en rango de fecha |
 | Libro Mayor | Movimientos por cuenta con saldo acumulado |
 
+### Reportes de Bienes de Uso
+
+| Reporte | Descripcion |
+|---------|-------------|
+| Registro de Bienes de Uso | Listado de activos fijos con valor bruto, depreciacion acumulada, valor neto y progreso |
+| Depreciaciones del Periodo | Periodos de depreciacion contabilizados en un rango de fechas con montos y asientos |
+
 ### Reportes de Auditoria
 
 | Reporte | Descripcion |
@@ -174,4 +181,13 @@ Cuentas contables asignadas a funciones del sistema:
 - Emitidas: IVA, Ganancias, IIBB, SUSS
 - Sufridas: IVA, Ganancias, IIBB, SUSS
 
-Sin estas cuentas configuradas, los asientos automaticos correspondientes no se generan.
+### Cuentas de Activos Fijos (4 campos)
+
+| Campo | Funcion | Tipo Cuenta |
+|-------|---------|-------------|
+| `fixedAssetAccountId` | Bienes de Uso | ASSET |
+| `accumulatedDepreciationAccountId` | Depreciacion Acumulada | ASSET |
+| `depreciationExpenseAccountId` | Gasto de Depreciacion | EXPENSE |
+| `assetDisposalGainLossAccountId` | Resultado Venta/Baja | REVENUE/EXPENSE |
+
+Sin estas cuentas configuradas, los asientos de depreciacion y baja de activos no se generan (degradacion suave).

@@ -32,6 +32,14 @@ describe('Accounting - Reports', () => {
       cy.contains('Libro Mayor').should('be.visible');
     });
 
+    it('should display fixed asset report options', () => {
+      cy.visit('/dashboard/company/accounting/reports');
+
+      cy.contains('Bienes de Uso').should('be.visible');
+      cy.contains('Registro de Bienes de Uso').should('be.visible');
+      cy.contains('Depreciaciones del Período').should('be.visible');
+    });
+
     it('should display audit report options', () => {
       cy.visit('/dashboard/company/accounting/reports');
 

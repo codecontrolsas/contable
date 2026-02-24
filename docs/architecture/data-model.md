@@ -85,6 +85,25 @@ Resolucion: Owner/Developer → acceso total. Otros → rol base + overrides ind
 - `VehicleCondition`: EXCELLENT, GOOD, FAIR, POOR
 - `VehicleTitularityType`: OWN, LEASED, THIRD_PARTY
 
+### Depreciacion de Equipos
+
+| Modelo | Descripcion | Campos clave |
+|--------|-------------|--------------|
+| `VehicleDepreciation` | Config depreciacion | vehicleId, method, grossValue, salvageValue, usefulLifeMonths, status |
+| `DepreciationScheduleEntry` | Periodo del schedule | depreciationId, periodNumber, scheduledDate, amount, accumulatedAmount, bookValueAfter, journalEntryId? |
+| `AssetValueAdjustment` | Ajuste de valor | vehicleId, date, previousValue, newValue, reason, journalEntryId? |
+
+**Enums:**
+- `DepreciationMethod`: STRAIGHT_LINE, DECLINING_BALANCE
+- `DepreciationStatus`: ACTIVE, COMPLETED, SUSPENDED
+
+**Relaciones clave:**
+- Vehicle 1→1 VehicleDepreciation (config de depreciacion)
+- VehicleDepreciation 1←N DepreciationScheduleEntry (periodos del schedule)
+- Vehicle 1←N AssetValueAdjustment (historial de ajustes)
+- DepreciationScheduleEntry N→1 JournalEntry (asiento contable al contabilizar)
+- AssetValueAdjustment N→1 JournalEntry (asiento del ajuste, opcional)
+
 ---
 
 ### Documentos
@@ -300,7 +319,7 @@ Resolucion: Owner/Developer → acceso total. Otros → rol base + overrides ind
 | `Account` | Cuenta contable (arbol) | code, name, type, nature, parentId, level |
 | `JournalEntry` | Asiento contable | number, date, description, status, isAutomatic, reversedById |
 | `JournalEntryLine` | Linea de asiento | accountId, debit, credit, description |
-| `AccountingSettings` | Config contable | salesAccountId, purchasesAccountId, vatAccountId, etc. |
+| `AccountingSettings` | Config contable | salesAccountId, purchasesAccountId, vatAccountId, fixedAssetAccountId, depreciationExpenseAccountId, etc. |
 | `RecurringEntry` | Asiento recurrente | frequency, nextExecution, templateLines |
 | `RecurringEntryLine` | Linea de asiento recurrente | accountId, debitAmount, creditAmount |
 

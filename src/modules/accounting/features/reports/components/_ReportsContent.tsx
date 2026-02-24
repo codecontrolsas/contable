@@ -10,6 +10,8 @@ import { _GeneralLedgerReport } from './_GeneralLedgerReport';
 import { _EntriesWithoutDocumentsReport } from './_EntriesWithoutDocumentsReport';
 import { _ReversalLogReport } from './_ReversalLogReport';
 import { _DocumentTraceabilityReport } from './_DocumentTraceabilityReport';
+import { _FixedAssetsReport } from './_FixedAssetsReport';
+import { _PeriodDepreciationsReport } from './_PeriodDepreciationsReport';
 import { useState } from 'react';
 
 interface ReportsContentProps {
@@ -73,6 +75,14 @@ export function _ReportsContent({ companyId }: ReportsContentProps) {
 
       {selectedReport === 'document-traceability' && (
         <_DocumentTraceabilityReport companyId={companyId} />
+      )}
+
+      {selectedReport === 'fixed-assets' && (
+        <_FixedAssetsReport companyId={companyId} />
+      )}
+
+      {selectedReport === 'period-depreciations' && (
+        <_PeriodDepreciationsReport companyId={companyId} />
       )}
     </div>
   );

@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/shared/components/ui/button';
-import { FileText, Book, BookOpen, Scale, TrendingUp, AlertTriangle, RotateCcw, ArrowLeftRight } from 'lucide-react';
+import { FileText, Book, BookOpen, Scale, TrendingUp, AlertTriangle, RotateCcw, ArrowLeftRight, Calculator, CalendarRange } from 'lucide-react';
 
 export type ReportType =
   | 'trial-balance'
@@ -11,7 +11,9 @@ export type ReportType =
   | 'income-statement'
   | 'entries-without-documents'
   | 'reversal-log'
-  | 'document-traceability';
+  | 'document-traceability'
+  | 'fixed-assets'
+  | 'period-depreciations';
 
 interface ReportsSelectorProps {
   selectedReport: ReportType;
@@ -51,6 +53,21 @@ const financialReports = [
   },
 ];
 
+const fixedAssetReports = [
+  {
+    id: 'fixed-assets' as const,
+    name: 'Registro de Bienes de Uso',
+    description: 'Listado de activos fijos con valores y depreciación',
+    icon: Calculator,
+  },
+  {
+    id: 'period-depreciations' as const,
+    name: 'Depreciaciones del Período',
+    description: 'Detalle de depreciaciones contabilizadas por período',
+    icon: CalendarRange,
+  },
+];
+
 const auditReports = [
   {
     id: 'entries-without-documents' as const,
@@ -73,7 +90,7 @@ const auditReports = [
 ];
 
 export function _ReportsSelector({ selectedReport, onSelect }: ReportsSelectorProps) {
-  const renderReportButton = (report: (typeof financialReports)[number] | (typeof auditReports)[number]) => {
+  const renderReportButton = (report: (typeof financialReports)[number] | (typeof fixedAssetReports)[number] | (typeof auditReports)[number]) => {
     const Icon = report.icon;
     return (
       <Button
@@ -97,6 +114,13 @@ export function _ReportsSelector({ selectedReport, onSelect }: ReportsSelectorPr
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-3">
         {financialReports.map(renderReportButton)}
+      </div>
+
+      <div>
+        <h3 className="text-sm font-medium text-muted-foreground mb-3">Bienes de Uso</h3>
+        <div className="grid gap-4 md:grid-cols-3">
+          {fixedAssetReports.map(renderReportButton)}
+        </div>
       </div>
 
       <div>

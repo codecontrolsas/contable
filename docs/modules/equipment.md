@@ -58,6 +58,61 @@ Cada equipo tiene un codigo QR que apunta a `/eq/[id]` (ruta publica, sin autent
 
 Gestionados desde el modulo Documents. Rutas: `/dashboard/equipment/[id]/documents`
 
+## Depreciacion (`features/depreciation/`)
+
+Gestion de depreciacion de activos fijos con integracion contable.
+
+### Modelos
+
+| Modelo | Descripcion |
+|--------|-------------|
+| `VehicleDepreciation` | Configuracion de depreciacion de un equipo (metodo, valores, vida util) |
+| `DepreciationScheduleEntry` | Periodo individual del schedule (monto, fecha, estado contable) |
+| `AssetValueAdjustment` | Ajuste de valor del activo (revaluacion/deterioro) |
+
+### Metodos de Depreciacion
+
+- **Linea Recta** (`STRAIGHT_LINE`): (grossValue - salvageValue) / usefulLifeMonths
+- **Saldo Decreciente** (`DECLINING_BALANCE`): bookValue * (annualRate / 12)
+
+### Flujo
+
+1. Configurar depreciacion en el tab "Depreciacion" del detalle del equipo
+2. Se genera automaticamente el schedule completo (todos los periodos)
+3. Contabilizar periodos individualmente o en lote ("Contabilizar Depreciaciones" en listado)
+4. Al contabilizar, se genera asiento: Gasto Depreciacion (Debe) / Depreciacion Acumulada (Haber)
+5. Ajustes de valor recalculan el schedule desde el periodo siguiente
+
+### Estados
+
+- `ACTIVE`: Depreciacion en curso
+- `COMPLETED`: Vida util agotada o equipo dado de baja
+- `SUSPENDED`: Depreciacion pausada temporalmente
+
+### Integracion Contable
+
+Cuentas configuradas en Contabilidad > Configuracion > Activos Fijos:
+
+| Cuenta | Uso |
+|--------|-----|
+| Bienes de Uso (ASSET) | Valor del activo fijo |
+| Depreciacion Acumulada (ASSET) | Acumulado de depreciacion (contra-activo) |
+| Gasto de Depreciacion (EXPENSE) | Gasto mensual de depreciacion |
+| Resultado Venta/Baja (REVENUE/EXPENSE) | Ganancia o perdida por venta/baja |
+
+Al dar de baja un equipo (`softDeleteVehicle`), se generan asientos automaticos segun el motivo:
+- **Venta**: Reversa activo fijo, depreciacion acumulada, registra ganancia/perdida
+- **Perdida total/Devolucion**: Reversa activo fijo y depreciacion acumulada
+
+### Reportes
+
+- **Registro de Bienes de Uso**: Listado de todos los activos con valores brutos, depreciacion acumulada y valor neto
+- **Depreciaciones del Periodo**: Detalle de periodos contabilizados en un rango de fechas
+
+Ambos reportes disponibles en Contabilidad > Informes > seccion "Bienes de Uso".
+
+---
+
 ## Server Actions Principales
 
 | Funcion | Descripcion |
@@ -67,5 +122,10 @@ Gestionados desde el modulo Documents. Rutas: `/dashboard/equipment/[id]/documen
 | `createVehicle` | Crear vehiculo + relaciones de contratistas |
 | `getVehicleById` | Detalle con todas las relaciones |
 | `updateVehicle` | Actualizar en transaccion |
-| `softDeleteVehicle` | Baja con motivo |
+| `softDeleteVehicle` | Baja con motivo (+ asiento contable si tiene depreciacion) |
 | `reactivateVehicle` | Reactivar equipo dado de baja |
+| `createVehicleDepreciation` | Configurar depreciacion + generar schedule |
+| `updateVehicleDepreciation` | Actualizar configuracion + regenerar schedule |
+| `postDepreciationEntry` | Contabilizar un periodo individual |
+| `postAllPendingDepreciations` | Contabilizacion masiva de periodos pendientes |
+| `createValueAdjustment` | Ajustar valor del activo + recalcular schedule |

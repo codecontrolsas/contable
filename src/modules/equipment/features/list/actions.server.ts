@@ -10,6 +10,10 @@ import {
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
 import { prisma } from '@/shared/lib/prisma';
+import {
+  createJournalEntryForAssetSale,
+  createJournalEntryForAssetDisposal,
+} from '@/modules/accounting/features/integrations/equipment';
 
 // ============================================
 // CONSTANTES
@@ -272,7 +276,9 @@ export async function getActiveVehicles() {
 }
 
 /**
- * Elimina (soft delete) un vehículo
+ * Elimina (soft delete) un vehículo.
+ * Si tiene depreciación configurada, genera asiento contable de baja
+ * y marca la depreciación como completada.
  */
 export async function softDeleteVehicle(
   id: string,
@@ -282,13 +288,38 @@ export async function softDeleteVehicle(
   if (!companyId) throw new Error('No hay empresa activa');
 
   try {
-    return await prisma.vehicle.update({
-      where: { id, companyId },
-      data: {
-        isActive: false,
-        terminationDate: new Date(),
-        terminationReason,
-      },
+    return await prisma.$transaction(async (tx) => {
+      // Dar de baja el vehículo
+      const vehicle = await tx.vehicle.update({
+        where: { id, companyId },
+        data: {
+          isActive: false,
+          terminationDate: new Date(),
+          terminationReason,
+        },
+      });
+
+      // Generar asiento contable de baja si tiene depreciación
+      if (terminationReason === 'SALE') {
+        await createJournalEntryForAssetSale(id, companyId, tx);
+      } else if (terminationReason === 'TOTAL_LOSS' || terminationReason === 'RETURN') {
+        await createJournalEntryForAssetDisposal(id, companyId, tx);
+      }
+
+      // Marcar depreciación como completada
+      const depreciation = await tx.vehicleDepreciation.findUnique({
+        where: { vehicleId: id },
+        select: { id: true },
+      });
+
+      if (depreciation) {
+        await tx.vehicleDepreciation.update({
+          where: { id: depreciation.id },
+          data: { status: 'COMPLETED' },
+        });
+      }
+
+      return vehicle;
     });
   } catch (error) {
     logger.error('Error deleting vehicle', { data: { error, id } });
