@@ -154,6 +154,7 @@ model Company {
   accounts            Account[]
   journalEntries     JournalEntry[]
   accountingSettings AccountingSettings?
+  budgets            Budget[]
   recurringEntries   RecurringEntry[]
   salesCreditNoteApplications     SalesCreditNoteApplication[]
   purchaseCreditNoteApplications  PurchaseCreditNoteApplication[]
@@ -266,6 +267,7 @@ model Account {
   settingsAsDepreciationExpense AccountingSettings[] @relation("DepreciationExpenseAccount")
   settingsAsAssetDisposalGL     AccountingSettings[] @relation("AssetDisposalGainLossAccount")
   recurringEntryLines           RecurringEntryLine[]
+  budgets                       Budget[]
 
   @@unique([companyId, code])
   @@map("accounts")
@@ -324,6 +326,56 @@ model JournalEntryLine {
   account       Account     @relation(fields: [accountId], references: [id])
 
   @@map("journal_entry_lines")
+}
+
+// Estado del Presupuesto
+enum BudgetStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+
+  @@map("budget_status")
+}
+
+// Presupuesto por Cuenta y Año Fiscal
+model Budget {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId       String        @map("company_id") @db.Uuid
+  accountId       String        @map("account_id") @db.Uuid
+  fiscalYear      Int           @map("fiscal_year")
+  status          BudgetStatus  @default(DRAFT)
+  monthlyAmounts  Json          @map("monthly_amounts")
+  totalAmount     Decimal       @default(0) @map("total_amount") @db.Decimal(12, 2)
+  notes           String?
+  createdBy       String        @map("created_by")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Relaciones
+  company         Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  account         Account       @relation(fields: [accountId], references: [id])
+  revisions       BudgetRevision[]
+
+  @@unique([companyId, accountId, fiscalYear])
+  @@map("budgets")
+}
+
+// Revisión de Presupuesto (historial de cambios)
+model BudgetRevision {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  budgetId        String    @map("budget_id") @db.Uuid
+  previousAmounts Json      @map("previous_amounts")
+  newAmounts      Json      @map("new_amounts")
+  previousTotal   Decimal   @map("previous_total") @db.Decimal(12, 2)
+  newTotal        Decimal   @map("new_total") @db.Decimal(12, 2)
+  reason          String
+  createdBy       String    @map("created_by")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  // Relaciones
+  budget          Budget    @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+
+  @@map("budget_revisions")
 }
 
 // Configuración Contable por Empresa

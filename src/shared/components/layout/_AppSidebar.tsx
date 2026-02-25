@@ -88,9 +88,19 @@ const navMain: NavItemWithSub[] = [
     items: [
       { title: 'Dashboard', href: '/dashboard/accounting', module: 'accounting' },
       {
+        title: 'Saldos de Apertura',
+        href: '/dashboard/company/accounting/opening-balances',
+        module: 'accounting.opening-balances',
+      },
+      {
         title: 'Asientos',
         href: '/dashboard/company/accounting/entries',
         module: 'accounting.entries',
+      },
+      {
+        title: 'Presupuestos',
+        href: '/dashboard/company/accounting/budgets',
+        module: 'accounting.budgets',
       },
       {
         title: 'Informes',

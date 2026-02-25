@@ -339,6 +339,36 @@ export async function cleanupTestReceivingNotes(companyId: string): Promise<numb
 }
 
 /**
+ * Clean up test budgets and their revisions
+ * Deletes budgets created during tests (those with notes containing 'test E2E' pattern
+ * or with very small amounts typical of test data)
+ */
+export async function cleanupTestBudgets(companyId: string): Promise<number> {
+  const client = await getPool().connect();
+  try {
+    // First delete revisions for test budgets
+    await client.query(
+      `DELETE FROM budget_revisions
+       WHERE budget_id IN (
+         SELECT id FROM budgets WHERE company_id = $1 AND notes LIKE '%test E2E%'
+       )`,
+      [companyId]
+    );
+    // Then delete the budgets themselves
+    const result = await client.query(
+      `DELETE FROM budgets
+       WHERE company_id = $1
+       AND notes LIKE '%test E2E%'
+       RETURNING id`,
+      [companyId]
+    );
+    return result.rowCount || 0;
+  } finally {
+    client.release();
+  }
+}
+
+/**
  * Clean up all test data for a company
  */
 export async function cleanupAllTestData(companyId: string): Promise<{

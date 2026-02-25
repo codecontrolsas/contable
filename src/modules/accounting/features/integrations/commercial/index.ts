@@ -29,6 +29,7 @@
 
 import moment from 'moment';
 import { Prisma } from '@/generated/prisma/client';
+import { BudgetStatus, AccountNature } from '@/generated/prisma/enums';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { isCreditNote } from '@/modules/commercial/shared/voucher-utils';
@@ -730,5 +731,172 @@ export async function createJournalEntryForExpense(
       data: { error, expenseId, companyId },
     });
     throw error;
+  }
+}
+
+// ============================================
+// VALIDACIÓN PRESUPUESTARIA PARA GASTOS
+// ============================================
+
+/**
+ * Verifica si un gasto supera el presupuesto mensual de la cuenta.
+ * Retorna un warning (no bloquea la operación).
+ * Se invoca desde confirmExpense() antes de la transacción.
+ *
+ * @param accountId - ID de la cuenta de gastos (expensesAccountId de settings)
+ * @param amount - Monto del gasto que se está confirmando
+ * @param companyId - ID de la empresa
+ * @param expenseDate - Fecha del gasto para determinar el mes presupuestario
+ * @returns Objeto con hasWarning, message y executedPercent; o null si no hay presupuesto
+ */
+export async function checkBudgetForExpense(
+  accountId: string,
+  amount: number,
+  companyId: string,
+  expenseDate: Date
+): Promise<{
+  hasWarning: boolean;
+  message: string;
+  executedPercent: number;
+} | null> {
+  try {
+    // Obtener configuración contable para determinar el año fiscal
+    const settings = await prisma.accountingSettings.findUnique({
+      where: { companyId },
+      select: {
+        fiscalYearStart: true,
+        fiscalYearEnd: true,
+      },
+    });
+
+    if (!settings) return null;
+
+    // Determinar el año fiscal de la fecha del gasto
+    const startMonth = moment(settings.fiscalYearStart).month(); // 0-based
+    const expenseMoment = moment(expenseDate);
+    const expenseMonth = expenseMoment.month(); // 0-based
+    const expenseYear = expenseMoment.year();
+
+    // Calcular el año fiscal al que pertenece la fecha del gasto
+    const fiscalYear = expenseMonth < startMonth ? expenseYear - 1 : expenseYear;
+
+    // Buscar presupuesto ACTIVE para la cuenta y año fiscal
+    const budget = await prisma.budget.findFirst({
+      where: {
+        companyId,
+        accountId,
+        fiscalYear,
+        status: BudgetStatus.ACTIVE,
+      },
+      select: {
+        id: true,
+        monthlyAmounts: true,
+        account: {
+          select: { nature: true },
+        },
+      },
+    });
+
+    if (!budget) return null;
+
+    const monthlyAmounts = budget.monthlyAmounts as number[];
+
+    // Calcular el índice del mes actual dentro del array de 12 posiciones
+    // El índice 0 corresponde al primer mes del año fiscal
+    const monthIndex = expenseMonth >= startMonth
+      ? expenseMonth - startMonth
+      : 12 - startMonth + expenseMonth;
+
+    if (monthIndex < 0 || monthIndex >= 12) return null;
+
+    const budgetedForMonth = monthlyAmounts[monthIndex] ?? 0;
+
+    // Si no hay presupuesto asignado para este mes, no hay advertencia
+    if (budgetedForMonth <= 0) return null;
+
+    // Calcular ejecutado del mes actual con query optimizada
+    const fiscalYearStart = moment(settings.fiscalYearStart)
+      .year(fiscalYear)
+      .startOf('day')
+      .toDate();
+    const fiscalYearEnd = moment(settings.fiscalYearEnd)
+      .year(fiscalYear + 1)
+      .endOf('day')
+      .toDate();
+
+    // Solo necesitamos el mes actual, pero usamos el rango del mes específico
+    const monthStart = expenseMoment.clone().startOf('month').toDate();
+    const monthEnd = expenseMoment.clone().endOf('month').toDate();
+
+    const accountNature = budget.account.nature;
+
+    const results = await prisma.$queryRaw<
+      {
+        total_debit: Prisma.Decimal;
+        total_credit: Prisma.Decimal;
+      }[]
+    >`
+      SELECT
+        COALESCE(SUM(jel.debit), 0) AS total_debit,
+        COALESCE(SUM(jel.credit), 0) AS total_credit
+      FROM journal_entry_lines jel
+      JOIN journal_entries je ON jel.entry_id = je.id
+      WHERE jel.account_id = ${accountId}::uuid
+        AND je.company_id = ${companyId}::uuid
+        AND je.status = 'POSTED'
+        AND je.date >= ${monthStart}
+        AND je.date <= ${monthEnd}
+    `;
+
+    const row = results[0];
+    const debit = row ? Number(row.total_debit) : 0;
+    const credit = row ? Number(row.total_credit) : 0;
+
+    // Calcular ejecutado según naturaleza de la cuenta
+    const currentExecuted =
+      accountNature === AccountNature.DEBIT ? debit - credit : credit - debit;
+
+    const totalAfter = currentExecuted + amount;
+    const executedPercent =
+      budgetedForMonth > 0
+        ? Math.round((totalAfter / budgetedForMonth) * 100)
+        : 0;
+
+    // Advertir si supera el 80% del presupuesto mensual
+    if (executedPercent >= 80) {
+      const monthLabel = expenseMoment.format('MMMM YYYY');
+      const formatAmount = (n: number) =>
+        n.toLocaleString('es-AR', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+
+      let message: string;
+      if (executedPercent > 100) {
+        message =
+          `Este gasto excede el presupuesto mensual de ${monthLabel}. ` +
+          `Presupuestado: $${formatAmount(budgetedForMonth)}, ` +
+          `Ejecutado actual: $${formatAmount(currentExecuted)}, ` +
+          `Este gasto: $${formatAmount(amount)}, ` +
+          `Total resultante: $${formatAmount(totalAfter)} (${executedPercent}% del presupuesto).`;
+      } else {
+        message =
+          `Este gasto se acerca al límite del presupuesto mensual de ${monthLabel}. ` +
+          `Presupuestado: $${formatAmount(budgetedForMonth)}, ` +
+          `Ejecutado actual: $${formatAmount(currentExecuted)}, ` +
+          `Este gasto: $${formatAmount(amount)}, ` +
+          `Total resultante: $${formatAmount(totalAfter)} (${executedPercent}% del presupuesto).`;
+      }
+
+      return { hasWarning: true, message, executedPercent };
+    }
+
+    return null;
+  } catch (error) {
+    // No bloquear la operación por errores en la validación presupuestaria
+    logger.error('Error en validación presupuestaria para gasto', {
+      data: { error, accountId, amount, companyId },
+    });
+    return null;
   }
 }

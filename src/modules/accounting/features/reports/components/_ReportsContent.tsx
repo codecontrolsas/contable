@@ -12,6 +12,7 @@ import { _ReversalLogReport } from './_ReversalLogReport';
 import { _DocumentTraceabilityReport } from './_DocumentTraceabilityReport';
 import { _FixedAssetsReport } from './_FixedAssetsReport';
 import { _PeriodDepreciationsReport } from './_PeriodDepreciationsReport';
+import { _BudgetVarianceReport } from './_BudgetVarianceReport';
 import { useState } from 'react';
 
 interface ReportsContentProps {
@@ -83,6 +84,10 @@ export function _ReportsContent({ companyId }: ReportsContentProps) {
 
       {selectedReport === 'period-depreciations' && (
         <_PeriodDepreciationsReport companyId={companyId} />
+      )}
+
+      {selectedReport === 'budget-variance' && (
+        <_BudgetVarianceReport companyId={companyId} />
       )}
     </div>
   );

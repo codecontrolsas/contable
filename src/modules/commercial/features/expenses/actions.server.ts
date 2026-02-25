@@ -9,7 +9,10 @@ import { Prisma } from '@/generated/prisma/client';
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
 import { parseSearchParams, stateToPrismaParams } from '@/shared/components/common/DataTable/helpers';
 import type { ExpenseFormInput, ExpenseCategoryFormInput } from './validators';
-import { createJournalEntryForExpense } from '@/modules/accounting/features/integrations/commercial';
+import {
+  createJournalEntryForExpense,
+  checkBudgetForExpense,
+} from '@/modules/accounting/features/integrations/commercial';
 import moment from 'moment';
 
 /**
@@ -417,9 +420,14 @@ export async function updateExpense(id: string, data: ExpenseFormInput) {
 }
 
 /**
- * Confirma un gasto
+ * Confirma un gasto.
+ * Antes de confirmar, verifica si el gasto excede el presupuesto mensual
+ * de la cuenta de gastos. Si lo excede, retorna un budgetWarning (no bloqueante).
  */
-export async function confirmExpense(id: string) {
+export async function confirmExpense(id: string): Promise<{
+  success: true;
+  budgetWarning?: { message: string; executedPercent: number };
+}> {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -429,10 +437,38 @@ export async function confirmExpense(id: string) {
   try {
     const expense = await prisma.expense.findFirst({
       where: { id, companyId, status: 'DRAFT' },
-      select: { id: true, description: true, amount: true, categoryId: true },
+      select: { id: true, description: true, amount: true, categoryId: true, date: true },
     });
 
     if (!expense) throw new Error('Gasto no encontrado o ya confirmado');
+
+    // Verificación presupuestaria (no bloqueante)
+    let budgetWarning: { message: string; executedPercent: number } | undefined;
+    try {
+      const settings = await prisma.accountingSettings.findUnique({
+        where: { companyId },
+        select: { expensesAccountId: true },
+      });
+
+      if (settings?.expensesAccountId) {
+        const check = await checkBudgetForExpense(
+          settings.expensesAccountId,
+          Number(expense.amount),
+          companyId,
+          expense.date
+        );
+        if (check?.hasWarning) {
+          budgetWarning = {
+            message: check.message,
+            executedPercent: check.executedPercent,
+          };
+        }
+      }
+    } catch (error) {
+      logger.warn('Error en verificación presupuestaria (no bloqueante)', {
+        data: { expenseId: id, error },
+      });
+    }
 
     await prisma.$transaction(async (tx) => {
       await tx.expense.update({
@@ -459,7 +495,7 @@ export async function confirmExpense(id: string) {
     logger.info('Gasto confirmado', { data: { expenseId: id } });
     revalidatePath('/dashboard/commercial/expenses');
 
-    return { success: true };
+    return { success: true, budgetWarning };
   } catch (error) {
     logger.error('Error al confirmar gasto', { data: { error, id } });
     if (error instanceof Error) throw error;

@@ -93,8 +93,17 @@ export function _ExpenseDetailModal({ expenseId, open, onOpenChange, onSuccess }
 
     setIsProcessing(true);
     try {
-      await confirmExpense(expense.id);
+      const result = await confirmExpense(expense.id);
       toast.success('Gasto confirmado correctamente');
+
+      // Mostrar advertencia presupuestaria si existe (no bloqueante)
+      if (result.budgetWarning) {
+        toast.warning('Advertencia de presupuesto', {
+          description: result.budgetWarning.message,
+          duration: 10000,
+        });
+      }
+
       setConfirmDialogOpen(false);
       router.refresh();
       onSuccess?.();

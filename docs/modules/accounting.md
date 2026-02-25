@@ -213,3 +213,110 @@ Cuentas contables asignadas a funciones del sistema:
 | `assetDisposalGainLossAccountId` | Resultado Venta/Baja | REVENUE/EXPENSE |
 
 Sin estas cuentas configuradas, los asientos de depreciacion y baja de activos no se generan (degradacion suave).
+
+---
+
+## Presupuestos y Control Presupuestario
+
+**Ruta:** `/company/accounting/budgets`
+**Archivos:** `features/budgets/`
+
+Permite definir presupuestos por cuenta contable y ano fiscal, comparar lo planificado con lo ejecutado (asientos POSTED), y crear revisiones formales con trazabilidad.
+
+### Modelos
+
+| Modelo | Descripcion |
+|--------|-------------|
+| `Budget` | Presupuesto por cuenta y ano fiscal. Campos: `monthlyAmounts` (Json, array de 12 numeros), `totalAmount` (Decimal), `status` (BudgetStatus), `fiscalYear` (Int). Constraint unico: `[companyId, accountId, fiscalYear]`. |
+| `BudgetRevision` | Historial de revisiones formales. Guarda `previousAmounts`, `newAmounts`, `reason` (obligatorio). Cascade delete desde Budget. |
+
+### Ciclo de Vida
+
+```
+DRAFT ──(activateBudget)──> ACTIVE ──(closeBudget)──> CLOSED
+  │                           │
+  │ (updateBudget)            │ (createBudgetRevision)
+  │ (deleteBudget)            │
+  └───────────────────────────┘
+```
+
+- **DRAFT**: Editable libremente. Se puede eliminar.
+- **ACTIVE**: Solo revisiones formales (con motivo obligatorio). Se puede cerrar.
+- **CLOSED**: Solo lectura.
+
+### Funcionalidades
+
+- **CRUD**: Crear presupuesto seleccionando una cuenta hoja de tipo EXPENSE o REVENUE, asignar montos por mes fiscal (12 campos). Distribucion uniforme disponible.
+- **Alineacion fiscal**: Los 12 meses se alinean con `fiscalYearStart` de `AccountingSettings`, no con el calendario.
+- **Comparacion mensual**: Detalle con tabla de 12 meses mostrando Presupuestado, Ejecutado, Desvio ($) y Desvio (%). Ejecutado calculado con query optimizada (`$queryRaw` con `GROUP BY`).
+- **Coloreo de desvios**: Verde (< 80%), amarillo (80-100%), rojo (> 100%). Para REVENUE la logica se invierte (mas ejecucion es favorable).
+- **Revisiones formales**: Al revisar un presupuesto ACTIVE se guarda snapshot de montos anteriores y nuevos con motivo. Historial visible en el detalle.
+- **Cuentas hoja**: Solo se asignan presupuestos a cuentas sin hijos (`children: { none: {} }`).
+
+### Permisos
+
+Modulo `accounting.budgets` con acciones: view, create, update, delete, approve.
+
+### Server Actions
+
+| Funcion | Descripcion |
+|---------|-------------|
+| `getBudgetsPageData()` | Datos iniciales (settings, cuentas de resultado) |
+| `getBudgets(fiscalYear?)` | Lista presupuestos con info de cuenta y revisiones |
+| `getBudgetDetail(budgetId)` | Detalle con ejecutado mensual, desvios y revisiones |
+| `getBudgetableAccounts(fiscalYear)` | Cuentas hoja EXPENSE/REVENUE disponibles |
+| `getAvailableFiscalYears()` | Anos fiscales con presupuestos existentes |
+| `createBudget(input)` | Crear presupuesto DRAFT |
+| `updateBudget(id, input)` | Actualizar presupuesto DRAFT |
+| `activateBudget(id)` | Pasar de DRAFT a ACTIVE (requiere totalAmount > 0) |
+| `createBudgetRevision(input)` | Revision formal de presupuesto ACTIVE (transaccion) |
+| `closeBudget(id)` | Pasar de ACTIVE a CLOSED |
+| `deleteBudget(id)` | Eliminar presupuesto DRAFT (cascade) |
+
+### Integracion con Gastos
+
+Al confirmar un gasto (`confirmExpense()`), se invoca `checkBudgetForExpense()` desde `integrations/commercial/index.ts`. Si el ejecutado del mes supera el 80% del presupuestado, se retorna un warning (toast). La confirmacion del gasto nunca se bloquea.
+
+### Reporte de Variacion Presupuestaria
+
+Disponible en `/company/accounting/reports` como tipo `budget-variance`. Compara todas las cuentas presupuestadas (ACTIVE/CLOSED) con su ejecucion real. Separado en secciones Ingresos y Gastos con resultado neto. Exportable a Excel.
+
+---
+
+## Saldos de Apertura
+
+**Ruta:** `/company/accounting/opening-balances`
+**Archivos:** `features/opening-balances/`
+
+Wizard para migrar saldos iniciales de empresas que vienen de otro sistema contable. Se divide en tres secciones (tabs):
+
+### Asiento de Apertura
+
+- Crea un JournalEntry con status POSTED, fecha = fiscalYearStart
+- El usuario ingresa el saldo (Debe o Haber) para cada cuenta con saldo inicial
+- La diferencia se balancea automaticamente con una cuenta "Apertura" de tipo EQUITY
+- La cuenta Apertura se auto-crea (codigo 3.0.1) si no existe
+- El asiento se puede editar/actualizar (reemplaza lineas, no genera reversal)
+- Bypass de validacion de periodo bloqueado (la fecha puede estar en un periodo ya bloqueado)
+- Deteccion de asiento existente: `description='Asiento de Apertura' AND date=fiscalYearStart AND status=POSTED`
+
+### Facturas de Venta Pendientes
+
+- Formulario simplificado: cliente, tipo comprobante, numero, fecha, vencimiento, total
+- Import masivo desde Excel (ExcelJS)
+- Crea SalesInvoice con `status=CONFIRMED, journalEntryId=null, internalNotes='opening-balance'`
+- Sin lineas de detalle de productos (una linea sintetica con total)
+- Aparecen automaticamente en cashflow como cuentas por cobrar
+
+### Facturas de Compra Pendientes
+
+- Mismo patron que facturas de venta pero con proveedores
+- Crea PurchaseInvoice con `status=CONFIRMED, journalEntryId=null, internalNotes='opening-balance'`
+- Aparecen automaticamente en cashflow como cuentas por pagar
+
+### Notas Tecnicas
+
+- **No requiere modelo nuevo**: usa JournalEntry, SalesInvoice y PurchaseInvoice existentes
+- **Marcador**: facturas de apertura se identifican por `internalNotes='opening-balance'`
+- **Prerequisitos**: requiere ejercicio fiscal configurado y plan de cuentas creado
+- **Permisos**: modulo `accounting.opening-balances`

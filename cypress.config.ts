@@ -12,6 +12,7 @@ import {
   cleanupTestWarehouses,
   cleanupTestPurchaseOrders,
   cleanupTestReceivingNotes,
+  cleanupTestBudgets,
   getTestCompanyId,
   closePool,
 } from './cypress/support/db';
@@ -106,6 +107,13 @@ export default defineConfig({
           const companyId = await getTestCompanyId(OWNER_USER_ID);
           if (!companyId) return { deleted: 0, error: 'No company found' };
           const deleted = await cleanupTestReceivingNotes(companyId);
+          return { deleted };
+        },
+
+        async cleanupTestBudgets() {
+          const companyId = await getTestCompanyId(OWNER_USER_ID);
+          if (!companyId) return { deleted: 0, error: 'No company found' };
+          const deleted = await cleanupTestBudgets(companyId);
           return { deleted };
         },
       });

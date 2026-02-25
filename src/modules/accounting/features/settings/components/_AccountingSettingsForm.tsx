@@ -10,6 +10,8 @@ import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 
+import moment from 'moment';
+
 import { accountingSettingsSchema } from '../../../shared/types';
 import { saveAccountingSettings } from '../actions.server';
 import { useState } from 'react';
@@ -67,8 +69,13 @@ export function _AccountingSettingsForm({ companyId, defaultValues }: Accounting
           <Input
             id="fiscalYearStart"
             type="date"
-            value={form.watch('fiscalYearStart')?.toISOString().split('T')[0]}
-            onChange={(e) => form.setValue('fiscalYearStart', new Date(e.target.value))}
+            value={moment(form.watch('fiscalYearStart')).isValid() ? moment(form.watch('fiscalYearStart')).format('YYYY-MM-DD') : ''}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val) {
+                form.setValue('fiscalYearStart', new Date(val + 'T00:00:00'), { shouldValidate: true });
+              }
+            }}
             disabled={isLoading}
           />
           {form.formState.errors.fiscalYearStart && (
@@ -85,8 +92,13 @@ export function _AccountingSettingsForm({ companyId, defaultValues }: Accounting
           <Input
             id="fiscalYearEnd"
             type="date"
-            value={form.watch('fiscalYearEnd')?.toISOString().split('T')[0]}
-            onChange={(e) => form.setValue('fiscalYearEnd', new Date(e.target.value))}
+            value={moment(form.watch('fiscalYearEnd')).isValid() ? moment(form.watch('fiscalYearEnd')).format('YYYY-MM-DD') : ''}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val) {
+                form.setValue('fiscalYearEnd', new Date(val + 'T00:00:00'), { shouldValidate: true });
+              }
+            }}
             disabled={isLoading}
           />
           {form.formState.errors.fiscalYearEnd && (

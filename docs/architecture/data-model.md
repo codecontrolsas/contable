@@ -334,3 +334,26 @@ Resolucion: Owner/Developer → acceso total. Otros → rol base + overrides ind
 - JournalEntry puede ser automatico (generado por comercial) o manual
 - JournalEntry puede ser reversado (reversedById → otro entry)
 - AccountingSettings mapea cuentas contables a funciones (ventas, compras, IVA, bancos, etc.)
+- Saldos de Apertura: implementado como JournalEntry (description='Asiento de Apertura', status=POSTED) sin modelo nuevo. Facturas de apertura se identifican por internalNotes='opening-balance' y journalEntryId=null.
+
+### Presupuestos
+
+| Modelo | Descripcion | Campos clave |
+|--------|-------------|--------------|
+| `Budget` | Presupuesto por cuenta y ano fiscal | companyId, accountId, fiscalYear, status, monthlyAmounts (Json, number[12]), totalAmount (Decimal 12,2), notes, createdBy |
+| `BudgetRevision` | Revision formal de presupuesto | budgetId, previousAmounts (Json), newAmounts (Json), previousTotal (Decimal 12,2), newTotal (Decimal 12,2), reason, createdBy |
+
+**Enums:**
+- `BudgetStatus`: DRAFT, ACTIVE, CLOSED
+
+**Relaciones clave:**
+- Budget N→1 Company (empresa/tenant, onDelete Cascade)
+- Budget N→1 Account (cuenta contable)
+- Budget 1←N BudgetRevision (historial de revisiones, onDelete Cascade)
+
+**Constraints:**
+- `Budget @@unique([companyId, accountId, fiscalYear])`: un solo presupuesto por cuenta y ano fiscal
+- `monthlyAmounts` almacena un array Json de 12 numeros alineados al inicio del ejercicio fiscal (indice 0 = primer mes fiscal)
+- Solo cuentas hoja (sin hijos) de tipo EXPENSE o REVENUE pueden tener presupuesto
+
+---

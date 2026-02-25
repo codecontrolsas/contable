@@ -77,6 +77,8 @@ export const MODULES = {
   'accounting.settings': 'accounting.settings',
   'accounting.fiscal-year-close': 'accounting.fiscal-year-close',
   'accounting.recurring-entries': 'accounting.recurring-entries',
+  'accounting.opening-balances': 'accounting.opening-balances',
+  'accounting.budgets': 'accounting.budgets',
 } as const;
 
 export type Module = (typeof MODULES)[keyof typeof MODULES];
@@ -160,6 +162,8 @@ export const MODULE_LABELS: Record<Module, string> = {
   'accounting.settings': 'Configuración Contable',
   'accounting.fiscal-year-close': 'Cierre de Ejercicio',
   'accounting.recurring-entries': 'Asientos Recurrentes',
+  'accounting.opening-balances': 'Saldos de Apertura',
+  'accounting.budgets': 'Presupuestos Contables',
 };
 
 export const ACTION_LABELS: Record<Action, string> = {
@@ -251,6 +255,8 @@ export const MODULE_GROUPS = {
       'accounting.entries',
       'accounting.reports',
       'accounting.settings',
+      'accounting.opening-balances',
+      'accounting.budgets',
     ] as Module[],
   },
 } as const;

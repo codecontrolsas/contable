@@ -2,8 +2,10 @@
 
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/shared/lib/prisma';
+import { Prisma } from '@/generated/prisma/client';
 import { logger } from '@/shared/lib/logger';
-import { AccountNature, AccountType, JournalEntryStatus } from '@/generated/prisma/enums';
+import { AccountNature, AccountType, BudgetStatus, JournalEntryStatus } from '@/generated/prisma/enums';
+import moment from 'moment';
 import {
   calculateAccountBalance,
   calculateAllAccountBalances,
@@ -1041,4 +1043,263 @@ export async function getPeriodDepreciations(companyId: string, fromDate: Date, 
     logger.error('Error al obtener depreciaciones del período', { data: { error, companyId, userId } });
     throw error;
   }
+}
+
+// ============================================
+// REPORTE: Variación Presupuestaria
+// ============================================
+
+interface BudgetVarianceAccount {
+  code: string;
+  name: string;
+  budgeted: number;
+  executed: number;
+  variance: number;
+  variancePercent: number;
+}
+
+interface BudgetVarianceSection {
+  accounts: BudgetVarianceAccount[];
+  totalBudgeted: number;
+  totalExecuted: number;
+  totalVariance: number;
+  totalVariancePercent: number;
+}
+
+interface BudgetVarianceResult {
+  revenue: BudgetVarianceSection;
+  expenses: BudgetVarianceSection;
+  netBudgeted: number;
+  netExecuted: number;
+  netVariance: number;
+  netVariancePercent: number;
+  fiscalYear: number;
+}
+
+/**
+ * Genera el reporte de variación presupuestaria.
+ * Obtiene todos los presupuestos ACTIVE/CLOSED del año fiscal,
+ * calcula el ejecutado acumulado de cada cuenta, y retorna
+ * la comparación separada en REVENUE y EXPENSE.
+ */
+export async function getBudgetVarianceReport(
+  companyId: string,
+  fiscalYear: number
+): Promise<BudgetVarianceResult> {
+  const { userId } = await auth();
+  if (!userId) throw new Error('No autenticado');
+
+  try {
+    logger.info('Generando reporte de variación presupuestaria', {
+      data: { companyId, fiscalYear },
+    });
+
+    // Obtener settings para calcular rango fiscal
+    const settings = await prisma.accountingSettings.findUnique({
+      where: { companyId },
+      select: { fiscalYearStart: true, fiscalYearEnd: true },
+    });
+
+    if (!settings) {
+      throw new Error('La empresa no tiene configuración contable');
+    }
+
+    // Calcular las fechas de inicio y fin del año fiscal
+    const fiscalStartMonth = moment(settings.fiscalYearStart).month();
+    const fiscalStartDay = moment(settings.fiscalYearStart).date();
+    const fiscalYearStartDate = moment()
+      .year(fiscalYear)
+      .month(fiscalStartMonth)
+      .date(fiscalStartDay)
+      .startOf('day')
+      .toDate();
+
+    const fiscalYearEndDate = moment(fiscalYearStartDate)
+      .add(1, 'year')
+      .subtract(1, 'day')
+      .endOf('day')
+      .toDate();
+
+    // Obtener todos los presupuestos ACTIVE o CLOSED del año fiscal
+    const budgets = await prisma.budget.findMany({
+      where: {
+        companyId,
+        fiscalYear,
+        status: { in: [BudgetStatus.ACTIVE, BudgetStatus.CLOSED] },
+      },
+      select: {
+        id: true,
+        accountId: true,
+        totalAmount: true,
+        monthlyAmounts: true,
+        account: {
+          select: {
+            code: true,
+            name: true,
+            type: true,
+            nature: true,
+          },
+        },
+      },
+      orderBy: { account: { code: 'asc' } },
+    });
+
+    if (budgets.length === 0) {
+      return {
+        revenue: buildEmptySection(),
+        expenses: buildEmptySection(),
+        netBudgeted: 0,
+        netExecuted: 0,
+        netVariance: 0,
+        netVariancePercent: 0,
+        fiscalYear,
+      };
+    }
+
+    // Obtener el ejecutado de todas las cuentas con presupuesto en una sola query
+    const accountIds = budgets.map((b) => b.accountId);
+
+    const executionResults = await prisma.$queryRaw<
+      {
+        account_id: string;
+        total_debit: Prisma.Decimal;
+        total_credit: Prisma.Decimal;
+      }[]
+    >`
+      SELECT
+        jel.account_id,
+        COALESCE(SUM(jel.debit), 0) AS total_debit,
+        COALESCE(SUM(jel.credit), 0) AS total_credit
+      FROM journal_entry_lines jel
+      JOIN journal_entries je ON jel.entry_id = je.id
+      WHERE jel.account_id = ANY(${accountIds}::uuid[])
+        AND je.company_id = ${companyId}::uuid
+        AND je.status = 'POSTED'
+        AND je.date >= ${fiscalYearStartDate}
+        AND je.date <= ${fiscalYearEndDate}
+      GROUP BY jel.account_id
+    `;
+
+    // Crear mapa de ejecutado por cuenta
+    const executionMap = new Map<string, { debit: number; credit: number }>();
+    for (const row of executionResults) {
+      executionMap.set(row.account_id, {
+        debit: Number(row.total_debit),
+        credit: Number(row.total_credit),
+      });
+    }
+
+    // Construir datos por sección
+    const revenueAccounts: BudgetVarianceAccount[] = [];
+    const expenseAccounts: BudgetVarianceAccount[] = [];
+
+    for (const budget of budgets) {
+      const budgeted = Number(budget.totalAmount);
+      const execution = executionMap.get(budget.accountId) || {
+        debit: 0,
+        credit: 0,
+      };
+
+      // Calcular ejecutado según naturaleza de la cuenta
+      // EXPENSE (DEBIT nature): ejecutado = debit - credit
+      // REVENUE (CREDIT nature): ejecutado = credit - debit
+      const executed =
+        budget.account.nature === AccountNature.DEBIT
+          ? execution.debit - execution.credit
+          : execution.credit - execution.debit;
+
+      const variance = budgeted - executed;
+      const variancePercent =
+        budgeted === 0
+          ? executed === 0
+            ? 0
+            : -100
+          : ((budgeted - executed) / budgeted) * 100;
+
+      const accountData: BudgetVarianceAccount = {
+        code: budget.account.code,
+        name: budget.account.name,
+        budgeted,
+        executed,
+        variance,
+        variancePercent,
+      };
+
+      if (budget.account.type === AccountType.REVENUE) {
+        revenueAccounts.push(accountData);
+      } else {
+        expenseAccounts.push(accountData);
+      }
+    }
+
+    // Calcular totales por sección
+    const revenue = buildSection(revenueAccounts);
+    const expenses = buildSection(expenseAccounts);
+
+    // Resultado neto
+    const netBudgeted = revenue.totalBudgeted - expenses.totalBudgeted;
+    const netExecuted = revenue.totalExecuted - expenses.totalExecuted;
+    const netVariance = netBudgeted - netExecuted;
+    const netVariancePercent =
+      netBudgeted === 0
+        ? netExecuted === 0
+          ? 0
+          : -100
+        : ((netBudgeted - netExecuted) / Math.abs(netBudgeted)) * 100;
+
+    logger.info('Reporte de variación presupuestaria generado', {
+      data: {
+        fiscalYear,
+        revenueAccounts: revenueAccounts.length,
+        expenseAccounts: expenseAccounts.length,
+        netBudgeted,
+        netExecuted,
+      },
+    });
+
+    return {
+      revenue,
+      expenses,
+      netBudgeted,
+      netExecuted,
+      netVariance,
+      netVariancePercent,
+      fiscalYear,
+    };
+  } catch (error) {
+    logger.error('Error al generar reporte de variación presupuestaria', {
+      data: { error, companyId, fiscalYear, userId },
+    });
+    throw error;
+  }
+}
+
+function buildSection(accounts: BudgetVarianceAccount[]): BudgetVarianceSection {
+  const totalBudgeted = accounts.reduce((sum, a) => sum + a.budgeted, 0);
+  const totalExecuted = accounts.reduce((sum, a) => sum + a.executed, 0);
+  const totalVariance = totalBudgeted - totalExecuted;
+  const totalVariancePercent =
+    totalBudgeted === 0
+      ? totalExecuted === 0
+        ? 0
+        : -100
+      : ((totalBudgeted - totalExecuted) / totalBudgeted) * 100;
+
+  return {
+    accounts,
+    totalBudgeted,
+    totalExecuted,
+    totalVariance,
+    totalVariancePercent,
+  };
+}
+
+function buildEmptySection(): BudgetVarianceSection {
+  return {
+    accounts: [],
+    totalBudgeted: 0,
+    totalExecuted: 0,
+    totalVariance: 0,
+    totalVariancePercent: 0,
+  };
 }

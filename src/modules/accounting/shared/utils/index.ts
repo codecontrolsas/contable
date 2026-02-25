@@ -128,6 +128,8 @@ export function revalidateAccountingRoutes(companyId: string) {
   revalidatePath('/dashboard/company/accounting/settings');
   revalidatePath('/dashboard/company/accounting/fiscal-year-close');
   revalidatePath('/dashboard/company/accounting/recurring-entries');
+  revalidatePath('/dashboard/company/accounting/opening-balances');
+  revalidatePath('/dashboard/company/accounting/budgets');
 
   // Dashboard principal (en caso de widgets contables)
   revalidatePath('/dashboard');
