@@ -334,6 +334,9 @@ model AccountingSettings {
   fiscalYearEnd     DateTime @map("fiscal_year_end")
   lastEntryNumber   Int      @default(0) @map("last_entry_number")
 
+  // Bloqueo de períodos contables (mensual)
+  lockedUntilDate   DateTime? @map("locked_until_date")
+
   // Cuentas por defecto para integración con módulo comercial
   salesAccountId          String? @map("sales_account_id") @db.Uuid          // Ventas (ingreso)
   purchasesAccountId      String? @map("purchases_account_id") @db.Uuid      // Compras (gasto)

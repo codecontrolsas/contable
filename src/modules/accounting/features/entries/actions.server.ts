@@ -5,7 +5,7 @@ import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { revalidateAccountingRoutes } from '../../shared/utils';
 import { type CreateJournalEntryInput } from '../../shared/types';
-import { validateJournalEntryAccounts, validateJournalEntryBalance, validateJournalEntryDate, validateJournalEntryAmounts, validateAccountNatures } from './validators';
+import { validateJournalEntryAccounts, validateJournalEntryBalance, validateJournalEntryDate, validateJournalEntryAmounts, validateAccountNatures, validatePeriodLock } from './validators';
 
 import { JournalEntryStatus } from '@/generated/prisma/enums';
 
@@ -143,6 +143,9 @@ export async function postJournalEntry(companyId: string, entryId: string) {
       throw new Error('El asiento no está en estado borrador');
     }
 
+    // Validar que el período no esté bloqueado
+    await validatePeriodLock(companyId, entry.date);
+
     // Validar nuevamente el balance
     await validateJournalEntryBalance(entry.lines);
     await validateJournalEntryAmounts(entry.lines);
@@ -234,6 +237,9 @@ export async function reverseJournalEntry(companyId: string, entryId: string) {
     if (entry.companyId !== companyId) {
       throw new Error('El asiento no pertenece a la empresa');
     }
+
+    // Validar que el período no esté bloqueado
+    await validatePeriodLock(companyId, entry.date);
 
     if (entry.status !== JournalEntryStatus.POSTED) {
       throw new Error('Solo se pueden anular asientos registrados');

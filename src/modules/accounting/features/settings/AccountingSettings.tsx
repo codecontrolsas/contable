@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 import { getAccountingSettings, getActiveAccounts } from './actions.server';
 import { _AccountingSettingsForm } from './components/_AccountingSettingsForm';
 import { _CommercialIntegrationForm } from './components/_CommercialIntegrationForm';
+import { _PeriodLockingForm } from './components/_PeriodLockingForm';
 
 import { getActiveCompanyId } from '@/shared/lib/company';
 
@@ -34,6 +35,23 @@ export async function AccountingSettings() {
               fiscalYearStart: settings?.fiscalYearStart ?? new Date(),
               fiscalYearEnd: settings?.fiscalYearEnd ?? new Date(),
             }}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Bloqueo de Períodos</CardTitle>
+          <CardDescription>
+            Bloquea períodos mensuales para evitar modificaciones en asientos contables
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <_PeriodLockingForm
+            companyId={companyId}
+            fiscalYearStart={settings?.fiscalYearStart ?? new Date()}
+            fiscalYearEnd={settings?.fiscalYearEnd ?? new Date()}
+            lockedUntilDate={settings?.lockedUntilDate ?? null}
           />
         </CardContent>
       </Card>

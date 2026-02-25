@@ -159,6 +159,28 @@ Todos los reportes solo consideran asientos POSTED.
 
 - Fecha de inicio y fin (maximo 366 dias)
 
+### Bloqueo de Periodos
+
+Permite bloquear periodos contables mensuales para evitar la creacion o modificacion de asientos. El bloqueo es secuencial: no se puede bloquear un mes sin bloquear los anteriores.
+
+**Campo:** `AccountingSettings.lockedUntilDate` (DateTime nullable)
+
+- Almacena la fecha de fin del ultimo mes bloqueado
+- Cualquier asiento con fecha <= `lockedUntilDate` es rechazado
+- UI muestra grid de 12 meses del ejercicio fiscal con iconos Lock/LockOpen
+- Solo el primer mes desbloqueado (para bloquear) y el ultimo mes bloqueado (para desbloquear) son interactivos
+
+**Impacto en el sistema:**
+
+| Operacion | Comportamiento en periodo bloqueado |
+|-----------|-------------------------------------|
+| Crear asiento manual | Error: periodo bloqueado |
+| Registrar (post) asiento borrador | Error: periodo bloqueado |
+| Revertir asiento | Error: periodo bloqueado |
+| Confirmar factura/recibo/OP/gasto | Documento se confirma, asiento automatico se omite con warning |
+| Contabilizar depreciacion | Error: periodo bloqueado |
+| Cierre fiscal | Auto-bloquea todos los meses del ejercicio |
+
 ### Mapeo de Cuentas
 
 Cuentas contables asignadas a funciones del sistema:

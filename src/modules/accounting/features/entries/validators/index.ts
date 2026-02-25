@@ -67,6 +67,35 @@ export async function validateJournalEntryAccounts(companyId: string, accountIds
 }
 
 /**
+ * Valida que la fecha no esté en un período bloqueado.
+ * Puede recibir settings ya cargados para evitar query duplicada.
+ */
+export async function validatePeriodLock(
+  companyId: string,
+  date: Date,
+  settings?: { lockedUntilDate: Date | null } | null
+) {
+  const moment = require('moment');
+
+  const lockSettings = settings ?? await prisma.accountingSettings.findUnique({
+    where: { companyId },
+    select: { lockedUntilDate: true },
+  });
+
+  if (lockSettings?.lockedUntilDate) {
+    const entryDate = moment(date);
+    const lockDate = moment(lockSettings.lockedUntilDate);
+
+    if (entryDate.isSameOrBefore(lockDate, 'day')) {
+      throw new Error(
+        `No se puede operar en el período ${entryDate.format('MM/YYYY')}. ` +
+        `Los períodos están bloqueados hasta ${lockDate.format('MM/YYYY')}.`
+      );
+    }
+  }
+}
+
+/**
  * Valida que la fecha del asiento esté dentro del ejercicio fiscal
  */
 export async function validateJournalEntryDate(companyId: string, date: Date) {
@@ -91,6 +120,9 @@ export async function validateJournalEntryDate(companyId: string, date: Date) {
       `(${fiscalStart.format('DD/MM/YYYY')} - ${fiscalEnd.format('DD/MM/YYYY')})`
     );
   }
+
+  // Validar bloqueo de período
+  await validatePeriodLock(companyId, date, settings);
 
   // Advertir si la fecha es muy antigua (más de 6 meses)
   if (entryDate.isBefore(moment().subtract(6, 'months'))) {

@@ -299,7 +299,10 @@ export async function closeFiscalYear(companyId: string) {
 
       await tx.accountingSettings.update({
         where: { companyId },
-        data: { lastEntryNumber: nextNumber },
+        data: {
+          lastEntryNumber: nextNumber,
+          lockedUntilDate: settings.fiscalYearEnd,
+        },
       });
 
       return entry;

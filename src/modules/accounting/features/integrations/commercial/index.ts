@@ -27,6 +27,7 @@
  *    - Haber: Cuentas por Pagar
  */
 
+import moment from 'moment';
 import { Prisma } from '@/generated/prisma/client';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
@@ -134,20 +135,33 @@ function validateBalance(lines: JournalEntryLineInput[]): void {
 async function createJournalEntry(
   input: CreateJournalEntryInput,
   tx: PrismaTransactionClient
-): Promise<string> {
+): Promise<string | null> {
   const { companyId, date, description, lines } = input;
 
   // Validar balance
   validateBalance(lines);
 
-  // Obtener settings para el siguiente número de asiento
+  // Obtener settings para el siguiente número de asiento y verificar bloqueo
   const settings = await tx.accountingSettings.findUnique({
     where: { companyId },
-    select: { lastEntryNumber: true },
+    select: { lastEntryNumber: true, lockedUntilDate: true },
   });
 
   if (!settings) {
     throw new Error('No se encontró configuración contable');
+  }
+
+  // Verificar bloqueo de período
+  if (settings.lockedUntilDate && moment(date).isSameOrBefore(moment(settings.lockedUntilDate), 'day')) {
+    logger.warn('Asiento automático omitido por período bloqueado', {
+      data: {
+        companyId,
+        date,
+        description,
+        lockedUntil: settings.lockedUntilDate,
+      },
+    });
+    return null;
   }
 
   const nextNumber = settings.lastEntryNumber + 1;

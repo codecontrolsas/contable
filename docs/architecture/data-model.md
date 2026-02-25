@@ -319,7 +319,7 @@ Resolucion: Owner/Developer → acceso total. Otros → rol base + overrides ind
 | `Account` | Cuenta contable (arbol) | code, name, type, nature, parentId, level |
 | `JournalEntry` | Asiento contable | number, date, description, status, isAutomatic, reversedById |
 | `JournalEntryLine` | Linea de asiento | accountId, debit, credit, description |
-| `AccountingSettings` | Config contable | salesAccountId, purchasesAccountId, vatAccountId, fixedAssetAccountId, depreciationExpenseAccountId, etc. |
+| `AccountingSettings` | Config contable | salesAccountId, purchasesAccountId, vatAccountId, fixedAssetAccountId, depreciationExpenseAccountId, lockedUntilDate, etc. |
 | `RecurringEntry` | Asiento recurrente | frequency, nextExecution, templateLines |
 | `RecurringEntryLine` | Linea de asiento recurrente | accountId, debitAmount, creditAmount |
 

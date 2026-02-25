@@ -1,5 +1,6 @@
 'use server';
 
+import moment from 'moment';
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
@@ -87,6 +88,91 @@ export async function saveAccountingSettings(
     return settings;
   } catch (error) {
     logger.error('Error al guardar configuración contable', { data: { error, companyId, userId } });
+    throw error;
+  }
+}
+
+/**
+ * Obtiene la información de bloqueo de períodos contables
+ */
+export async function getLockedPeriod(companyId: string) {
+  const { userId } = await auth();
+  if (!userId) throw new Error('No autenticado');
+
+  try {
+    const settings = await prisma.accountingSettings.findUnique({
+      where: { companyId },
+      select: {
+        lockedUntilDate: true,
+        fiscalYearStart: true,
+        fiscalYearEnd: true,
+      },
+    });
+
+    if (!settings) return null;
+
+    return {
+      lockedUntilDate: settings.lockedUntilDate,
+      fiscalYearStart: settings.fiscalYearStart,
+      fiscalYearEnd: settings.fiscalYearEnd,
+    };
+  } catch (error) {
+    logger.error('Error al obtener período bloqueado', { data: { error, companyId, userId } });
+    throw error;
+  }
+}
+
+/**
+ * Bloquea o desbloquea períodos contables hasta una fecha determinada.
+ * La fecha debe ser el último día de un mes dentro del ejercicio fiscal.
+ * Pasar null para desbloquear todos los períodos.
+ */
+export async function setLockedPeriod(companyId: string, lockedUntilDate: Date | null) {
+  const { userId } = await auth();
+  if (!userId) throw new Error('No autenticado');
+
+  try {
+    if (lockedUntilDate) {
+      const settings = await prisma.accountingSettings.findUnique({
+        where: { companyId },
+        select: { fiscalYearStart: true, fiscalYearEnd: true },
+      });
+
+      if (!settings) {
+        throw new Error('No se encontró configuración contable');
+      }
+
+      const lockDate = moment(lockedUntilDate);
+      const fiscalStart = moment(settings.fiscalYearStart);
+      const fiscalEnd = moment(settings.fiscalYearEnd);
+
+      // Validar que la fecha esté dentro del ejercicio fiscal
+      if (!lockDate.isBetween(fiscalStart, fiscalEnd, 'day', '[]')) {
+        throw new Error('La fecha de bloqueo debe estar dentro del ejercicio fiscal');
+      }
+
+      // Validar que sea fin de mes
+      if (!lockDate.isSame(lockDate.clone().endOf('month'), 'day')) {
+        throw new Error('La fecha de bloqueo debe ser el último día de un mes');
+      }
+    }
+
+    await prisma.accountingSettings.update({
+      where: { companyId },
+      data: { lockedUntilDate },
+    });
+
+    logger.info('Período contable actualizado', {
+      data: {
+        companyId,
+        userId,
+        lockedUntilDate: lockedUntilDate ? moment(lockedUntilDate).format('DD/MM/YYYY') : null,
+      },
+    });
+
+    revalidateAccountingRoutes(companyId);
+  } catch (error) {
+    logger.error('Error al actualizar período bloqueado', { data: { error, companyId, userId } });
     throw error;
   }
 }

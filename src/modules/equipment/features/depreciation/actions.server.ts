@@ -450,6 +450,7 @@ export async function postDepreciationEntry(scheduleEntryId: string) {
         depreciationExpenseAccountId: true,
         accumulatedDepreciationAccountId: true,
         lastEntryNumber: true,
+        lockedUntilDate: true,
       },
     });
 
@@ -457,6 +458,16 @@ export async function postDepreciationEntry(scheduleEntryId: string) {
       throw new Error(
         'Las cuentas contables de depreciación no están configuradas. Configure las cuentas en Contabilidad > Configuración.',
       );
+    }
+
+    // Verificar bloqueo de período
+    if (settings.lockedUntilDate) {
+      const moment = require('moment');
+      if (moment(entry.scheduledDate).isSameOrBefore(moment(settings.lockedUntilDate), 'day')) {
+        throw new Error(
+          `No se puede contabilizar la depreciación. El período ${moment(entry.scheduledDate).format('MM/YYYY')} está bloqueado.`,
+        );
+      }
     }
 
     const vehicle = entry.depreciation.vehicle;
@@ -565,6 +576,7 @@ export async function postAllPendingDepreciations(upToDate: Date) {
         depreciationExpenseAccountId: true,
         accumulatedDepreciationAccountId: true,
         lastEntryNumber: true,
+        lockedUntilDate: true,
       },
     });
 
@@ -574,11 +586,14 @@ export async function postAllPendingDepreciations(upToDate: Date) {
       );
     }
 
-    // Buscar todos los períodos pendientes hasta la fecha
+    // Buscar todos los períodos pendientes hasta la fecha (excluyendo períodos bloqueados)
     const pendingEntries = await prisma.depreciationScheduleEntry.findMany({
       where: {
         isPosted: false,
-        scheduledDate: { lte: upToDate },
+        scheduledDate: {
+          lte: upToDate,
+          ...(settings.lockedUntilDate ? { gt: settings.lockedUntilDate } : {}),
+        },
         depreciation: {
           companyId,
           status: 'ACTIVE',
