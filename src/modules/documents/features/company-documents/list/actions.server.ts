@@ -3,6 +3,7 @@
 import type { DocumentState } from '@/generated/prisma/enums';
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import { prisma } from '@/shared/lib/prisma';
 
 // ============================================
@@ -31,6 +32,7 @@ export interface CompanyDocumentsSummary {
  * Obtiene todos los documentos de la empresa activa
  */
 export async function getCompanyDocuments(filters?: CompanyDocumentsFilters) {
+  await checkPermission('company.documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -69,6 +71,7 @@ export async function getCompanyDocuments(filters?: CompanyDocumentsFilters) {
  * Obtiene un resumen del estado de documentos de la empresa
  */
 export async function getCompanyDocumentsSummary(): Promise<CompanyDocumentsSummary> {
+  await checkPermission('company.documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 

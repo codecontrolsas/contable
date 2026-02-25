@@ -1,8 +1,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { WarehouseForm } from './components/_WarehouseForm';
+import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 
 export function CreateWarehouse() {
   return (
+    <PermissionGuard module="commercial.warehouses" action="create" redirect>
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Nuevo Almacén</h1>
@@ -23,5 +25,6 @@ export function CreateWarehouse() {
         </CardContent>
       </Card>
     </div>
+    </PermissionGuard>
   );
 }

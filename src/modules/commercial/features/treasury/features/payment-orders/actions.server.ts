@@ -12,11 +12,13 @@ import { CREDIT_NOTE_TYPES, isCreditNote } from '@/modules/commercial/shared/vou
 import type { CreatePaymentOrderFormData } from '../../shared/validators';
 import type { PendingPurchaseInvoice, PaymentOrderListItem, PaymentOrderWithDetails } from '../../shared/types';
 import { createJournalEntryForPaymentOrder } from '@/modules/accounting/features/integrations/commercial';
+import { checkPermission } from '@/shared/lib/permissions';
 
 /**
  * Obtiene las facturas pendientes de pago de un proveedor
  */
 export async function getPendingPurchaseInvoices(supplierId: string): Promise<PendingPurchaseInvoice[]> {
+  await checkPermission('commercial.treasury.payment-orders', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -103,6 +105,7 @@ export async function getPendingPurchaseInvoices(supplierId: string): Promise<Pe
  * Crea una nueva orden de pago (borrador)
  */
 export async function createPaymentOrder(data: CreatePaymentOrderFormData) {
+  await checkPermission('commercial.treasury.payment-orders', 'create', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -204,6 +207,7 @@ export async function createPaymentOrder(data: CreatePaymentOrderFormData) {
  * Confirma una orden de pago (actualiza facturas y crea movimientos)
  */
 export async function confirmPaymentOrder(paymentOrderId: string) {
+  await checkPermission('commercial.treasury.payment-orders', 'approve', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -430,6 +434,7 @@ export async function confirmPaymentOrder(paymentOrderId: string) {
  * Obtiene la lista de órdenes de pago
  */
 export async function getPaymentOrders(params: { supplierId?: string; status?: string } = {}): Promise<PaymentOrderListItem[]> {
+  await checkPermission('commercial.treasury.payment-orders', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -486,6 +491,7 @@ export async function getPaymentOrders(params: { supplierId?: string; status?: s
  * Obtiene órdenes de pago con paginación server-side para DataTable
  */
 export async function getPaymentOrdersPaginated(searchParams: DataTableSearchParams) {
+  await checkPermission('commercial.treasury.payment-orders', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -556,6 +562,7 @@ export async function getPaymentOrdersPaginated(searchParams: DataTableSearchPar
  * Obtiene el detalle de una orden de pago
  */
 export async function getPaymentOrder(id: string): Promise<PaymentOrderWithDetails> {
+  await checkPermission('commercial.treasury.payment-orders', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -695,6 +702,7 @@ export async function getPaymentOrder(id: string): Promise<PaymentOrderWithDetai
  * Elimina una orden de pago en estado DRAFT
  */
 export async function deletePaymentOrder(paymentOrderId: string) {
+  await checkPermission('commercial.treasury.payment-orders', 'delete', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 

@@ -8,6 +8,7 @@ import {
   type EquipmentForConditionCheck,
 } from '@/shared/lib/documentConditions';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import { prisma } from '@/shared/lib/prisma';
 import { getPresignedDownloadUrl } from '@/shared/lib/storage';
 
@@ -94,6 +95,7 @@ export async function getDocumentsByEquipment(
   vehicleId: string,
   filters?: EquipmentDocumentsFilters
 ) {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -147,6 +149,7 @@ export async function getDocumentsByEquipment(
 export async function getEquipmentDocumentsSummary(
   vehicleId: string
 ): Promise<EquipmentDocumentsSummary> {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -232,6 +235,7 @@ export async function getEquipmentDocumentsSummary(
  * - Solo muestra obligatorios que no tienen documento aprobado
  */
 export async function getPendingEquipmentDocumentTypes(vehicleId: string) {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) return [];
 
@@ -309,6 +313,7 @@ export async function getEquipmentDocumentDownloadUrl(
   documentId: string,
   vehicleId: string
 ): Promise<{ success: boolean; url?: string; error?: string }> {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) {
     return { success: false, error: 'No hay empresa activa' };
@@ -355,6 +360,7 @@ export async function getEquipmentDocumentDownloadUrl(
  * - Excluye tipos que ya tienen documento aprobado (excepto mensuales)
  */
 export async function getAvailableEquipmentDocumentTypesForUpload(vehicleId: string) {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) return [];
 
@@ -444,6 +450,7 @@ export async function getAvailableEquipmentDocumentTypesForUpload(vehicleId: str
  * Estos son documentos con vehicleId = NULL y documentType.isMultiResource = true
  */
 export async function getMultiResourceDocumentsForEquipment() {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 

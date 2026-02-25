@@ -7,6 +7,7 @@ import moment from 'moment';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { usePermissions } from '@/shared/hooks/usePermissions';
 import { generateRecurringEntry } from '../actions.server';
 import { formatAmount } from '../../../shared/utils';
 import { _CreateRecurringEntryDialog } from './_CreateRecurringEntryDialog';
@@ -50,6 +51,9 @@ const FREQUENCY_VARIANTS: Record<string, 'default' | 'secondary' | 'outline'> = 
 
 export function _RecurringEntriesTable({ companyId, entries, accounts }: RecurringEntriesTableProps) {
   const router = useRouter();
+  const { hasPermission } = usePermissions();
+  const canCreate = hasPermission('accounting.recurring-entries', 'create');
+  const canDelete = hasPermission('accounting.recurring-entries', 'delete');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showGeneratePending, setShowGeneratePending] = useState(false);
   const [deleteEntry, setDeleteEntry] = useState<RecurringEntryItem | null>(null);
@@ -78,11 +82,13 @@ export function _RecurringEntriesTable({ companyId, entries, accounts }: Recurri
     <>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Button onClick={() => setShowCreateDialog(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nuevo Asiento Recurrente
-          </Button>
-          {pendingCount > 0 && (
+          {canCreate && (
+            <Button onClick={() => setShowCreateDialog(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nuevo Asiento Recurrente
+            </Button>
+          )}
+          {canCreate && pendingCount > 0 && (
             <Button variant="outline" onClick={() => setShowGeneratePending(true)}>
               <Zap className="mr-2 h-4 w-4" />
               Generar Pendientes ({pendingCount})
@@ -145,23 +151,27 @@ export function _RecurringEntriesTable({ companyId, entries, accounts }: Recurri
                     </td>
                     <td className="py-2 pr-4 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleGenerate(entry)}
-                          disabled={generatingId === entry.id}
-                          title="Generar asiento"
-                        >
-                          <Play className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setDeleteEntry(entry)}
-                          title="Eliminar"
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        {canCreate && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleGenerate(entry)}
+                            disabled={generatingId === entry.id}
+                            title="Generar asiento"
+                          >
+                            <Play className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {canDelete && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setDeleteEntry(entry)}
+                            title="Eliminar"
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>

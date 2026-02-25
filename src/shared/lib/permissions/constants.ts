@@ -249,14 +249,16 @@ export const MODULE_GROUPS = {
     modules: ['company.document-types'] as Module[],
   },
   configuracionContable: {
-    label: 'Configuración - Contabilidad',
+    label: 'Contabilidad',
     modules: [
       'accounting.accounts',
       'accounting.entries',
-      'accounting.reports',
-      'accounting.settings',
+      'accounting.recurring-entries',
       'accounting.opening-balances',
       'accounting.budgets',
+      'accounting.reports',
+      'accounting.settings',
+      'accounting.fiscal-year-close',
     ] as Module[],
   },
 } as const;

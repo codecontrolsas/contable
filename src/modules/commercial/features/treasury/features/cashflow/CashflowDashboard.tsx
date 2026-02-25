@@ -1,3 +1,4 @@
+import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 import { getCashflowData, type Granularity } from './actions.server';
 import { _CashflowSummaryCards } from './components/_CashflowSummaryCards';
 import { _CashflowChart } from './components/_CashflowChart';
@@ -13,6 +14,7 @@ export async function CashflowDashboard({ granularity = 'weekly', month }: Props
   const data = await getCashflowData(granularity, month);
 
   return (
+    <PermissionGuard module="commercial.treasury.cashflow" action="view" redirect>
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -28,5 +30,6 @@ export async function CashflowDashboard({ granularity = 'weekly', month }: Props
       <_CashflowChart data={data.rows} />
       <_CashflowTable data={data.rows} />
     </div>
+    </PermissionGuard>
   );
 }

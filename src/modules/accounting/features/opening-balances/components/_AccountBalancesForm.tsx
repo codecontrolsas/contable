@@ -25,6 +25,7 @@ import {
 } from '@/shared/components/ui/alert-dialog';
 import { CheckCircle, Loader2, Pencil, Search, Info } from 'lucide-react';
 import { AccountType } from '@/generated/prisma/enums';
+import { usePermissions } from '@/shared/hooks/usePermissions';
 import { saveOpeningBalanceEntry } from '../actions.server';
 import type { OpeningBalancesPageData } from '../types';
 import { formatAmount } from '../../../shared/utils';
@@ -68,6 +69,7 @@ export function _AccountBalancesForm({
   aperturaAccount,
 }: Props) {
   const router = useRouter();
+  const { hasPermission } = usePermissions();
   const [isPending, startTransition] = useTransition();
   const [searchTerm, setSearchTerm] = useState('');
   const [editMode, setEditMode] = useState(!existingEntry);
@@ -355,40 +357,42 @@ export function _AccountBalancesForm({
               )}
 
               {/* Botón de submit */}
-              <div className="flex justify-end">
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button disabled={!hasChanges || isPending}>
-                      {isPending && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      )}
-                      {existingEntry
-                        ? 'Actualizar Asiento de Apertura'
-                        : 'Registrar Asiento de Apertura'}
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>
+              {hasPermission('accounting.opening-balances', 'create') && (
+                <div className="flex justify-end">
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button disabled={!hasChanges || isPending}>
+                        {isPending && (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        )}
                         {existingEntry
-                          ? '¿Actualizar asiento de apertura?'
-                          : '¿Registrar asiento de apertura?'}
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        {existingEntry
-                          ? 'Se reemplazarán las líneas del asiento existente con los nuevos saldos.'
-                          : 'Se creará un asiento contable POSTED con los saldos ingresados. La fecha será el inicio del ejercicio fiscal.'}
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleSubmit}>
-                        Confirmar
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
+                          ? 'Actualizar Asiento de Apertura'
+                          : 'Registrar Asiento de Apertura'}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          {existingEntry
+                            ? '¿Actualizar asiento de apertura?'
+                            : '¿Registrar asiento de apertura?'}
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          {existingEntry
+                            ? 'Se reemplazarán las líneas del asiento existente con los nuevos saldos.'
+                            : 'Se creará un asiento contable POSTED con los saldos ingresados. La fecha será el inicio del ejercicio fiscal.'}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleSubmit}>
+                          Confirmar
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              )}
             </div>
           </>
         )}

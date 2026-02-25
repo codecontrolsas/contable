@@ -9,12 +9,14 @@ import type { DataTableSearchParams } from '@/shared/components/common/DataTable
 import { parseSearchParams, stateToPrismaParams } from '@/shared/components/common/DataTable/helpers';
 import type { CreateCheckFormData, DepositCheckFormData, EndorseCheckFormData } from '../../shared/validators';
 import type { CheckListItem, CheckWithDetails } from '../../shared/types';
+import { checkPermission } from '@/shared/lib/permissions';
 
 // ============================================
 // CONSULTAS
 // ============================================
 
 export async function getChecksPaginated(searchParams: DataTableSearchParams) {
+  await checkPermission('commercial.treasury.checks', 'view', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -87,6 +89,7 @@ export async function getChecksPaginated(searchParams: DataTableSearchParams) {
 }
 
 export async function getCheckById(id: string): Promise<CheckWithDetails | null> {
+  await checkPermission('commercial.treasury.checks', 'view', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -141,6 +144,7 @@ export async function getCheckById(id: string): Promise<CheckWithDetails | null>
 // ============================================
 
 export async function createCheck(data: CreateCheckFormData) {
+  await checkPermission('commercial.treasury.checks', 'create', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -183,6 +187,7 @@ export async function createCheck(data: CreateCheckFormData) {
 // ============================================
 
 export async function depositCheck(data: DepositCheckFormData) {
+  await checkPermission('commercial.treasury.checks', 'update', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -239,6 +244,7 @@ export async function depositCheck(data: DepositCheckFormData) {
 // ============================================
 
 export async function clearCheck(checkId: string) {
+  await checkPermission('commercial.treasury.checks', 'approve', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -297,6 +303,7 @@ export async function clearCheck(checkId: string) {
 // ============================================
 
 export async function rejectCheck(checkId: string, reason: string) {
+  await checkPermission('commercial.treasury.checks', 'approve', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -345,6 +352,7 @@ export async function rejectCheck(checkId: string, reason: string) {
 // ============================================
 
 export async function endorseCheck(data: EndorseCheckFormData) {
+  await checkPermission('commercial.treasury.checks', 'update', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -383,6 +391,7 @@ export async function endorseCheck(data: EndorseCheckFormData) {
 // ============================================
 
 export async function voidCheck(checkId: string) {
+  await checkPermission('commercial.treasury.checks', 'delete', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -429,6 +438,7 @@ export async function voidCheck(checkId: string) {
 // ============================================
 
 export async function deleteCheck(checkId: string) {
+  await checkPermission('commercial.treasury.checks', 'delete', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -460,6 +470,7 @@ export async function deleteCheck(checkId: string) {
 // ============================================
 
 export async function getActiveBankAccounts() {
+  await checkPermission('commercial.treasury.checks', 'view', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -493,6 +504,7 @@ export async function getActiveBankAccounts() {
 // ============================================
 
 export async function getChecksForCashflow(startDate: Date, endDate: Date) {
+  await checkPermission('commercial.treasury.checks', 'view', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 

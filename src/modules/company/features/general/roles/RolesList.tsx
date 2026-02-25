@@ -2,11 +2,7 @@ import type { DataTableSearchParams } from '@/shared/components/common/DataTable
 import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 import { getModulePermissions } from '@/shared/lib/permissions';
 
-import {
-  getRolesPaginated,
-  getSystemActions,
-  getPermissionsConfig,
-} from './actions.server';
+import { getRolesPaginated } from './actions.server';
 import { _RolesDataTable } from './components/_RolesDataTable';
 
 interface Props {
@@ -14,13 +10,10 @@ interface Props {
 }
 
 export async function RolesList({ searchParams }: Props) {
-  const [rolesResult, systemActions, permissionsConfig, permissions] =
-    await Promise.all([
-      getRolesPaginated(searchParams),
-      getSystemActions(),
-      getPermissionsConfig(),
-      getModulePermissions('company.general.roles'),
-    ]);
+  const [rolesResult, permissions] = await Promise.all([
+    getRolesPaginated(searchParams),
+    getModulePermissions('company.general.roles'),
+  ]);
 
   return (
     <PermissionGuard module="company.general.roles" action="view" redirect>
@@ -38,8 +31,6 @@ export async function RolesList({ searchParams }: Props) {
           data={rolesResult.data}
           totalRows={rolesResult.total}
           searchParams={searchParams}
-          systemActions={systemActions}
-          permissionsConfig={permissionsConfig}
           permissions={permissions}
         />
       </div>

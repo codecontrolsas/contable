@@ -9,6 +9,7 @@ import {
   UrlTabsTrigger,
 } from '@/shared/components/ui/url-tabs';
 import { getActiveCompanyId } from '@/shared/lib/company';
+import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 
 import type { DocumentTypeTab } from '../document-types/list/actions.server';
 import type { DocumentsSubTab } from './actions.server';
@@ -45,6 +46,7 @@ export async function DocumentsOverview({ searchParams }: Props) {
   const currentDocTypeTab = (searchParams.docTypeTab as DocumentTypeTab) || 'ALL';
 
   return (
+    <PermissionGuard module="documents" action="view" redirect>
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -122,5 +124,6 @@ export async function DocumentsOverview({ searchParams }: Props) {
         </UrlTabsContent>
       </UrlTabs>
     </div>
+    </PermissionGuard>
   );
 }

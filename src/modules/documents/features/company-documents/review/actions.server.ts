@@ -1,7 +1,8 @@
 'use server';
 
-import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
+import { prisma } from '@/shared/lib/prisma';
 
 // ============================================
 // MUTATIONS
@@ -11,6 +12,7 @@ import { logger } from '@/shared/lib/logger';
  * Marca un documento de empresa como vencido (para uso en jobs/cron)
  */
 export async function markCompanyDocumentAsExpired(id: string) {
+  await checkPermission('company.documents', 'update', { redirect: true });
   try {
     await prisma.companyDocument.update({
       where: { id },

@@ -10,6 +10,7 @@ import {
   parseSearchParams,
   stateToPrismaParams,
 } from '@/shared/components/common/DataTable/helpers';
+import { checkPermission } from '@/shared/lib/permissions';
 
 // Select optimizado para relaciones - solo id y name
 const selectForDropdown = { id: true, name: true } as const;
@@ -36,6 +37,7 @@ export interface UpdateVehicleBrandInput {
 export async function getVehicleBrandsPaginated(searchParams: DataTableSearchParams) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.vehicle-brands', 'view', { redirect: true });
 
   try {
     // Parsear parametros de URL
@@ -79,6 +81,7 @@ export async function getVehicleBrandsPaginated(searchParams: DataTableSearchPar
 export async function getAllVehicleBrands() {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.vehicle-brands', 'view', { redirect: true });
 
   try {
     return await prisma.vehicleBrand.findMany({
@@ -145,6 +148,7 @@ export async function getVehicleBrandsWithModelsForSelect() {
 export async function getVehicleBrandById(id: string) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.vehicle-brands', 'view', { redirect: true });
 
   try {
     const brand = await prisma.vehicleBrand.findFirst({
@@ -174,6 +178,7 @@ export async function getVehicleBrandById(id: string) {
 export async function createVehicleBrand(input: CreateVehicleBrandInput) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.vehicle-brands', 'create', { redirect: true });
 
   try {
     const brand = await prisma.vehicleBrand.create({
@@ -193,6 +198,7 @@ export async function createVehicleBrand(input: CreateVehicleBrandInput) {
 export async function updateVehicleBrand(id: string, input: UpdateVehicleBrandInput) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.vehicle-brands', 'update', { redirect: true });
 
   try {
     const existing = await prisma.vehicleBrand.findFirst({
@@ -219,6 +225,7 @@ export async function updateVehicleBrand(id: string, input: UpdateVehicleBrandIn
 export async function deleteVehicleBrand(id: string) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.vehicle-brands', 'delete', { redirect: true });
 
   try {
     const existing = await prisma.vehicleBrand.findFirst({
@@ -253,6 +260,7 @@ export interface CreateVehicleModelInput {
 export async function createVehicleModel(input: CreateVehicleModelInput) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.vehicle-brands', 'create', { redirect: true });
 
   try {
     // Verificar que la marca pertenece a la empresa
@@ -279,6 +287,7 @@ export async function createVehicleModel(input: CreateVehicleModelInput) {
 export async function deleteVehicleModel(id: string) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.vehicle-brands', 'delete', { redirect: true });
 
   try {
     const model = await prisma.vehicleModel.findUnique({

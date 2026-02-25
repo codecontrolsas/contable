@@ -13,6 +13,7 @@ import {
 } from '@/shared/components/common/DataTable/helpers';
 import type { PurchaseInvoiceFormInput } from '../shared/validators';
 import type { VoucherType } from '@/generated/prisma/enums';
+import { checkPermission } from '@/shared/lib/permissions';
 import { createJournalEntryForPurchaseInvoice } from '@/modules/accounting/features/integrations/commercial';
 import { isCreditNote, isDebitNote } from '@/modules/commercial/shared/voucher-utils';
 import { applyPurchaseCreditNote } from '@/modules/commercial/shared/credit-note-compensation';
@@ -25,6 +26,7 @@ import { applyPurchaseCreditNote } from '@/modules/commercial/shared/credit-note
  * Obtiene facturas de compra con paginación server-side para DataTable
  */
 export async function getPurchaseInvoicesPaginated(searchParams: DataTableSearchParams) {
+  await checkPermission('commercial.purchases', 'view', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -177,6 +179,7 @@ export async function getPurchaseInvoicesPaginated(searchParams: DataTableSearch
  * Obtiene una factura de compra por ID con todos sus detalles
  */
 export async function getPurchaseInvoiceById(id: string) {
+  await checkPermission('commercial.purchases', 'view', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -533,6 +536,7 @@ export async function getSupplierInvoicesForSelect(supplierId: string) {
  * Obtiene OCs aprobadas de un proveedor para vincular a factura de compra
  */
 export async function getApprovedPurchaseOrdersForInvoicing(supplierId: string) {
+  await checkPermission('commercial.purchases', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) return [];
 
@@ -567,6 +571,7 @@ export async function getApprovedPurchaseOrdersForInvoicing(supplierId: string) 
  * Obtiene líneas de una OC con cantidades pendientes de facturar
  */
 export async function getPurchaseOrderLinesForInvoicing(orderId: string) {
+  await checkPermission('commercial.purchases', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) return [];
 
@@ -620,6 +625,7 @@ export async function getPurchaseOrderLinesForInvoicing(orderId: string) {
  * Crea una nueva factura de compra en estado DRAFT
  */
 export async function createPurchaseInvoice(input: PurchaseInvoiceFormInput) {
+  await checkPermission('commercial.purchases', 'create', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -735,6 +741,7 @@ export async function createPurchaseInvoice(input: PurchaseInvoiceFormInput) {
  * Actualiza una factura de compra (solo si está en estado DRAFT)
  */
 export async function updatePurchaseInvoice(id: string, input: PurchaseInvoiceFormInput) {
+  await checkPermission('commercial.purchases', 'update', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -879,6 +886,7 @@ export async function updatePurchaseInvoice(id: string, input: PurchaseInvoiceFo
  * Confirma una factura de compra y actualiza el stock
  */
 export async function confirmPurchaseInvoice(id: string) {
+  await checkPermission('commercial.purchases', 'approve', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -1098,6 +1106,7 @@ export async function confirmPurchaseInvoice(id: string) {
  * Las FC normales no generan stock, por lo que no hay nada que revertir.
  */
 export async function cancelPurchaseInvoice(id: string) {
+  await checkPermission('commercial.purchases', 'delete', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 

@@ -1,4 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 import { getAccounts } from './actions.server';
 import { buildAccountTree } from '../../shared/utils';
 import { _AccountsTable } from './components/_AccountsTable';
@@ -10,6 +11,15 @@ import { getActiveCompanyId } from '@/shared/lib/company';
 export async function AccountsList() {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+
+  return (
+    <PermissionGuard module="accounting.accounts" action="view" redirect>
+      <AccountsListContent companyId={companyId} />
+    </PermissionGuard>
+  );
+}
+
+async function AccountsListContent({ companyId }: { companyId: string }) {
   const accounts = await getAccounts(companyId);
   const accountTree = buildAccountTree(accounts);
 
@@ -24,7 +34,9 @@ export async function AccountsList() {
         </div>
         <div className="flex gap-2">
           <_ImportExportButtons companyId={companyId} />
-          <_CreateAccountButton companyId={companyId} />
+          <PermissionGuard module="accounting.accounts" action="create">
+            <_CreateAccountButton companyId={companyId} />
+          </PermissionGuard>
         </div>
       </div>
 

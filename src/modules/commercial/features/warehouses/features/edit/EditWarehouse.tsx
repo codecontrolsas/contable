@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 import { getWarehouseById, updateWarehouse } from '../list/actions.server';
 import { WarehouseForm } from '../create/components/_WarehouseForm';
 import type { UpdateWarehouseFormData } from '../../shared/validators';
+import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 
 interface EditWarehouseProps {
   warehouseId: string;
@@ -26,6 +27,7 @@ export async function EditWarehouse({ warehouseId }: EditWarehouseProps) {
   };
 
   return (
+    <PermissionGuard module="commercial.warehouses" action="update" redirect>
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Editar Almacén</h1>
@@ -50,5 +52,6 @@ export async function EditWarehouse({ warehouseId }: EditWarehouseProps) {
         </CardContent>
       </Card>
     </div>
+    </PermissionGuard>
   );
 }

@@ -8,6 +8,7 @@ import {
   type EmployeeForConditionCheck,
 } from '@/shared/lib/documentConditions';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import { prisma } from '@/shared/lib/prisma';
 import { getPresignedDownloadUrl } from '@/shared/lib/storage';
 
@@ -121,6 +122,7 @@ export async function getDocumentsByEmployee(
   employeeId: string,
   filters?: EmployeeDocumentsFilters
 ) {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -170,6 +172,7 @@ export async function getDocumentsByEmployee(
 export async function getEmployeeDocumentsSummary(
   employeeId: string
 ): Promise<EmployeeDocumentsSummary> {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -258,6 +261,7 @@ export async function getEmployeeDocumentsSummary(
  * - Solo muestra obligatorios que no tienen documento aprobado
  */
 export async function getPendingDocumentTypes(employeeId: string) {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) return [];
 
@@ -338,6 +342,7 @@ export async function getDocumentDownloadUrl(
   documentId: string,
   employeeId: string
 ): Promise<{ success: boolean; url?: string; error?: string }> {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) {
     return { success: false, error: 'No hay empresa activa' };
@@ -384,6 +389,7 @@ export async function getDocumentDownloadUrl(
  * - Excluye tipos que ya tienen documento aprobado (excepto mensuales)
  */
 export async function getAvailableDocumentTypesForUpload(employeeId: string) {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) return [];
 
@@ -476,6 +482,7 @@ export async function getAvailableDocumentTypesForUpload(employeeId: string) {
  * Obtiene el detalle de un documento con su historial
  */
 export async function getDocumentDetail(documentId: string, employeeId: string) {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -541,6 +548,7 @@ export async function getDocumentDetail(documentId: string, employeeId: string) 
  * Estos son documentos con employeeId = NULL y documentType.isMultiResource = true
  */
 export async function getMultiResourceDocumentsForEmployee() {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 

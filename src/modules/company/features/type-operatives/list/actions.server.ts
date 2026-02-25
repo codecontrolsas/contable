@@ -10,6 +10,7 @@ import {
   parseSearchParams,
   stateToPrismaParams,
 } from '@/shared/components/common/DataTable/helpers';
+import { checkPermission } from '@/shared/lib/permissions';
 
 // ============================================
 // TIPOS
@@ -33,6 +34,7 @@ export interface UpdateTypeOperativeInput {
 export async function getTypeOperativesPaginated(searchParams: DataTableSearchParams) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.type-operatives', 'view', { redirect: true });
 
   try {
     // Parsear parametros de URL
@@ -78,6 +80,7 @@ export async function getTypeOperativesPaginated(searchParams: DataTableSearchPa
 export async function getAllTypeOperatives() {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.type-operatives', 'view', { redirect: true });
 
   try {
     return await prisma.typeOperative.findMany({
@@ -116,6 +119,7 @@ export async function getTypeOperativesForSelect() {
 export async function getTypeOperativeById(id: string) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.type-operatives', 'view', { redirect: true });
 
   try {
     const typeOperative = await prisma.typeOperative.findFirst({
@@ -139,6 +143,7 @@ export async function getTypeOperativeById(id: string) {
 export async function createTypeOperative(input: CreateTypeOperativeInput) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.type-operatives', 'create', { redirect: true });
 
   try {
     const typeOperative = await prisma.typeOperative.create({
@@ -164,6 +169,7 @@ export async function createTypeOperative(input: CreateTypeOperativeInput) {
 export async function updateTypeOperative(id: string, input: UpdateTypeOperativeInput) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.type-operatives', 'update', { redirect: true });
 
   try {
     const existing = await prisma.typeOperative.findFirst({
@@ -197,6 +203,7 @@ export async function updateTypeOperative(id: string, input: UpdateTypeOperative
 export async function deleteTypeOperative(id: string) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.type-operatives', 'delete', { redirect: true });
 
   try {
     const existing = await prisma.typeOperative.findFirst({

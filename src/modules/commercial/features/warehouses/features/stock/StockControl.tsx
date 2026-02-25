@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui
 import { getWarehouses, getWarehouseStocks } from '../list/actions.server';
 import { StockByWarehouse } from './components/_StockByWarehouse';
 import { StockByProduct } from './components/_StockByProduct';
+import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 
 export async function StockControl() {
   const warehouses = await getWarehouses();
@@ -15,6 +16,7 @@ export async function StockControl() {
   const defaultStock = defaultWarehouse ? await getWarehouseStocks(defaultWarehouse.id) : [];
 
   return (
+    <PermissionGuard module="commercial.stock" action="view" redirect>
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Control de Stock</h1>
@@ -62,5 +64,6 @@ export async function StockControl() {
         </TabsContent>
       </Tabs>
     </div>
+    </PermissionGuard>
   );
 }

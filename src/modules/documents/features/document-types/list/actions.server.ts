@@ -10,6 +10,7 @@ import {
 } from '@/shared/components/common/DataTable/helpers';
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import { prisma } from '@/shared/lib/prisma';
 import { slugify } from '@/shared/utils/slugify';
 import { revalidatePath } from 'next/cache';
@@ -90,6 +91,7 @@ export async function getDocumentTypesPaginated(
   searchParams: DataTableSearchParams,
   tab: DocumentTypeTab = 'ALL'
 ) {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -155,6 +157,7 @@ export async function getDocumentTypesPaginated(
  * Obtiene contadores para cada tab
  */
 export async function getDocumentTypeTabCounts() {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) return { ALL: 0, EMPLOYEE: 0, EQUIPMENT: 0, COMPANY: 0 };
 
@@ -178,6 +181,7 @@ export async function getDocumentTypeTabCounts() {
  * @deprecated Usar getDocumentTypesPaginated para listas grandes
  */
 export async function getAllDocumentTypes(filters?: DocumentTypeFilters) {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -266,6 +270,7 @@ export async function getInitialConditionOptions() {
  * Obtiene un tipo de documento con sus condiciones (para edición)
  */
 export async function getDocumentTypeWithConditions(id: string) {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -319,6 +324,7 @@ export async function getDocumentTypeWithConditions(id: string) {
  * Crea un nuevo tipo de documento
  */
 export async function createDocumentType(input: CreateDocumentTypeInput) {
+  await checkPermission('documents', 'create', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -458,6 +464,7 @@ export async function createDocumentType(input: CreateDocumentTypeInput) {
  * Actualiza un tipo de documento existente
  */
 export async function updateDocumentType(id: string, input: UpdateDocumentTypeInput) {
+  await checkPermission('documents', 'update', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -613,6 +620,7 @@ export async function updateDocumentType(id: string, input: UpdateDocumentTypeIn
  * Elimina un tipo de documento
  */
 export async function deleteDocumentType(id: string) {
+  await checkPermission('documents', 'delete', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 

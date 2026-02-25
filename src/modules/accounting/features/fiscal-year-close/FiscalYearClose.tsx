@@ -1,11 +1,9 @@
 import { getActiveCompanyId } from '@/shared/lib/company';
+import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 import { getFiscalYearStatus } from './actions.server';
 import { _FiscalYearStatus } from './components/_FiscalYearStatus';
 
-export async function FiscalYearClose() {
-  const companyId = await getActiveCompanyId();
-  if (!companyId) throw new Error('No hay empresa activa');
-
+async function FiscalYearCloseContent({ companyId }: { companyId: string }) {
   const status = await getFiscalYearStatus(companyId);
 
   return (
@@ -19,5 +17,16 @@ export async function FiscalYearClose() {
 
       <_FiscalYearStatus companyId={companyId} status={status} />
     </div>
+  );
+}
+
+export async function FiscalYearClose() {
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  return (
+    <PermissionGuard module="accounting.fiscal-year-close" action="view" redirect>
+      <FiscalYearCloseContent companyId={companyId} />
+    </PermissionGuard>
   );
 }

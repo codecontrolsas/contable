@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { getActiveCompanyId } from '@/shared/lib/company';
+import { checkPermission } from '@/shared/lib/permissions';
 import {
   createCategorySchema,
   updateCategorySchema,
@@ -18,6 +19,7 @@ import type { ProductCategory } from '../shared/types';
 // ============================================
 
 export async function getCategories(): Promise<ProductCategory[]> {
+  await checkPermission('commercial.categories', 'view', { redirect: true });
   const { userId } = await auth();
   if (!userId) {
     throw new Error('No autenticado');
@@ -56,6 +58,7 @@ export async function getCategories(): Promise<ProductCategory[]> {
 }
 
 export async function getCategoryById(id: string): Promise<ProductCategory> {
+  await checkPermission('commercial.categories', 'view', { redirect: true });
   const { userId } = await auth();
   if (!userId) {
     throw new Error('No autenticado');
@@ -109,6 +112,7 @@ export async function getCategoryById(id: string): Promise<ProductCategory> {
 }
 
 export async function createCategory(data: CreateCategoryFormData): Promise<ProductCategory> {
+  await checkPermission('commercial.categories', 'create', { redirect: true });
   const { userId } = await auth();
   if (!userId) {
     throw new Error('No autenticado');
@@ -173,6 +177,7 @@ export async function updateCategory(
   id: string,
   data: UpdateCategoryFormData
 ): Promise<ProductCategory> {
+  await checkPermission('commercial.categories', 'update', { redirect: true });
   const { userId } = await auth();
   if (!userId) {
     throw new Error('No autenticado');
@@ -255,6 +260,7 @@ export async function updateCategory(
 }
 
 export async function deleteCategory(id: string): Promise<void> {
+  await checkPermission('commercial.categories', 'delete', { redirect: true });
   const { userId } = await auth();
   if (!userId) {
     throw new Error('No autenticado');

@@ -3,6 +3,7 @@
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
 import { prisma } from '@/shared/lib/prisma';
+import { checkPermission } from '@/shared/lib/permissions';
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
 import {
   buildSearchWhere,
@@ -21,6 +22,7 @@ interface GetBankAccountsParams {
 export async function getBankAccounts(
   params: GetBankAccountsParams = {}
 ): Promise<BankAccountWithBalance[]> {
+  await checkPermission('commercial.treasury.bank-accounts', 'view', { redirect: true });
   const { includeInactive = false } = params;
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
@@ -68,6 +70,7 @@ export async function getBankAccounts(
  * Obtiene cuentas bancarias con paginación server-side para DataTable
  */
 export async function getBankAccountsPaginated(searchParams: DataTableSearchParams) {
+  await checkPermission('commercial.treasury.bank-accounts', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -131,6 +134,7 @@ export async function getBankAccountsPaginated(searchParams: DataTableSearchPara
  * Obtiene el detalle de una cuenta bancaria específica
  */
 export async function getBankAccount(id: string) {
+  await checkPermission('commercial.treasury.bank-accounts', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -178,6 +182,7 @@ export async function getBankAccount(id: string) {
  * Verifica si existe una cuenta con el número especificado
  */
 export async function checkAccountNumberExists(accountNumber: string, excludeId?: string): Promise<boolean> {
+  await checkPermission('commercial.treasury.bank-accounts', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -202,6 +207,7 @@ export async function checkAccountNumberExists(accountNumber: string, excludeId?
  * Obtiene cuentas contables disponibles para vincular
  */
 export async function getAvailableAccounts() {
+  await checkPermission('commercial.treasury.bank-accounts', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 

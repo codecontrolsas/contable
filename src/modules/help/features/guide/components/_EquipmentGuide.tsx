@@ -1,8 +1,9 @@
 'use client';
 
-import { FileText, Info, Plus, QrCode, Truck } from 'lucide-react';
+import { FileText, Info, Plus, QrCode, TrendingDown, Truck } from 'lucide-react';
 
 import { Alert, AlertDescription } from '@/shared/components/ui/alert';
+import { Badge } from '@/shared/components/ui/badge';
 import {
   Card,
   CardContent,
@@ -145,6 +146,117 @@ export function _EquipmentGuide() {
         </CardContent>
       </Card>
 
+      {/* Depreciación de Equipos */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingDown className="h-5 w-5" />
+            Depreciación de Equipos
+          </CardTitle>
+          <CardDescription>
+            Control del valor contable de tus activos
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p>
+            Cada equipo puede configurarse para calcular automáticamente su
+            depreciación contable, reflejando la pérdida de valor a lo largo del
+            tiempo.
+          </p>
+
+          <p>
+            <strong>Configurar depreciación:</strong>
+          </p>
+          <ol className="list-decimal pl-6 space-y-2 text-muted-foreground">
+            <li>
+              Ve al <strong>detalle del equipo</strong>
+            </li>
+            <li>
+              Selecciona la pestaña <strong>Depreciación</strong>
+            </li>
+            <li>
+              Haz clic en <strong>Configurar Depreciación</strong>
+            </li>
+            <li>
+              Completa:
+              <ul className="list-disc pl-6 mt-1 space-y-1">
+                <li>
+                  <strong>Valor de origen</strong> (costo de adquisición del
+                  equipo)
+                </li>
+                <li>
+                  <strong>Valor residual</strong> (valor estimado al final de la
+                  vida útil)
+                </li>
+                <li>
+                  <strong>Vida útil</strong> (en meses, máximo 600 meses / 50
+                  años)
+                </li>
+                <li>
+                  <strong>Fecha de inicio</strong> de la depreciación
+                </li>
+                <li>
+                  <strong>Método de depreciación</strong>:
+                  <ul className="list-disc pl-6 mt-1 space-y-1">
+                    <li>Línea recta: cuota fija mensual</li>
+                    <li>
+                      Saldo decreciente: cuota decreciente (requiere indicar
+                      tasa)
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+          </ol>
+
+          <p className="mt-3">
+            <strong>Plan de depreciación:</strong>
+          </p>
+          <ul className="list-disc pl-6 space-y-1 text-muted-foreground">
+            <li>
+              Una vez configurado, el sistema genera el{' '}
+              <strong>cronograma</strong> completo mes a mes
+            </li>
+            <li>
+              Cada línea del plan muestra: período, cuota de depreciación,
+              depreciación acumulada y valor residual
+            </li>
+            <li>
+              Puedes ver el progreso con porcentaje de depreciación completada
+            </li>
+          </ul>
+
+          <p className="mt-3">
+            <strong>Estados de depreciación:</strong>
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Badge>Activo</Badge>
+            <Badge variant="outline">Completado</Badge>
+            <Badge variant="secondary">Suspendido</Badge>
+          </div>
+
+          <p className="mt-3">
+            <strong>Ajustes de valor:</strong>
+          </p>
+          <ul className="list-disc pl-6 space-y-1 text-muted-foreground">
+            <li>
+              Si el valor del equipo cambia (revaluación, deterioro), puedes
+              registrar un <strong>ajuste de valor</strong>
+            </li>
+            <li>Cada ajuste requiere fecha, nuevo valor y motivo</li>
+            <li>
+              El plan de depreciación se recalcula automáticamente
+            </li>
+          </ul>
+
+          <p className="text-sm text-muted-foreground">
+            Los asientos contables de depreciación se generan desde el módulo de{' '}
+            <strong>Contabilidad</strong>. Consulta la sección de Depreciación de
+            Activos Fijos en la guía de Contabilidad.
+          </p>
+        </CardContent>
+      </Card>
+
       <Separator />
 
       <Alert>
@@ -163,6 +275,11 @@ export function _EquipmentGuide() {
             <li>
               <strong>Comercial → Clientes</strong>: los equipos pueden
               asignarse a clientes específicos
+            </li>
+            <li>
+              <strong>Contabilidad</strong>: la depreciación de equipos genera
+              asientos contables automáticos que reflejan la pérdida de valor en
+              los libros
             </li>
           </ul>
         </AlertDescription>

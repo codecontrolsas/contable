@@ -4,6 +4,7 @@ import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { revalidatePath } from 'next/cache';
 import { getActiveCompanyId } from '@/shared/lib/company';
+import { checkPermission } from '@/shared/lib/permissions';
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
 import {
   buildSearchWhere,
@@ -33,6 +34,7 @@ export interface UpdateUnionInput {
 export async function getUnionsPaginated(searchParams: DataTableSearchParams) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.unions', 'view', { redirect: true });
 
   try {
     // Parsear parámetros de URL
@@ -78,6 +80,7 @@ export async function getUnionsPaginated(searchParams: DataTableSearchParams) {
 export async function getAllUnions() {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.unions', 'view', { redirect: true });
 
   try {
     const unions = await prisma.union.findMany({
@@ -133,6 +136,7 @@ export async function getUnionsForSelect() {
 export async function getUnionById(id: string) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.unions', 'view', { redirect: true });
 
   try {
     const union = await prisma.union.findFirst({
@@ -169,6 +173,7 @@ export async function getUnionById(id: string) {
 export async function createUnion(input: CreateUnionInput) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.unions', 'create', { redirect: true });
 
   try {
     const union = await prisma.union.create({
@@ -195,6 +200,7 @@ export async function createUnion(input: CreateUnionInput) {
 export async function updateUnion(id: string, input: UpdateUnionInput) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.unions', 'update', { redirect: true });
 
   try {
     const existing = await prisma.union.findFirst({
@@ -230,6 +236,7 @@ export async function updateUnion(id: string, input: UpdateUnionInput) {
 export async function deleteUnion(id: string) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.unions', 'delete', { redirect: true });
 
   try {
     const existing = await prisma.union.findFirst({

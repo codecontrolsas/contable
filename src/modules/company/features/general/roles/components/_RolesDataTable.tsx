@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import Link from 'next/link';
 
 import { Button } from '@/shared/components/ui/button';
 import {
@@ -23,20 +24,15 @@ import {
 import type { ModulePermissions } from '@/shared/lib/permissions';
 
 import { getColumns } from '../columns';
-import { _RoleFormModal } from './_RoleFormModal';
 import {
   deleteRole,
   type RoleListItem,
-  type SystemAction,
-  type PermissionsConfig,
 } from '../actions.server';
 
 interface Props {
   data: RoleListItem[];
   totalRows: number;
   searchParams: DataTableSearchParams;
-  systemActions: SystemAction[];
-  permissionsConfig: PermissionsConfig;
   permissions: ModulePermissions;
 }
 
@@ -44,17 +40,13 @@ export function _RolesDataTable({
   data,
   totalRows,
   searchParams,
-  systemActions,
-  permissionsConfig,
   permissions,
 }: Props) {
   const router = useRouter();
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [editingRole, setEditingRole] = useState<RoleListItem | null>(null);
   const [deletingRole, setDeletingRole] = useState<RoleListItem | null>(null);
 
-  const handleRefresh = () => {
-    router.refresh();
+  const handleEdit = (roleId: string) => {
+    router.push(`/dashboard/company/general/roles/${roleId}/edit`);
   };
 
   const handleDelete = async () => {
@@ -62,7 +54,7 @@ export function _RolesDataTable({
     try {
       await deleteRole(deletingRole.id);
       toast.success('Rol eliminado');
-      handleRefresh();
+      router.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Error al eliminar rol');
     } finally {
@@ -73,7 +65,7 @@ export function _RolesDataTable({
   const columns = useMemo(
     () =>
       getColumns({
-        onEdit: setEditingRole,
+        onEdit: handleEdit,
         onDelete: setDeletingRole,
         permissions,
       }),
@@ -90,30 +82,16 @@ export function _RolesDataTable({
         searchPlaceholder="Buscar roles..."
         toolbarActions={
           permissions.canCreate ? (
-            <Button onClick={() => setIsCreateOpen(true)} data-testid="new-role-button">
-              <Plus className="h-4 w-4 mr-2" />
-              Nuevo Rol
+            <Button asChild data-testid="new-role-button">
+              <Link href="/dashboard/company/general/roles/new">
+                <Plus className="h-4 w-4 mr-2" />
+                Nuevo Rol
+              </Link>
             </Button>
           ) : null
         }
       />
 
-      {/* Modal de crear/editar rol */}
-      <_RoleFormModal
-        open={isCreateOpen || !!editingRole}
-        onOpenChange={(open) => {
-          if (!open) {
-            setIsCreateOpen(false);
-            setEditingRole(null);
-          }
-        }}
-        role={editingRole}
-        systemActions={systemActions}
-        permissionsConfig={permissionsConfig}
-        onSuccess={handleRefresh}
-      />
-
-      {/* Diálogo de confirmación para eliminar */}
       <AlertDialog
         open={!!deletingRole}
         onOpenChange={(open) => !open && setDeletingRole(null)}

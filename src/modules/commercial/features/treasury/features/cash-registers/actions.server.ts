@@ -6,11 +6,13 @@ import { logger } from '@/shared/lib/logger';
 import { prisma } from '@/shared/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { cashRegisterSchema, type CashRegisterFormData } from '../../shared/validators';
+import { checkPermission } from '@/shared/lib/permissions';
 
 /**
  * Crea una nueva caja
  */
 export async function createCashRegister(data: CashRegisterFormData) {
+  await checkPermission('commercial.treasury.cash-registers', 'create', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -71,6 +73,7 @@ export async function createCashRegister(data: CashRegisterFormData) {
  * Actualiza una caja existente
  */
 export async function updateCashRegister(id: string, data: CashRegisterFormData) {
+  await checkPermission('commercial.treasury.cash-registers', 'update', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -141,6 +144,7 @@ export async function updateCashRegister(id: string, data: CashRegisterFormData)
  * Desactiva una caja (no se puede eliminar si tiene sesiones)
  */
 export async function deactivateCashRegister(id: string) {
+  await checkPermission('commercial.treasury.cash-registers', 'update', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -196,6 +200,7 @@ export async function deactivateCashRegister(id: string) {
  * Activa una caja desactivada
  */
 export async function activateCashRegister(id: string) {
+  await checkPermission('commercial.treasury.cash-registers', 'update', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 

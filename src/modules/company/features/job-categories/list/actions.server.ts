@@ -4,6 +4,7 @@ import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { revalidatePath } from 'next/cache';
 import { getActiveCompanyId } from '@/shared/lib/company';
+import { checkPermission } from '@/shared/lib/permissions';
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
 import {
   buildSearchWhere,
@@ -35,6 +36,7 @@ export interface UpdateJobCategoryInput {
 export async function getJobCategoriesPaginated(searchParams: DataTableSearchParams) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.job-categories', 'view', { redirect: true });
 
   try {
     // Parsear parámetros de URL
@@ -98,6 +100,7 @@ export async function getJobCategoriesPaginated(searchParams: DataTableSearchPar
 export async function getAllJobCategories() {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.job-categories', 'view', { redirect: true });
 
   try {
     const categories = await prisma.jobCategory.findMany({
@@ -216,6 +219,7 @@ export async function getJobCategoriesByAgreement(agreementId: string) {
 export async function getJobCategoryById(id: string) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.job-categories', 'view', { redirect: true });
 
   try {
     const category = await prisma.jobCategory.findFirst({
@@ -264,6 +268,7 @@ export async function getJobCategoryById(id: string) {
 export async function createJobCategory(input: CreateJobCategoryInput) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.job-categories', 'create', { redirect: true });
 
   try {
     // Verificar que el convenio pertenezca a la empresa
@@ -307,6 +312,7 @@ export async function createJobCategory(input: CreateJobCategoryInput) {
 export async function updateJobCategory(id: string, input: UpdateJobCategoryInput) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.job-categories', 'update', { redirect: true });
 
   try {
     const existing = await prisma.jobCategory.findFirst({
@@ -369,6 +375,7 @@ export async function updateJobCategory(id: string, input: UpdateJobCategoryInpu
 export async function deleteJobCategory(id: string) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.job-categories', 'delete', { redirect: true });
 
   try {
     const existing = await prisma.jobCategory.findFirst({

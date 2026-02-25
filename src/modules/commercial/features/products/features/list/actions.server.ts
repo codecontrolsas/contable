@@ -4,6 +4,7 @@ import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { getActiveCompanyId } from '@/shared/lib/company';
+import { checkPermission } from '@/shared/lib/permissions';
 import { revalidatePath } from 'next/cache';
 import {
   createProductSchema,
@@ -23,6 +24,7 @@ interface GetProductsParams {
  * Obtiene el listado de productos con paginación
  */
 export async function getProducts(params: GetProductsParams = {}) {
+  await checkPermission('commercial.products', 'view', { redirect: true });
   const { page = 1, pageSize = 10, search } = params;
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
@@ -85,6 +87,7 @@ export async function getProducts(params: GetProductsParams = {}) {
  * Obtiene un producto por ID
  */
 export async function getProductById(id: string): Promise<Product | null> {
+  await checkPermission('commercial.products', 'view', { redirect: true });
   try {
     const { userId } = await auth();
     if (!userId) throw new Error('No autenticado');
@@ -120,6 +123,7 @@ export async function getProductById(id: string): Promise<Product | null> {
  * Crea un nuevo producto
  */
 export async function createProduct(data: CreateProductFormData): Promise<Product> {
+  await checkPermission('commercial.products', 'create', { redirect: true });
   try {
     const { userId } = await auth();
     if (!userId) throw new Error('No autenticado');
@@ -207,6 +211,7 @@ export async function updateProduct(
   id: string,
   data: UpdateProductFormData
 ): Promise<Product> {
+  await checkPermission('commercial.products', 'update', { redirect: true });
   try {
     const { userId } = await auth();
     if (!userId) throw new Error('No autenticado');
@@ -287,6 +292,7 @@ export async function updateProduct(
  * Elimina un producto (soft delete cambiando a INACTIVE)
  */
 export async function deleteProduct(id: string): Promise<void> {
+  await checkPermission('commercial.products', 'delete', { redirect: true });
   try {
     const { userId } = await auth();
     if (!userId) throw new Error('No autenticado');

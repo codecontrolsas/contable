@@ -12,6 +12,7 @@ import {
   parseSearchParams,
   stateToPrismaParams,
 } from '@/shared/components/common/DataTable/helpers';
+import { checkPermission } from '@/shared/lib/permissions';
 import type { PurchaseOrderFormInput } from '../shared/validators';
 import moment from 'moment';
 
@@ -23,6 +24,7 @@ import moment from 'moment';
  * Obtiene órdenes de compra con paginación server-side para DataTable
  */
 export async function getPurchaseOrdersPaginated(searchParams: DataTableSearchParams) {
+  await checkPermission('commercial.purchase-orders', 'view', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -87,6 +89,7 @@ export async function getPurchaseOrdersPaginated(searchParams: DataTableSearchPa
  * Obtiene una orden de compra por ID con todos sus detalles
  */
 export async function getPurchaseOrderById(id: string) {
+  await checkPermission('commercial.purchase-orders', 'view', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -299,6 +302,7 @@ export async function getProductsForSelect() {
  * Crea una nueva orden de compra
  */
 export async function createPurchaseOrder(input: PurchaseOrderFormInput) {
+  await checkPermission('commercial.purchase-orders', 'create', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -411,6 +415,7 @@ export async function createPurchaseOrder(input: PurchaseOrderFormInput) {
  * Actualiza una orden de compra (solo si está en DRAFT)
  */
 export async function updatePurchaseOrder(id: string, input: PurchaseOrderFormInput) {
+  await checkPermission('commercial.purchase-orders', 'update', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -525,6 +530,7 @@ export async function updatePurchaseOrder(id: string, input: PurchaseOrderFormIn
  * Envía una orden de compra para aprobación (DRAFT → PENDING_APPROVAL)
  */
 export async function submitForApproval(id: string) {
+  await checkPermission('commercial.purchase-orders', 'update', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -570,6 +576,7 @@ export async function submitForApproval(id: string) {
  * Aprueba una orden de compra (PENDING_APPROVAL → APPROVED)
  */
 export async function approvePurchaseOrder(id: string) {
+  await checkPermission('commercial.purchase-orders', 'approve', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -619,6 +626,7 @@ export async function approvePurchaseOrder(id: string) {
  * Rechaza una orden de compra (PENDING_APPROVAL → DRAFT)
  */
 export async function rejectPurchaseOrder(id: string) {
+  await checkPermission('commercial.purchase-orders', 'approve', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -664,6 +672,7 @@ export async function rejectPurchaseOrder(id: string) {
  * Cancela una orden de compra (DRAFT/PENDING_APPROVAL/APPROVED → CANCELLED)
  */
 export async function cancelPurchaseOrder(id: string) {
+  await checkPermission('commercial.purchase-orders', 'update', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -710,6 +719,7 @@ export async function cancelPurchaseOrder(id: string) {
  * Elimina una orden de compra (solo si está en DRAFT)
  */
 export async function deletePurchaseOrder(id: string) {
+  await checkPermission('commercial.purchase-orders', 'delete', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -758,6 +768,7 @@ export async function linkInvoiceToInstallment(
   installmentId: string,
   purchaseInvoiceId: string
 ) {
+  await checkPermission('commercial.purchase-orders', 'update', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -822,6 +833,7 @@ export async function linkInvoiceToInstallment(
  * Desvincula una factura de una cuota de OC
  */
 export async function unlinkInvoiceFromInstallment(installmentId: string) {
+  await checkPermission('commercial.purchase-orders', 'update', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -869,6 +881,7 @@ export async function unlinkInvoiceFromInstallment(installmentId: string) {
  * Obtiene facturas de compra del proveedor que no están vinculadas a cuotas
  */
 export async function getUnlinkedPurchaseInvoicesForSupplier(supplierId: string) {
+  await checkPermission('commercial.purchase-orders', 'view', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 

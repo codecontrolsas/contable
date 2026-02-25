@@ -2,6 +2,7 @@
 
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import { prisma } from '@/shared/lib/prisma';
 import { revalidatePath } from 'next/cache';
 
@@ -15,6 +16,7 @@ interface GetContactsParams {
  * Obtiene la lista de contactos con paginación
  */
 export async function getContacts(params: GetContactsParams = {}) {
+  await checkPermission('commercial.contacts', 'view', { redirect: true });
   const { page = 1, pageSize = 10, search } = params;
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
@@ -96,6 +98,7 @@ export interface CreateContactInput {
  * Crea un nuevo contacto
  */
 export async function createContact(input: CreateContactInput) {
+  await checkPermission('commercial.contacts', 'create', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -128,6 +131,7 @@ export interface UpdateContactInput extends Partial<CreateContactInput> {}
  * Actualiza un contacto existente
  */
 export async function updateContact(id: string, input: UpdateContactInput) {
+  await checkPermission('commercial.contacts', 'update', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -165,6 +169,7 @@ export async function updateContact(id: string, input: UpdateContactInput) {
  * Elimina un contacto (soft delete)
  */
 export async function deleteContact(id: string) {
+  await checkPermission('commercial.contacts', 'delete', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -193,6 +198,7 @@ export async function deleteContact(id: string) {
  * Obtiene clientes y leads para el select del formulario
  */
 export async function getContactFormOptions() {
+  await checkPermission('commercial.contacts', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 

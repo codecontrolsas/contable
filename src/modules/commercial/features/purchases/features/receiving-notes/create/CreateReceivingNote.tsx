@@ -1,5 +1,6 @@
 import { getSuppliersForSelect, getWarehousesForSelect } from '../list/actions.server';
 import { _ReceivingNoteForm } from './components/_ReceivingNoteForm';
+import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 
 interface Props {
   purchaseInvoiceId?: string;
@@ -27,19 +28,21 @@ export async function CreateReceivingNote({ purchaseInvoiceId, supplierId }: Pro
     : undefined;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Nuevo Remito de Recepción</h1>
-        <p className="text-muted-foreground">
-          Registra la recepción de materiales de un proveedor
-        </p>
-      </div>
+    <PermissionGuard module="commercial.receiving-notes" action="create" redirect>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Nuevo Remito de Recepción</h1>
+          <p className="text-muted-foreground">
+            Registra la recepción de materiales de un proveedor
+          </p>
+        </div>
 
-      <_ReceivingNoteForm
-        suppliers={suppliers}
-        warehouses={warehouses}
-        defaultValues={defaultValues}
-      />
-    </div>
+        <_ReceivingNoteForm
+          suppliers={suppliers}
+          warehouses={warehouses}
+          defaultValues={defaultValues}
+        />
+      </div>
+    </PermissionGuard>
   );
 }

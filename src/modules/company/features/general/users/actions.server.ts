@@ -6,7 +6,7 @@ import { auth, clerkClient } from '@clerk/nextjs/server';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { getActiveCompanyId } from '@/shared/lib/company';
-import { createAuditLog, AUDIT_ACTIONS } from '@/shared/lib/permissions';
+import { checkPermission, createAuditLog, AUDIT_ACTIONS } from '@/shared/lib/permissions';
 import { sendInvitationEmail } from '@/shared/actions/email';
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
 import {
@@ -37,6 +37,8 @@ export interface UpdateMemberRoleInput {
  * Obtiene los miembros de la empresa con paginación
  */
 export async function getCompanyMembersPaginated(searchParams: DataTableSearchParams) {
+  await checkPermission('company.general.users', 'view', { redirect: true });
+
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -119,6 +121,8 @@ export async function getCompanyMembersPaginated(searchParams: DataTableSearchPa
  * Obtiene las invitaciones pendientes (no aceptadas y no expiradas)
  */
 export async function getPendingInvitations() {
+  await checkPermission('company.general.users', 'view', { redirect: true });
+
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -169,6 +173,8 @@ export async function getPendingInvitations() {
  * Obtiene los roles disponibles para selección
  */
 export async function getAvailableRoles() {
+  await checkPermission('company.general.users', 'view', { redirect: true });
+
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -196,6 +202,8 @@ export async function getAvailableRoles() {
  * Excluye empleados ya vinculados a un CompanyMember o con invitación pendiente
  */
 export async function getAvailableEmployeesForInvitation() {
+  await checkPermission('company.general.users', 'view', { redirect: true });
+
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -248,6 +256,7 @@ export async function getAvailableEmployeesForInvitation() {
 export async function inviteUser(input: InviteUserInput) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('company.general.users', 'create', { redirect: true });
 
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
@@ -397,6 +406,7 @@ export async function inviteUser(input: InviteUserInput) {
 export async function cancelInvitation(invitationId: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('company.general.users', 'update', { redirect: true });
 
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
@@ -442,6 +452,7 @@ export async function cancelInvitation(invitationId: string) {
 export async function updateMemberRole(input: UpdateMemberRoleInput) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('company.general.users', 'update', { redirect: true });
 
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
@@ -501,6 +512,7 @@ export async function updateMemberRole(input: UpdateMemberRoleInput) {
 export async function deactivateMember(memberId: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('company.general.users', 'delete', { redirect: true });
 
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');

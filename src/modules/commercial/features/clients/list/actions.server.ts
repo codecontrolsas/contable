@@ -2,6 +2,7 @@
 
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import { prisma } from '@/shared/lib/prisma';
 import { revalidatePath } from 'next/cache';
 
@@ -16,6 +17,7 @@ interface GetClientsParams {
  * Obtiene la lista de clientes (contratistas) con paginación
  */
 export async function getClients(params: GetClientsParams = {}) {
+  await checkPermission('commercial.clients', 'view', { redirect: true });
   const { page = 1, pageSize = 10, search, isActive } = params;
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
@@ -108,6 +110,7 @@ export async function getClients(params: GetClientsParams = {}) {
  * Obtiene un cliente por ID
  */
 export async function getClientById(id: string) {
+  await checkPermission('commercial.clients', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -176,6 +179,7 @@ export interface CreateClientInput {
  * Crea un nuevo cliente
  */
 export async function createClient(input: CreateClientInput) {
+  await checkPermission('commercial.clients', 'create', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -233,6 +237,7 @@ export interface UpdateClientInput extends Partial<CreateClientInput> {
  * Actualiza un cliente existente
  */
 export async function updateClient(id: string, input: UpdateClientInput) {
+  await checkPermission('commercial.clients', 'update', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -317,6 +322,7 @@ export async function updateClient(id: string, input: UpdateClientInput) {
  * Da de baja a un cliente
  */
 export async function deactivateClient(id: string, reason?: string) {
+  await checkPermission('commercial.clients', 'delete', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -349,6 +355,7 @@ export async function deactivateClient(id: string, reason?: string) {
  * Reactiva un cliente
  */
 export async function reactivateClient(id: string) {
+  await checkPermission('commercial.clients', 'update', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -381,6 +388,7 @@ export async function reactivateClient(id: string) {
  * Obtiene contactos disponibles (sin asignar a cliente ni lead)
  */
 export async function getAvailableContacts(currentContactId?: string) {
+  await checkPermission('commercial.clients', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) return [];
 

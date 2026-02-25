@@ -10,6 +10,7 @@ import {
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { recalculateEmployeeStatus } from '@/shared/lib/employeeStatus';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import { prisma } from '@/shared/lib/prisma';
 import { uploadFile, deleteFile } from '@/shared/lib/storage';
 
@@ -48,6 +49,7 @@ export interface UploadDocumentResult {
 export async function uploadEmployeeDocument(
   input: UploadEmployeeDocumentInput
 ): Promise<UploadDocumentResult> {
+  await checkPermission('documents', 'create', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) {
     return { success: false, error: 'No hay empresa activa' };
@@ -295,6 +297,7 @@ export async function deleteEmployeeDocument(
   id: string,
   employeeId: string
 ): Promise<UploadDocumentResult> {
+  await checkPermission('documents', 'delete', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) {
     return { success: false, error: 'No hay empresa activa' };
@@ -380,6 +383,7 @@ export async function revertToVersionVersion(
   id: string,
   employeeId: string
 ): Promise<UploadDocumentResult> {
+  await checkPermission('documents', 'update', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) {
     return { success: false, error: 'No hay empresa activa' };

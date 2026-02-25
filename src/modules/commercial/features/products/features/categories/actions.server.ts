@@ -4,6 +4,7 @@ import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { getActiveCompanyId } from '@/shared/lib/company';
+import { checkPermission } from '@/shared/lib/permissions';
 import { revalidatePath } from 'next/cache';
 import {
   createCategorySchema,
@@ -17,6 +18,7 @@ import type { ProductCategory } from '../../shared/types';
  * Obtiene todas las categorías de productos
  */
 export async function getCategories(): Promise<ProductCategory[]> {
+  await checkPermission('commercial.categories', 'view', { redirect: true });
   try {
     const { userId } = await auth();
     if (!userId) throw new Error('No autenticado');
@@ -44,6 +46,7 @@ export async function getCategories(): Promise<ProductCategory[]> {
  * Obtiene una categoría por ID
  */
 export async function getCategoryById(id: string): Promise<ProductCategory | null> {
+  await checkPermission('commercial.categories', 'view', { redirect: true });
   try {
     const { userId } = await auth();
     if (!userId) throw new Error('No autenticado');
@@ -70,6 +73,7 @@ export async function getCategoryById(id: string): Promise<ProductCategory | nul
  * Crea una nueva categoría
  */
 export async function createCategory(data: CreateCategoryFormData): Promise<ProductCategory> {
+  await checkPermission('commercial.categories', 'create', { redirect: true });
   try {
     const { userId } = await auth();
     if (!userId) throw new Error('No autenticado');
@@ -141,6 +145,7 @@ export async function updateCategory(
   id: string,
   data: UpdateCategoryFormData
 ): Promise<ProductCategory> {
+  await checkPermission('commercial.categories', 'update', { redirect: true });
   try {
     const { userId } = await auth();
     if (!userId) throw new Error('No autenticado');
@@ -224,6 +229,7 @@ export async function updateCategory(
  * Elimina una categoría
  */
 export async function deleteCategory(id: string): Promise<void> {
+  await checkPermission('commercial.categories', 'delete', { redirect: true });
   try {
     const { userId } = await auth();
     if (!userId) throw new Error('No autenticado');

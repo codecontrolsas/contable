@@ -10,6 +10,7 @@ import { BankMovementType } from '@/generated/prisma/enums';
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
 import { parseSearchParams, stateToPrismaParams } from '@/shared/components/common/DataTable/helpers';
 import { bankMovementSchema, type BankMovementFormData } from '../../shared/validators';
+import { checkPermission } from '@/shared/lib/permissions';
 
 // Tipo para el cliente de transacción de Prisma
 type PrismaTransactionClient = Omit<
@@ -21,6 +22,7 @@ type PrismaTransactionClient = Omit<
  * Crea un nuevo movimiento bancario y genera asiento contable
  */
 export async function createBankMovement(data: BankMovementFormData) {
+  await checkPermission('commercial.treasury.bank-accounts', 'create', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -245,6 +247,7 @@ async function createJournalEntryForBankMovement(
  * Obtiene los movimientos de una cuenta bancaria
  */
 export async function getBankAccountMovements(bankAccountId: string, limit = 50) {
+  await checkPermission('commercial.treasury.bank-accounts', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -289,6 +292,7 @@ export async function getBankMovementsPaginated(
   searchParams: DataTableSearchParams,
   options?: { reconciled?: boolean; type?: string; dateFrom?: Date; dateTo?: Date }
 ) {
+  await checkPermission('commercial.treasury.bank-accounts', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -367,6 +371,7 @@ export async function getBankMovementsPaginated(
  * Obtiene las cuentas contables disponibles para movimientos bancarios
  */
 export async function getAccountsForBankMovement() {
+  await checkPermission('commercial.treasury.bank-accounts', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -396,6 +401,7 @@ export async function getAccountsForBankMovement() {
  * Concilia un movimiento bancario
  */
 export async function reconcileBankMovement(movementId: string, reconcile: boolean) {
+  await checkPermission('commercial.treasury.bank-accounts', 'update', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -463,6 +469,7 @@ export async function reconcileBankMovement(movementId: string, reconcile: boole
  * Concilia múltiples movimientos bancarios
  */
 export async function reconcileMultipleBankMovements(movementIds: string[], reconcile: boolean) {
+  await checkPermission('commercial.treasury.bank-accounts', 'update', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -503,6 +510,7 @@ export async function reconcileMultipleBankMovements(movementIds: string[], reco
  * Elimina un movimiento bancario (solo si no está conciliado)
  */
 export async function deleteBankMovement(movementId: string) {
+  await checkPermission('commercial.treasury.bank-accounts', 'delete', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -588,6 +596,7 @@ export async function deleteBankMovement(movementId: string) {
  * Obtiene recibos confirmados sin movimiento bancario vinculado para una cuenta bancaria
  */
 export async function getUnlinkedReceipts(bankAccountId: string) {
+  await checkPermission('commercial.treasury.bank-accounts', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -646,6 +655,7 @@ export async function getUnlinkedReceipts(bankAccountId: string) {
  * Obtiene órdenes de pago confirmadas sin movimiento bancario vinculado para una cuenta bancaria
  */
 export async function getUnlinkedPaymentOrders(bankAccountId: string) {
+  await checkPermission('commercial.treasury.bank-accounts', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -708,6 +718,7 @@ export async function linkBankMovementToDocument(
   documentType: 'RECEIPT' | 'PAYMENT_ORDER',
   documentId: string
 ) {
+  await checkPermission('commercial.treasury.bank-accounts', 'update', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -755,6 +766,7 @@ export async function linkBankMovementToDocument(
  * Desvincula un movimiento bancario de su documento asociado
  */
 export async function unlinkBankMovementFromDocument(movementId: string) {
+  await checkPermission('commercial.treasury.bank-accounts', 'update', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -799,6 +811,7 @@ export async function unlinkBankMovementFromDocument(movementId: string) {
  * Obtiene estadísticas de conciliación
  */
 export async function getReconciliationStats(bankAccountId: string) {
+  await checkPermission('commercial.treasury.bank-accounts', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 

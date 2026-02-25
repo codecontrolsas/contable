@@ -18,7 +18,7 @@ import type { ModulePermissions } from '@/shared/lib/permissions';
 import type { RoleListItem } from './actions.server';
 
 interface GetColumnsProps {
-  onEdit: (role: RoleListItem) => void;
+  onEdit: (roleId: string) => void;
   onDelete: (role: RoleListItem) => void;
   permissions: ModulePermissions;
 }
@@ -102,7 +102,6 @@ export function getColumns({ onEdit, onDelete, permissions }: GetColumnsProps): 
     },
   ];
 
-  // Solo agregar columna de acciones si el usuario tiene al menos un permiso
   if (hasAnyAction) {
     baseColumns.push({
       id: 'actions',
@@ -125,7 +124,7 @@ export function getColumns({ onEdit, onDelete, permissions }: GetColumnsProps): 
             <DropdownMenuContent align="end">
               {canUpdate && (
                 <DropdownMenuItem
-                  onClick={() => onEdit(role)}
+                  onClick={() => onEdit(role.id)}
                   data-testid={`role-edit-${role.id}`}
                 >
                   <Edit className="mr-2 h-4 w-4" />

@@ -4,6 +4,7 @@ import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { revalidatePath } from 'next/cache';
 import { getActiveCompanyId } from '@/shared/lib/company';
+import { checkPermission } from '@/shared/lib/permissions';
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
 import {
   buildSearchWhere,
@@ -37,6 +38,7 @@ export interface UpdateContractTypeInput {
 export async function getContractTypesPaginated(searchParams: DataTableSearchParams) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.contract-types', 'view', { redirect: true });
 
   try {
     const state = parseSearchParams(searchParams);
@@ -73,6 +75,7 @@ export async function getContractTypesPaginated(searchParams: DataTableSearchPar
 export async function getAllContractTypes() {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.contract-types', 'view', { redirect: true });
 
   try {
     const contractTypes = await prisma.contractType.findMany({
@@ -124,6 +127,7 @@ export async function getContractTypesForSelect() {
 export async function getContractTypeById(id: string) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.contract-types', 'view', { redirect: true });
 
   try {
     const contractType = await prisma.contractType.findFirst({
@@ -154,6 +158,7 @@ export async function getContractTypeById(id: string) {
 export async function createContractType(input: CreateContractTypeInput) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.contract-types', 'create', { redirect: true });
 
   try {
     const contractType = await prisma.contractType.create({
@@ -181,6 +186,7 @@ export async function createContractType(input: CreateContractTypeInput) {
 export async function updateContractType(id: string, input: UpdateContractTypeInput) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.contract-types', 'update', { redirect: true });
 
   try {
     const existing = await prisma.contractType.findFirst({
@@ -216,6 +222,7 @@ export async function updateContractType(id: string, input: UpdateContractTypeIn
 export async function deleteContractType(id: string) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.contract-types', 'delete', { redirect: true });
 
   try {
     const existing = await prisma.contractType.findFirst({

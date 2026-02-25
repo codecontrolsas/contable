@@ -6,6 +6,7 @@ import { Prisma } from '@/generated/prisma/client';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { getActiveCompanyId } from '@/shared/lib/company';
+import { checkPermission } from '@/shared/lib/permissions';
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
 import { parseSearchParams, stateToPrismaParams } from '@/shared/components/common/DataTable/helpers';
 import {
@@ -34,6 +35,7 @@ interface GetWarehousesParams {
 }
 
 export async function getWarehouses(params: GetWarehousesParams = {}) {
+  await checkPermission('commercial.warehouses', 'view', { redirect: true });
   const { page = 1, pageSize = 10, search, isActive } = params;
   const { userId } = await auth();
   if (!userId) {
@@ -92,6 +94,7 @@ export async function getWarehouses(params: GetWarehousesParams = {}) {
 }
 
 export async function getWarehouseById(id: string): Promise<Warehouse> {
+  await checkPermission('commercial.warehouses', 'view', { redirect: true });
   const { userId } = await auth();
   if (!userId) {
     throw new Error('No autenticado');
@@ -127,6 +130,7 @@ export async function getWarehouseById(id: string): Promise<Warehouse> {
 }
 
 export async function createWarehouse(data: CreateWarehouseFormData): Promise<Warehouse> {
+  await checkPermission('commercial.warehouses', 'create', { redirect: true });
   const { userId } = await auth();
   if (!userId) {
     throw new Error('No autenticado');
@@ -190,6 +194,7 @@ export async function updateWarehouse(
   id: string,
   data: UpdateWarehouseFormData
 ): Promise<Warehouse> {
+  await checkPermission('commercial.warehouses', 'update', { redirect: true });
   const { userId } = await auth();
   if (!userId) {
     throw new Error('No autenticado');
@@ -261,6 +266,7 @@ export async function updateWarehouse(
 }
 
 export async function deleteWarehouse(id: string): Promise<void> {
+  await checkPermission('commercial.warehouses', 'delete', { redirect: true });
   const { userId } = await auth();
   if (!userId) {
     throw new Error('No autenticado');
@@ -313,6 +319,7 @@ export async function deleteWarehouse(id: string): Promise<void> {
 }
 
 export async function toggleWarehouseActive(id: string): Promise<void> {
+  await checkPermission('commercial.warehouses', 'update', { redirect: true });
   const { userId } = await auth();
   if (!userId) {
     throw new Error('No autenticado');
@@ -352,6 +359,7 @@ export async function toggleWarehouseActive(id: string): Promise<void> {
 // ============================================
 
 export async function getWarehouseStocks(warehouseId: string): Promise<WarehouseStock[]> {
+  await checkPermission('commercial.stock', 'view', { redirect: true });
   const { userId } = await auth();
   if (!userId) {
     throw new Error('No autenticado');
@@ -416,6 +424,7 @@ export async function getWarehouseStocks(warehouseId: string): Promise<Warehouse
 }
 
 export async function getProductStock(productId: string): Promise<WarehouseStock[]> {
+  await checkPermission('commercial.stock', 'view', { redirect: true });
   const { userId } = await auth();
   if (!userId) {
     throw new Error('No autenticado');
@@ -493,6 +502,7 @@ export async function getStockMovements(filters?: {
   productId?: string;
   limit?: number;
 }): Promise<StockMovement[]> {
+  await checkPermission('commercial.movements', 'view', { redirect: true });
   const { userId } = await auth();
   if (!userId) {
     throw new Error('No autenticado');
@@ -551,6 +561,7 @@ export async function getStockMovementsPaginated(
     dateTo?: Date;
   }
 ) {
+  await checkPermission('commercial.movements', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -625,6 +636,7 @@ export async function getStockMovementsPaginated(
 }
 
 export async function createStockMovement(data: CreateStockMovementFormData): Promise<StockMovement> {
+  await checkPermission('commercial.movements', 'create', { redirect: true });
   const { userId } = await auth();
   if (!userId) {
     throw new Error('No autenticado');
@@ -710,6 +722,7 @@ export async function createStockMovement(data: CreateStockMovementFormData): Pr
 // ============================================
 
 export async function adjustStock(data: SetStockQuantityFormData): Promise<void> {
+  await checkPermission('commercial.stock', 'update', { redirect: true });
   const { userId } = await auth();
   if (!userId) {
     throw new Error('No autenticado');
@@ -808,6 +821,7 @@ export async function adjustStock(data: SetStockQuantityFormData): Promise<void>
 // ============================================
 
 export async function transferStock(data: DirectStockTransferFormData): Promise<void> {
+  await checkPermission('commercial.movements', 'create', { redirect: true });
   const { userId } = await auth();
   if (!userId) {
     throw new Error('No autenticado');

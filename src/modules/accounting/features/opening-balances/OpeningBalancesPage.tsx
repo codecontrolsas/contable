@@ -1,4 +1,5 @@
 import { getActiveCompanyId } from '@/shared/lib/company';
+import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 import { getOpeningBalancesPageData } from './actions.server';
 import { _OpeningBalancesTabs } from './components/_OpeningBalancesTabs';
 import { Alert, AlertDescription, AlertTitle } from '@/shared/components/ui/alert';
@@ -6,10 +7,7 @@ import { AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/shared/components/ui/button';
 
-export async function OpeningBalancesPage() {
-  const companyId = await getActiveCompanyId();
-  if (!companyId) throw new Error('No hay empresa activa');
-
+async function OpeningBalancesContent() {
   const data = await getOpeningBalancesPageData();
 
   if (!data.hasFiscalYear) {
@@ -73,5 +71,16 @@ export async function OpeningBalancesPage() {
 
       <_OpeningBalancesTabs data={data} />
     </div>
+  );
+}
+
+export async function OpeningBalancesPage() {
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  return (
+    <PermissionGuard module="accounting.opening-balances" action="view" redirect>
+      <OpeningBalancesContent />
+    </PermissionGuard>
   );
 }

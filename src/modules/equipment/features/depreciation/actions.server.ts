@@ -3,6 +3,7 @@
 import { Prisma } from '@/generated/prisma/client';
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import { prisma } from '@/shared/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@clerk/nextjs/server';
@@ -27,6 +28,7 @@ import {
  * Obtiene la configuración de depreciación de un equipo con su schedule
  */
 export async function getVehicleDepreciation(vehicleId: string) {
+  await checkPermission('equipment', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -81,6 +83,7 @@ export async function getVehicleDepreciation(vehicleId: string) {
  * Obtiene los ajustes de valor de un equipo
  */
 export async function getVehicleValueAdjustments(vehicleId: string) {
+  await checkPermission('equipment', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -115,6 +118,7 @@ export async function getVehicleValueAdjustments(vehicleId: string) {
  * Configura la depreciación para un equipo
  */
 export async function createVehicleDepreciation(vehicleId: string, input: DepreciationConfigInput) {
+  await checkPermission('equipment', 'create', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -228,6 +232,7 @@ export async function updateVehicleDepreciation(
   depreciationId: string,
   input: DepreciationConfigInput,
 ) {
+  await checkPermission('equipment', 'update', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -316,6 +321,7 @@ export async function toggleDepreciationStatus(
   depreciationId: string,
   status: 'ACTIVE' | 'SUSPENDED',
 ) {
+  await checkPermission('equipment', 'update', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -353,6 +359,7 @@ export async function toggleDepreciationStatus(
  * Elimina la depreciación (solo si no hay períodos contabilizados)
  */
 export async function deleteVehicleDepreciation(depreciationId: string) {
+  await checkPermission('equipment', 'delete', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -392,6 +399,7 @@ export async function deleteVehicleDepreciation(depreciationId: string) {
  * Contabiliza un período individual de depreciación
  */
 export async function postDepreciationEntry(scheduleEntryId: string) {
+  await checkPermission('equipment', 'update', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -562,6 +570,7 @@ export async function postDepreciationEntry(scheduleEntryId: string) {
  * Contabiliza todos los períodos pendientes hasta una fecha dada
  */
 export async function postAllPendingDepreciations(upToDate: Date) {
+  await checkPermission('equipment', 'update', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -748,6 +757,7 @@ export async function postAllPendingDepreciations(upToDate: Date) {
  * Crea un ajuste de valor para un equipo con depreciación
  */
 export async function createValueAdjustment(vehicleId: string, input: ValueAdjustmentInput) {
+  await checkPermission('equipment', 'update', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -951,6 +961,7 @@ export async function createValueAdjustment(vehicleId: string, input: ValueAdjus
  * Obtiene el resumen de depreciaciones pendientes para contabilización masiva
  */
 export async function getPendingDepreciationsSummary(upToDate: Date) {
+  await checkPermission('equipment', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 

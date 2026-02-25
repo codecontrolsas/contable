@@ -14,6 +14,7 @@ import {
   checkBudgetForExpense,
 } from '@/modules/accounting/features/integrations/commercial';
 import moment from 'moment';
+import { checkPermission } from '@/shared/lib/permissions';
 
 /**
  * Normaliza una fecha @db.Date (medianoche UTC) a mediodía UTC
@@ -35,6 +36,7 @@ function normalizeDbDateNullable(date: Date | null): Date | null {
  * Obtiene las categorías de gastos activas de la empresa
  */
 export async function getExpenseCategories() {
+  await checkPermission('commercial.expenses', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -54,6 +56,7 @@ export async function getExpenseCategories() {
  * Obtiene todas las categorías (incluyendo inactivas) para gestión
  */
 export async function getAllExpenseCategories() {
+  await checkPermission('commercial.expenses', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -74,6 +77,7 @@ export async function getAllExpenseCategories() {
  * Crea una nueva categoría de gastos
  */
 export async function createExpenseCategory(data: ExpenseCategoryFormInput) {
+  await checkPermission('commercial.expenses', 'create', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -106,6 +110,7 @@ export async function createExpenseCategory(data: ExpenseCategoryFormInput) {
  * Actualiza una categoría de gastos
  */
 export async function updateExpenseCategory(id: string, data: ExpenseCategoryFormInput) {
+  await checkPermission('commercial.expenses', 'update', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -141,6 +146,7 @@ export async function updateExpenseCategory(id: string, data: ExpenseCategoryFor
  * Activa/desactiva una categoría de gastos
  */
 export async function toggleExpenseCategory(id: string) {
+  await checkPermission('commercial.expenses', 'update', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -179,6 +185,7 @@ export async function toggleExpenseCategory(id: string) {
  * Obtiene gastos con paginación server-side para DataTable
  */
 export async function getExpensesPaginated(searchParams: DataTableSearchParams) {
+  await checkPermission('commercial.expenses', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -250,6 +257,7 @@ export async function getExpensesPaginated(searchParams: DataTableSearchParams) 
  * Obtiene el detalle de un gasto
  */
 export async function getExpenseById(id: string) {
+  await checkPermission('commercial.expenses', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -330,6 +338,7 @@ export async function getExpenseById(id: string) {
  * Crea un nuevo gasto (borrador)
  */
 export async function createExpense(data: ExpenseFormInput) {
+  await checkPermission('commercial.expenses', 'create', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -381,6 +390,7 @@ export async function createExpense(data: ExpenseFormInput) {
  * Actualiza un gasto (solo si está en DRAFT)
  */
 export async function updateExpense(id: string, data: ExpenseFormInput) {
+  await checkPermission('commercial.expenses', 'update', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -428,6 +438,7 @@ export async function confirmExpense(id: string): Promise<{
   success: true;
   budgetWarning?: { message: string; executedPercent: number };
 }> {
+  await checkPermission('commercial.expenses', 'approve', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -507,6 +518,7 @@ export async function confirmExpense(id: string): Promise<{
  * Cancela un gasto (solo si DRAFT o CONFIRMED sin pagos)
  */
 export async function cancelExpense(id: string) {
+  await checkPermission('commercial.expenses', 'delete', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -556,6 +568,7 @@ export async function cancelExpense(id: string) {
  * Elimina un gasto (solo si DRAFT)
  */
 export async function deleteExpense(id: string) {
+  await checkPermission('commercial.expenses', 'delete', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -591,6 +604,7 @@ export async function deleteExpense(id: string) {
  * Obtiene gastos pendientes de pago (para seleccionar en órdenes de pago)
  */
 export async function getPendingExpenses(supplierId?: string) {
+  await checkPermission('commercial.expenses', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 

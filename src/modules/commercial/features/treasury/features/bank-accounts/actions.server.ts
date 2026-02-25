@@ -7,11 +7,13 @@ import { prisma } from '@/shared/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { Prisma } from '@/generated/prisma/client';
 import { bankAccountSchema, type BankAccountFormData } from '../../shared/validators';
+import { checkPermission } from '@/shared/lib/permissions';
 
 /**
  * Crea una nueva cuenta bancaria
  */
 export async function createBankAccount(data: BankAccountFormData) {
+  await checkPermission('commercial.treasury.bank-accounts', 'create', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -77,6 +79,7 @@ export async function createBankAccount(data: BankAccountFormData) {
  * Actualiza una cuenta bancaria existente
  */
 export async function updateBankAccount(id: string, data: BankAccountFormData) {
+  await checkPermission('commercial.treasury.bank-accounts', 'update', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -151,6 +154,7 @@ export async function updateBankAccount(id: string, data: BankAccountFormData) {
  * Obtiene una cuenta bancaria por ID
  */
 export async function getBankAccountById(id: string) {
+  await checkPermission('commercial.treasury.bank-accounts', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -191,6 +195,7 @@ export async function getBankAccountById(id: string) {
  * Desactiva una cuenta bancaria
  */
 export async function deactivateBankAccount(id: string) {
+  await checkPermission('commercial.treasury.bank-accounts', 'update', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -253,6 +258,7 @@ export async function deactivateBankAccount(id: string) {
  * Activa una cuenta bancaria desactivada
  */
 export async function activateBankAccount(id: string) {
+  await checkPermission('commercial.treasury.bank-accounts', 'update', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -300,6 +306,7 @@ export async function activateBankAccount(id: string) {
  * Cierra una cuenta bancaria (permanente)
  */
 export async function closeBankAccount(id: string) {
+  await checkPermission('commercial.treasury.bank-accounts', 'delete', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 

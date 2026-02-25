@@ -14,12 +14,14 @@ import type {
   DocumentForLinking,
   ProjectionForLinking,
 } from '../../shared/types';
+import { checkPermission } from '@/shared/lib/permissions';
 
 // ============================================
 // CONSULTAS
 // ============================================
 
 export async function getProjectionsPaginated(searchParams: DataTableSearchParams) {
+  await checkPermission('commercial.treasury.projections', 'view', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -91,6 +93,7 @@ export async function getProjectionsPaginated(searchParams: DataTableSearchParam
 // ============================================
 
 export async function createProjection(data: CreateProjectionFormData) {
+  await checkPermission('commercial.treasury.projections', 'create', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -125,6 +128,7 @@ export async function createProjection(data: CreateProjectionFormData) {
 // ============================================
 
 export async function updateProjection(id: string, data: CreateProjectionFormData) {
+  await checkPermission('commercial.treasury.projections', 'update', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -164,6 +168,7 @@ export async function updateProjection(id: string, data: CreateProjectionFormDat
 // ============================================
 
 export async function deleteProjection(id: string) {
+  await checkPermission('commercial.treasury.projections', 'delete', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -192,6 +197,7 @@ export async function deleteProjection(id: string) {
 // ============================================
 
 export async function getProjectionsTotals() {
+  await checkPermission('commercial.treasury.projections', 'view', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -229,6 +235,7 @@ export async function getProjectionsTotals() {
 // ============================================
 
 export async function linkDocumentToProjection(data: LinkDocumentFormData) {
+  await checkPermission('commercial.treasury.projections', 'update', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -295,6 +302,7 @@ export async function linkDocumentToProjection(data: LinkDocumentFormData) {
 }
 
 export async function unlinkDocumentFromProjection(linkId: string) {
+  await checkPermission('commercial.treasury.projections', 'update', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -339,6 +347,7 @@ export async function unlinkDocumentFromProjection(linkId: string) {
 }
 
 export async function getProjectionLinks(projectionId: string): Promise<ProjectionDocumentLinkItem[]> {
+  await checkPermission('commercial.treasury.projections', 'view', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -424,6 +433,7 @@ export async function searchDocumentsForLinking(
   projectionId: string,
   search: string
 ): Promise<DocumentForLinking[]> {
+  await checkPermission('commercial.treasury.projections', 'view', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -557,6 +567,7 @@ export async function searchProjectionsForLinking(
   documentType: 'SALES_INVOICE' | 'PURCHASE_INVOICE' | 'EXPENSE',
   search: string
 ): Promise<ProjectionForLinking[]> {
+  await checkPermission('commercial.treasury.projections', 'view', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -609,6 +620,7 @@ export async function searchProjectionsForLinking(
 // ============================================
 
 export async function getProjectionsInRange(startDate: Date, endDate: Date) {
+  await checkPermission('commercial.treasury.projections', 'view', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 

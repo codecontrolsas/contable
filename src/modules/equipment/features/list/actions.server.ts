@@ -9,6 +9,7 @@ import {
 } from '@/shared/components/common/DataTable/helpers';
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import { prisma } from '@/shared/lib/prisma';
 import {
   createJournalEntryForAssetSale,
@@ -40,6 +41,7 @@ export async function getEquipmentPaginated(
   searchParams: DataTableSearchParams,
   tab: EquipmentTab = 'all'
 ) {
+  await checkPermission('equipment', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -139,6 +141,7 @@ export async function getEquipmentPaginated(
  * Obtiene contadores para cada tab
  */
 export async function getEquipmentTabCounts() {
+  await checkPermission('equipment', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) return { all: 0, vehicles: 0, others: 0 };
 
@@ -212,6 +215,7 @@ export async function getVehicleBrandsForFilter() {
  * @deprecated Usar getEquipmentPaginated para listas grandes
  */
 export async function getAllVehicles() {
+  await checkPermission('equipment', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -244,6 +248,7 @@ export async function getAllVehicles() {
  * Obtiene solo los vehículos activos
  */
 export async function getActiveVehicles() {
+  await checkPermission('equipment', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -284,6 +289,7 @@ export async function softDeleteVehicle(
   id: string,
   terminationReason: 'SALE' | 'TOTAL_LOSS' | 'RETURN' | 'OTHER'
 ) {
+  await checkPermission('equipment', 'delete', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -331,6 +337,7 @@ export async function softDeleteVehicle(
  * Reactiva un vehículo dado de baja
  */
 export async function reactivateVehicle(id: string) {
+  await checkPermission('equipment', 'update', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -361,6 +368,7 @@ export async function getAllEquipmentForExport(
   searchParams: DataTableSearchParams,
   tab: EquipmentTab = 'all'
 ) {
+  await checkPermission('equipment', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 

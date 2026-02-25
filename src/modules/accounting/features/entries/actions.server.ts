@@ -3,6 +3,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import { revalidateAccountingRoutes } from '../../shared/utils';
 import { type CreateJournalEntryInput } from '../../shared/types';
 import { validateJournalEntryAccounts, validateJournalEntryBalance, validateJournalEntryDate, validateJournalEntryAmounts, validateAccountNatures, validatePeriodLock } from './validators';
@@ -15,6 +16,7 @@ import { JournalEntryStatus } from '@/generated/prisma/enums';
 export async function createJournalEntry(companyId: string, input: CreateJournalEntryInput) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.entries', 'create', { redirect: true });
 
   try {
     // Obtener el último número de asiento
@@ -103,6 +105,7 @@ export async function createJournalEntry(companyId: string, input: CreateJournal
 export async function postJournalEntry(companyId: string, entryId: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.entries', 'approve', { redirect: true });
 
   try {
     const entry = await prisma.journalEntry.findUnique({
@@ -202,6 +205,7 @@ export async function postJournalEntry(companyId: string, entryId: string) {
 export async function reverseJournalEntry(companyId: string, entryId: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.entries', 'approve', { redirect: true });
 
   try {
     const entry = await prisma.journalEntry.findUnique({
@@ -340,6 +344,7 @@ export async function reverseJournalEntry(companyId: string, entryId: string) {
 export async function getJournalEntries(companyId: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.entries', 'view', { redirect: true });
 
   try {
     const entries = await prisma.journalEntry.findMany({
@@ -393,6 +398,7 @@ export async function getJournalEntries(companyId: string) {
 export async function getJournalEntryById(companyId: string, entryId: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.entries', 'view', { redirect: true });
 
   try {
     const entry = await prisma.journalEntry.findUnique({

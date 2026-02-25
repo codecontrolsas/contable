@@ -7,6 +7,7 @@ import { getActiveCompanyId } from '@/shared/lib/company';
 import { stockAdjustmentSchema, stockTransferSchema } from '../../shared/validators';
 import { revalidatePath } from 'next/cache';
 import { Prisma } from '@/generated/prisma/client';
+import { checkPermission } from '@/shared/lib/permissions';
 
 // ============================================
 // QUERIES PARA FORMULARIOS
@@ -70,6 +71,7 @@ export async function getStockProductsForSelect() {
 // ============================================
 
 export async function createStockAdjustment(data: unknown) {
+  await checkPermission('commercial.movements', 'create', { redirect: true });
   const { userId: authUserId } = await auth();
   if (!authUserId) throw new Error('No autenticado');
   const userId = authUserId;
@@ -228,6 +230,7 @@ export async function createStockAdjustment(data: unknown) {
 // ============================================
 
 export async function createStockTransfer(data: unknown) {
+  await checkPermission('commercial.movements', 'create', { redirect: true });
   const { userId: authUserId } = await auth();
   if (!authUserId) throw new Error('No autenticado');
   const userId = authUserId;

@@ -6,6 +6,7 @@ import { _MovementsTable } from './components/_MovementsTable';
 import { MovementFilters } from './components/_MovementFilters';
 import { MovementsSummary } from './components/_MovementsSummary';
 import { _MovementActions } from './components/_MovementActions';
+import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 
 interface StockMovementsProps {
   searchParams?: DataTableSearchParams & {
@@ -35,6 +36,7 @@ export async function StockMovements({ searchParams = {} }: StockMovementsProps)
   ]);
 
   return (
+    <PermissionGuard module="commercial.movements" action="view" redirect>
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -77,5 +79,6 @@ export async function StockMovements({ searchParams = {} }: StockMovementsProps)
         </CardContent>
       </Card>
     </div>
+    </PermissionGuard>
   );
 }

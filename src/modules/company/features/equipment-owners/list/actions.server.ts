@@ -10,6 +10,7 @@ import {
   parseSearchParams,
   stateToPrismaParams,
 } from '@/shared/components/common/DataTable/helpers';
+import { checkPermission } from '@/shared/lib/permissions';
 import type { VehicleTitularityType } from '@/generated/prisma/enums';
 
 // ============================================
@@ -38,6 +39,7 @@ export interface UpdateEquipmentOwnerInput {
 export async function getEquipmentOwnersPaginated(searchParams: DataTableSearchParams) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.equipment-owners', 'view', { redirect: true });
 
   try {
     // Parsear parámetros de URL
@@ -85,6 +87,7 @@ export async function getEquipmentOwnersPaginated(searchParams: DataTableSearchP
 export async function getEquipmentOwnerById(id: string) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.equipment-owners', 'view', { redirect: true });
 
   try {
     const owner = await prisma.equipmentOwner.findFirst({
@@ -117,6 +120,7 @@ export async function getEquipmentOwnerById(id: string) {
 export async function createEquipmentOwner(input: CreateEquipmentOwnerInput) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.equipment-owners', 'create', { redirect: true });
 
   try {
     const owner = await prisma.equipmentOwner.create({
@@ -148,6 +152,7 @@ export async function createEquipmentOwner(input: CreateEquipmentOwnerInput) {
 export async function updateEquipmentOwner(id: string, input: UpdateEquipmentOwnerInput) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.equipment-owners', 'update', { redirect: true });
 
   try {
     const existing = await prisma.equipmentOwner.findFirst({
@@ -199,6 +204,7 @@ export async function updateEquipmentOwner(id: string, input: UpdateEquipmentOwn
 export async function deleteEquipmentOwner(id: string) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.equipment-owners', 'delete', { redirect: true });
 
   try {
     const existing = await prisma.equipmentOwner.findFirst({

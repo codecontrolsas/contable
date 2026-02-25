@@ -3,12 +3,15 @@
 import {
   ArrowDownUp,
   BadgeDollarSign,
-  Building2,
   CheckSquare,
-  CreditCard,
+  Clock,
+  FileCheck,
   Info,
   Landmark,
+  LineChart,
   Receipt,
+  TrendingUp,
+  Vault,
 } from 'lucide-react';
 
 import { Alert, AlertDescription } from '@/shared/components/ui/alert';
@@ -222,6 +225,106 @@ export function _TreasuryGuide() {
         </CardContent>
       </Card>
 
+      {/* Cheques */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileCheck className="h-5 w-5" />
+            Cheques
+          </CardTitle>
+          <CardDescription>
+            Gestión de cheques propios y de terceros
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p>
+            El sistema permite gestionar cheques propios (emitidos por tu
+            empresa) y de terceros (recibidos de clientes). Cada cheque tiene un
+            ciclo de vida completo con seguimiento de estado.
+          </p>
+          <p>
+            <strong>Registrar un cheque:</strong>
+          </p>
+          <ol className="list-decimal pl-6 space-y-2 text-muted-foreground">
+            <li>
+              Ve a <strong>Tesorería → Cheques</strong>
+            </li>
+            <li>
+              Haz clic en <strong>Nuevo Cheque</strong>
+            </li>
+            <li>
+              Completa:
+              <ul className="list-disc pl-6 mt-1 space-y-1">
+                <li>Tipo: Propio o De Tercero</li>
+                <li>Número de cheque</li>
+                <li>Banco emisor</li>
+                <li>Monto</li>
+                <li>Fecha de emisión y fecha de vencimiento</li>
+                <li>Librador (quien emite el cheque)</li>
+                <li>Beneficiario (a quien se paga)</li>
+                <li>Cliente o proveedor asociado (según tipo)</li>
+                <li>Cuenta bancaria vinculada (opcional)</li>
+              </ul>
+            </li>
+          </ol>
+
+          <p className="mt-3">
+            <strong>Estados de cheques de terceros:</strong>
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="secondary">En Cartera</Badge>
+            <span>→</span>
+            <Badge>Depositado</Badge>
+            <span>→</span>
+            <Badge>Acreditado</Badge>
+          </div>
+          <div className="flex flex-wrap gap-2 mt-2">
+            <span className="text-sm text-muted-foreground">También:</span>
+            <Badge variant="outline">Endosado</Badge>
+            <Badge variant="destructive">Rechazado</Badge>
+            <Badge variant="destructive">Anulado</Badge>
+          </div>
+          <ul className="list-disc pl-6 space-y-1 text-muted-foreground mt-2">
+            <li>
+              <strong>En Cartera</strong>: cheque recibido, disponible
+            </li>
+            <li>
+              <strong>Depositado</strong>: enviado al banco para su cobro
+            </li>
+            <li>
+              <strong>Acreditado</strong>: el banco acreditó el monto
+            </li>
+            <li>
+              <strong>Endosado</strong>: transferido a un tercero
+            </li>
+            <li>
+              <strong>Rechazado</strong>: el banco rechazó el cheque
+            </li>
+          </ul>
+
+          <p className="mt-3">
+            <strong>Estados de cheques propios:</strong>
+          </p>
+          <ul className="list-disc pl-6 space-y-1 text-muted-foreground">
+            <li>
+              <strong>Entregado</strong>: cheque emitido y entregado al
+              beneficiario
+            </li>
+            <li>
+              <strong>Cobrado</strong>: el cheque fue debitado de tu cuenta
+            </li>
+            <li>
+              <strong>Anulado</strong>: el cheque fue anulado
+            </li>
+          </ul>
+
+          <p className="text-sm text-muted-foreground mt-2">
+            Desde el detalle del cheque puedes realizar acciones como depositar,
+            endosar o marcar como rechazado.
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Conciliación */}
       <Card>
         <CardHeader>
@@ -256,6 +359,203 @@ export function _TreasuryGuide() {
         </CardContent>
       </Card>
 
+      {/* Cajas Registradoras */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Vault className="h-5 w-5" />
+            Cajas Registradoras
+          </CardTitle>
+          <CardDescription>
+            Gestión de cajas para operaciones en efectivo
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p>
+            Las cajas registradoras permiten gestionar el efectivo de tu
+            negocio. Cada caja tiene sesiones de apertura y cierre con control
+            de saldos.
+          </p>
+          <p>
+            <strong>Crear una caja:</strong>
+          </p>
+          <ol className="list-decimal pl-6 space-y-1 text-muted-foreground">
+            <li>
+              Ve a <strong>Tesorería → Cajas</strong>
+            </li>
+            <li>
+              Haz clic en <strong>Nueva Caja</strong>
+            </li>
+            <li>
+              Completa:
+              <ul className="list-disc pl-6 mt-1 space-y-1">
+                <li>Código (único)</li>
+                <li>Nombre</li>
+                <li>Ubicación (opcional)</li>
+                <li>Marcar como caja por defecto si corresponde</li>
+              </ul>
+            </li>
+          </ol>
+          <p className="text-sm text-muted-foreground">
+            Cada caja puede tener una única sesión abierta a la vez.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Sesiones de Caja */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            Sesiones de Caja
+          </CardTitle>
+          <CardDescription>
+            Apertura, operaciones y cierre de caja
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p>
+            <strong>Abrir una sesión:</strong>
+          </p>
+          <ol className="list-decimal pl-6 space-y-1 text-muted-foreground">
+            <li>
+              En la lista de cajas, haz clic en <strong>Abrir Sesión</strong> en
+              la caja deseada
+            </li>
+            <li>
+              Indica el <strong>monto de apertura</strong> (efectivo inicial en
+              caja)
+            </li>
+            <li>Agrega notas de apertura si es necesario</li>
+          </ol>
+
+          <p className="mt-3">
+            <strong>Durante la sesión:</strong>
+          </p>
+          <ul className="list-disc pl-6 space-y-1 text-muted-foreground">
+            <li>
+              Se registran automáticamente los movimientos de cobros en efectivo
+              (recibos)
+            </li>
+            <li>
+              Se registran automáticamente los pagos en efectivo (órdenes de
+              pago)
+            </li>
+            <li>
+              El sistema calcula el <strong>saldo esperado</strong> en base a
+              los movimientos
+            </li>
+          </ul>
+
+          <p className="mt-3">
+            <strong>Cerrar la sesión:</strong>
+          </p>
+          <ol className="list-decimal pl-6 space-y-1 text-muted-foreground">
+            <li>
+              Haz clic en <strong>Cerrar Sesión</strong>
+            </li>
+            <li>
+              Indica el <strong>monto real</strong> contado en caja (arqueo)
+            </li>
+            <li>
+              El sistema muestra la <strong>diferencia</strong> entre lo
+              esperado y lo real
+            </li>
+            <li>Agrega notas de cierre si hay observaciones</li>
+          </ol>
+        </CardContent>
+      </Card>
+
+      {/* Flujo de Caja */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5" />
+            Flujo de Caja
+          </CardTitle>
+          <CardDescription>
+            Visualización de ingresos y egresos
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p>
+            El flujo de caja muestra una visión consolidada de todos los
+            ingresos y egresos de tu empresa en un período determinado.
+          </p>
+          <p>
+            Desde <strong>Tesorería → Flujo de Caja</strong> puedes ver:
+          </p>
+          <ul className="list-disc pl-6 space-y-1 text-muted-foreground">
+            <li>
+              <strong>Resumen</strong>: tarjetas con total de ingresos, total de
+              egresos y saldo neto
+            </li>
+            <li>
+              <strong>Gráfico</strong>: evolución temporal de ingresos y egresos
+            </li>
+            <li>
+              <strong>Tabla detallada</strong>: cada movimiento con fecha, tipo,
+              monto y origen
+            </li>
+          </ul>
+          <p className="text-sm text-muted-foreground">
+            Puedes cambiar la <strong>granularidad</strong> (diario, semanal,
+            mensual) y filtrar por rango de fechas.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Proyecciones de Cashflow */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <LineChart className="h-5 w-5" />
+            Proyecciones de Cashflow
+          </CardTitle>
+          <CardDescription>
+            Planificación financiera a futuro
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p>
+            Las proyecciones permiten registrar ingresos y egresos esperados a
+            futuro para planificar la disponibilidad de fondos.
+          </p>
+          <p>
+            <strong>Crear una proyección:</strong>
+          </p>
+          <ol className="list-decimal pl-6 space-y-2 text-muted-foreground">
+            <li>
+              Ve a <strong>Tesorería → Proyecciones</strong>
+            </li>
+            <li>
+              Haz clic en <strong>Nueva Proyección</strong>
+            </li>
+            <li>
+              Completa:
+              <ul className="list-disc pl-6 mt-1 space-y-1">
+                <li>Tipo: Ingreso o Egreso</li>
+                <li>Categoría: Venta, Compra, Gasto, Salario, Impuesto, Otro</li>
+                <li>Descripción</li>
+                <li>Monto esperado</li>
+                <li>Fecha esperada</li>
+                <li>Si es recurrente (opcional)</li>
+                <li>Notas (opcional)</li>
+              </ul>
+            </li>
+          </ol>
+          <p className="text-sm text-muted-foreground">
+            Cada proyección puede <strong>vincularse</strong> a documentos
+            reales (facturas de venta, facturas de compra, gastos) a medida que
+            se concretan, permitiendo comparar lo proyectado vs lo real.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Las proyecciones ayudan a anticipar necesidades de financiamiento o
+            excedentes de liquidez.
+          </p>
+        </CardContent>
+      </Card>
+
       <Separator />
 
       <Alert>
@@ -274,6 +574,15 @@ export function _TreasuryGuide() {
             <li>
               <strong>Dashboard</strong>: los saldos bancarios y totales de
               cobros/pagos alimentan los KPIs del dashboard
+            </li>
+            <li>
+              <strong>Cheques</strong>: los cheques de terceros se reciben en
+              recibos de cobro; los cheques propios se entregan en órdenes de
+              pago
+            </li>
+            <li>
+              <strong>Cajas</strong>: los cobros y pagos en efectivo se
+              registran contra la sesión de caja abierta
             </li>
           </ul>
         </AlertDescription>

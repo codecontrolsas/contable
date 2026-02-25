@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import { prisma } from '@/shared/lib/prisma';
 import { uploadFile } from '@/shared/lib/storage';
 import { generateCompanyDocumentPath } from '@/shared/utils/documentPaths';
@@ -41,6 +42,7 @@ export interface UploadCompanyDocumentResult {
 export async function uploadCompanyDocument(
   input: UploadCompanyDocumentInput
 ): Promise<UploadCompanyDocumentResult> {
+  await checkPermission('company.documents', 'create', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) {
     return { success: false, error: 'No hay empresa activa' };
@@ -169,6 +171,7 @@ export async function uploadCompanyDocument(
  * Elimina un documento de empresa
  */
 export async function deleteCompanyDocument(id: string) {
+  await checkPermission('company.documents', 'delete', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 

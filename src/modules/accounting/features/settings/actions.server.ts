@@ -4,6 +4,7 @@ import moment from 'moment';
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import { revalidateAccountingRoutes } from '../../shared/utils';
 
 /**
@@ -12,6 +13,7 @@ import { revalidateAccountingRoutes } from '../../shared/utils';
 export async function getAccountingSettings(companyId: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.settings', 'view', { redirect: true });
 
   try {
     const settings = await prisma.accountingSettings.findUnique({
@@ -60,6 +62,7 @@ export async function saveAccountingSettings(
 ) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.settings', 'update', { redirect: true });
 
   try {
     // Validar que el ejercicio no sea mayor a un año
@@ -98,6 +101,7 @@ export async function saveAccountingSettings(
 export async function getLockedPeriod(companyId: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.settings', 'view', { redirect: true });
 
   try {
     const settings = await prisma.accountingSettings.findUnique({
@@ -130,6 +134,7 @@ export async function getLockedPeriod(companyId: string) {
 export async function setLockedPeriod(companyId: string, lockedUntilDate: Date | null) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.settings', 'update', { redirect: true });
 
   try {
     if (lockedUntilDate) {
@@ -183,6 +188,7 @@ export async function setLockedPeriod(companyId: string, lockedUntilDate: Date |
 export async function getActiveAccounts(companyId: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.settings', 'view', { redirect: true });
 
   try {
     const accounts = await prisma.account.findMany({

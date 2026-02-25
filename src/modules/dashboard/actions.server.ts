@@ -3,6 +3,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import { prisma } from '@/shared/lib/prisma';
 import moment from 'moment';
 
@@ -20,6 +21,7 @@ function parsePeriod(period?: string) {
 export async function getDashboardKPIs(period?: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('dashboard', 'view', { redirect: true });
 
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
@@ -173,6 +175,7 @@ export async function getDashboardKPIs(period?: string) {
 export async function getSalesTrend(period?: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('dashboard', 'view', { redirect: true });
 
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
@@ -226,6 +229,7 @@ export async function getSalesTrend(period?: string) {
 export async function getPurchasesTrend(period?: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('dashboard', 'view', { redirect: true });
 
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
@@ -277,6 +281,7 @@ export async function getPurchasesTrend(period?: string) {
 export async function getCriticalStockProducts() {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('dashboard', 'view', { redirect: true });
 
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
@@ -334,6 +339,7 @@ export async function getCriticalStockProducts() {
 export async function getRecentAlerts(period?: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('dashboard', 'view', { redirect: true });
 
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');

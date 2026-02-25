@@ -5,6 +5,7 @@ import { prisma } from '@/shared/lib/prisma';
 import { Prisma } from '@/generated/prisma/client';
 import { logger } from '@/shared/lib/logger';
 import { getActiveCompanyId } from '@/shared/lib/company';
+import { checkPermission } from '@/shared/lib/permissions';
 import { revalidateAccountingRoutes } from '../../shared/utils';
 import {
   AccountType,
@@ -143,6 +144,7 @@ async function calculateBudgetExecution(
 export async function getBudgetsPageData() {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.budgets', 'view', { redirect: true });
 
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No se encontró empresa activa');
@@ -193,6 +195,7 @@ export async function getBudgetsPageData() {
 export async function getBudgets(fiscalYear?: number) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.budgets', 'view', { redirect: true });
 
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No se encontró empresa activa');
@@ -260,6 +263,7 @@ export async function getBudgets(fiscalYear?: number) {
 export async function getBudgetDetail(budgetId: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.budgets', 'view', { redirect: true });
 
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No se encontró empresa activa');
@@ -410,6 +414,7 @@ export async function getBudgetDetail(budgetId: string) {
 export async function getBudgetableAccounts(fiscalYear: number) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.budgets', 'view', { redirect: true });
 
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No se encontró empresa activa');
@@ -453,6 +458,7 @@ export async function getBudgetableAccounts(fiscalYear: number) {
 export async function getAvailableFiscalYears() {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.budgets', 'view', { redirect: true });
 
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No se encontró empresa activa');
@@ -504,6 +510,7 @@ export async function getAvailableFiscalYears() {
 export async function createBudget(input: CreateBudgetInput) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.budgets', 'create', { redirect: true });
 
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No se encontró empresa activa');
@@ -612,6 +619,7 @@ export async function createBudget(input: CreateBudgetInput) {
 export async function updateBudget(id: string, input: UpdateBudgetInput) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.budgets', 'update', { redirect: true });
 
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No se encontró empresa activa');
@@ -673,6 +681,7 @@ export async function updateBudget(id: string, input: UpdateBudgetInput) {
 export async function activateBudget(id: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.budgets', 'approve', { redirect: true });
 
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No se encontró empresa activa');
@@ -726,6 +735,7 @@ export async function activateBudget(id: string) {
 export async function createBudgetRevision(input: CreateRevisionInput) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.budgets', 'update', { redirect: true });
 
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No se encontró empresa activa');
@@ -820,6 +830,7 @@ export async function createBudgetRevision(input: CreateRevisionInput) {
 export async function closeBudget(id: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.budgets', 'approve', { redirect: true });
 
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No se encontró empresa activa');
@@ -865,6 +876,7 @@ export async function closeBudget(id: string) {
 export async function deleteBudget(id: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.budgets', 'delete', { redirect: true });
 
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No se encontró empresa activa');

@@ -19,6 +19,7 @@ import {
   AlertDialogTrigger,
 } from '@/shared/components/ui/alert-dialog';
 
+import { usePermissions } from '@/shared/hooks/usePermissions';
 import { getOpeningBalanceInvoices, deleteOpeningInvoice } from '../actions.server';
 import { _CreateInvoiceDialog } from './_CreateInvoiceDialog';
 import { _InvoiceImportDialog } from './_InvoiceImportDialog';
@@ -43,6 +44,7 @@ interface Props {
 }
 
 export function _PendingPurchasesTab({ suppliers }: Props) {
+  const { hasPermission } = usePermissions();
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
@@ -72,14 +74,16 @@ export function _PendingPurchasesTab({ suppliers }: Props) {
       <CardHeader>
         <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <span>Facturas de Compra Pendientes de Pago</span>
-          <div className="flex gap-2">
-            <_InvoiceImportDialog type="purchases" onImported={handleRefresh} />
-            <_CreateInvoiceDialog
-              type="purchases"
-              suppliers={suppliers}
-              onCreated={handleRefresh}
-            />
-          </div>
+          {hasPermission('accounting.opening-balances', 'create') && (
+            <div className="flex gap-2">
+              <_InvoiceImportDialog type="purchases" onImported={handleRefresh} />
+              <_CreateInvoiceDialog
+                type="purchases"
+                suppliers={suppliers}
+                onCreated={handleRefresh}
+              />
+            </div>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -138,33 +142,35 @@ export function _PendingPurchasesTab({ suppliers }: Props) {
                     <td className="py-2 text-right font-medium">
                       {formatAmount(inv.total)}
                     </td>
-                    <td className="py-2">
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-7 w-7">
-                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>
-                              ¿Eliminar factura?
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Se eliminará la factura {inv.fullNumber}. Esta acción no se puede deshacer.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDelete(inv.id)}
-                            >
-                              Eliminar
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </td>
+                    {hasPermission('accounting.opening-balances', 'delete') && (
+                      <td className="py-2">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7">
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                ¿Eliminar factura?
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Se eliminará la factura {inv.fullNumber}. Esta acción no se puede deshacer.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDelete(inv.id)}
+                              >
+                                Eliminar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

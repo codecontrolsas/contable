@@ -5,6 +5,7 @@ import { clerkClient } from '@clerk/nextjs/server';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { getActiveCompanyId } from '@/shared/lib/company';
+import { checkPermission } from '@/shared/lib/permissions';
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
 import {
   parseSearchParams,
@@ -20,6 +21,8 @@ import { AUDIT_ACTIONS } from '@/shared/lib/permissions';
  * Obtiene los logs de auditoría con paginación
  */
 export async function getAuditLogsPaginated(searchParams: DataTableSearchParams) {
+  await checkPermission('company.general.audit', 'view', { redirect: true });
+
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -96,6 +99,8 @@ export async function getAuditLogsPaginated(searchParams: DataTableSearchParams)
  * Obtiene los tipos de acciones disponibles para filtrar
  */
 export async function getAuditActionTypes() {
+  await checkPermission('company.general.audit', 'view', { redirect: true });
+
   return Object.entries(AUDIT_ACTIONS).map(([key, value]) => ({
     key,
     value,

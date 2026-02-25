@@ -2,6 +2,7 @@
 
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import { prisma } from '@/shared/lib/prisma';
 import { getVehicleStatusInfo } from '@/shared/lib/vehicleStatus';
 import type { VehicleStatusInfo } from '@/shared/lib/vehicleStatus.types';
@@ -14,6 +15,7 @@ const relationSelect = { select: { id: true, name: true } } as const;
  * Optimizado: solo trae los campos necesarios de las relaciones
  */
 export async function getVehicleById(id: string) {
+  await checkPermission('equipment', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -57,6 +59,7 @@ export async function getVehicleById(id: string) {
  * Obtiene la información del estado de documentos de un vehículo (para tooltip)
  */
 export async function getVehicleDocumentStatusInfo(vehicleId: string): Promise<VehicleStatusInfo> {
+  await checkPermission('equipment', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 

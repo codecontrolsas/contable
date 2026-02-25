@@ -1,3 +1,3 @@
 export { UsersList } from './users';
-export { RolesList } from './roles';
+export { RolesList, RoleCreate, RoleEdit } from './roles';
 export { AuditLog } from './audit';

@@ -3,6 +3,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import { revalidateAccountingRoutes } from '../../shared/utils';
 import { type CreateAccountInput } from '../../shared/types';
 import { validateAccountCode, validateAccountNature, validateAccountParent } from '../../shared/validators';
@@ -13,6 +14,7 @@ import { validateAccountCode, validateAccountNature, validateAccountParent } fro
 export async function createAccount(params: { companyId: string, input: CreateAccountInput }) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.accounts', 'create', { redirect: true });
   try {
     const { companyId, input } = params;
 
@@ -49,6 +51,7 @@ export async function createAccount(params: { companyId: string, input: CreateAc
 export async function updateAccount(companyId: string, accountId: string, input: Partial<CreateAccountInput>) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.accounts', 'update', { redirect: true });
 
   try {
     // Validar que la cuenta exista y pertenezca a la empresa
@@ -98,6 +101,7 @@ export async function updateAccount(companyId: string, accountId: string, input:
 export async function deleteAccount(companyId: string, accountId: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.accounts', 'delete', { redirect: true });
 
   try {
     // Validar que la cuenta exista y pertenezca a la empresa
@@ -149,6 +153,7 @@ export async function deleteAccount(companyId: string, accountId: string) {
 export async function getAccounts(companyId: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.accounts', 'view', { redirect: true });
 
   try {
     const accounts = await prisma.account.findMany({
@@ -172,6 +177,7 @@ export async function getAccounts(companyId: string) {
 export async function getAccountById(companyId: string, accountId: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.accounts', 'view', { redirect: true });
 
   try {
     const account = await prisma.account.findUnique({

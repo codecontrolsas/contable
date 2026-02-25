@@ -16,6 +16,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import moment from 'moment';
+import { usePermissions } from '@/shared/hooks/usePermissions';
 import { previewFiscalYearClose, closeFiscalYear } from '../actions.server';
 import { formatAmount } from '../../../shared/utils';
 
@@ -35,6 +36,8 @@ export function _ClosePreviewDialog({
   onClose,
 }: ClosePreviewDialogProps) {
   const router = useRouter();
+  const { hasPermission } = usePermissions();
+  const canApprove = hasPermission('accounting.fiscal-year-close', 'approve');
   const [isLoadingPreview, setIsLoadingPreview] = useState(true);
   const [isClosing, setIsClosing] = useState(false);
   const [preview, setPreview] = useState<PreviewData | null>(null);
@@ -163,7 +166,7 @@ export function _ClosePreviewDialog({
           <AlertDialogCancel disabled={isClosing}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleClose}
-            disabled={isClosing || isLoadingPreview || !!error || !preview}
+            disabled={isClosing || isLoadingPreview || !!error || !preview || !canApprove}
             className="bg-primary text-primary-foreground hover:bg-primary/90"
           >
             {isClosing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

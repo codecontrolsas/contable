@@ -3,6 +3,7 @@
 import { LeadStatus } from '@/generated/prisma/enums';
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import { prisma } from '@/shared/lib/prisma';
 import { revalidatePath } from 'next/cache';
 
@@ -17,6 +18,7 @@ interface GetLeadsParams {
  * Obtiene la lista de leads con paginación
  */
 export async function getLeads(params: GetLeadsParams = {}) {
+  await checkPermission('commercial.leads', 'view', { redirect: true });
   const { page = 1, pageSize = 10, search, status } = params;
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
@@ -92,6 +94,7 @@ export async function getLeads(params: GetLeadsParams = {}) {
  * Obtiene un lead por ID
  */
 export async function getLeadById(id: string) {
+  await checkPermission('commercial.leads', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -122,6 +125,7 @@ export async function getLeadById(id: string) {
  * @param currentContactId - ID del contacto actual para incluirlo en la lista al editar
  */
 export async function getAvailableContactsForLead(currentContactId?: string) {
+  await checkPermission('commercial.leads', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) return [];
 
@@ -174,6 +178,7 @@ export interface CreateLeadInput {
  * Crea un nuevo lead
  */
 export async function createLead(input: CreateLeadInput) {
+  await checkPermission('commercial.leads', 'create', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -227,6 +232,7 @@ export interface UpdateLeadInput extends Partial<CreateLeadInput> {
  * Actualiza un lead existente
  */
 export async function updateLead(id: string, input: UpdateLeadInput) {
+  await checkPermission('commercial.leads', 'update', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -305,6 +311,7 @@ export async function updateLead(id: string, input: UpdateLeadInput) {
  * Actualiza el estado de un lead
  */
 export async function updateLeadStatus(id: string, status: LeadStatus) {
+  await checkPermission('commercial.leads', 'update', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -339,6 +346,7 @@ export interface ConvertLeadInput {
  * Convierte un lead a cliente
  */
 export async function convertLeadToClient(id: string, additionalData?: ConvertLeadInput) {
+  await checkPermission('commercial.leads', 'approve', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -404,6 +412,7 @@ export async function convertLeadToClient(id: string, additionalData?: ConvertLe
  * Elimina un lead (soft delete)
  */
 export async function deleteLead(id: string) {
+  await checkPermission('commercial.leads', 'delete', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 

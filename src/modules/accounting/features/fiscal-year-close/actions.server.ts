@@ -3,6 +3,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import { JournalEntryStatus } from '@/generated/prisma/enums';
 import { revalidateAccountingRoutes } from '../../shared/utils';
 import moment from 'moment';
@@ -38,6 +39,7 @@ interface ClosePreview {
 export async function getFiscalYearStatus(companyId: string): Promise<FiscalYearStatus> {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.fiscal-year-close', 'view', { redirect: true });
 
   try {
     const settings = await prisma.accountingSettings.findUnique({
@@ -93,6 +95,7 @@ export async function getFiscalYearStatus(companyId: string): Promise<FiscalYear
 export async function previewFiscalYearClose(companyId: string): Promise<ClosePreview> {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.fiscal-year-close', 'view', { redirect: true });
 
   try {
     const settings = await prisma.accountingSettings.findUnique({
@@ -229,6 +232,7 @@ export async function previewFiscalYearClose(companyId: string): Promise<ClosePr
 export async function closeFiscalYear(companyId: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.fiscal-year-close', 'approve', { redirect: true });
 
   try {
     const settings = await prisma.accountingSettings.findUnique({

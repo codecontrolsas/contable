@@ -1,4 +1,5 @@
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
+import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { getBankAccounts, getBankAccountsPaginated } from './actions.server';
 import { _BankAccountsTable } from './components/_BankAccountsTable';
@@ -25,6 +26,7 @@ export async function BankAccountsList({ searchParams = {} }: Props) {
   const totalMovements = allAccounts.reduce((acc, account) => acc + (account._count?.movements || 0), 0);
 
   return (
+    <PermissionGuard module="commercial.treasury.bank-accounts" action="view" redirect>
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Cuentas Bancarias</h1>
@@ -81,5 +83,6 @@ export async function BankAccountsList({ searchParams = {} }: Props) {
         searchParams={searchParams}
       />
     </div>
+    </PermissionGuard>
   );
 }

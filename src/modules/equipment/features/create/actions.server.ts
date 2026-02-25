@@ -9,6 +9,7 @@ import type {
 } from '@/generated/prisma/enums';
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import { prisma } from '@/shared/lib/prisma';
 import { revalidatePath } from 'next/cache';
 
@@ -60,6 +61,7 @@ export interface CreateVehicleInput {
  * Crea un nuevo vehículo/equipo
  */
 export async function createVehicle(input: CreateVehicleInput) {
+  await checkPermission('equipment', 'create', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 

@@ -10,6 +10,7 @@ import type {
 } from '@/generated/prisma/enums';
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import { prisma } from '@/shared/lib/prisma';
 import { revalidatePath } from 'next/cache';
 
@@ -87,6 +88,7 @@ function cleanUUID(id: string | null | undefined): string | null {
  * Obtiene el siguiente número de legajo disponible
  */
 export async function getNextEmployeeNumber(): Promise<string> {
+  await checkPermission('employees', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -121,6 +123,7 @@ export async function getNextEmployeeNumber(): Promise<string> {
  * Crea un nuevo empleado
  */
 export async function createEmployee(input: CreateEmployeeInput) {
+  await checkPermission('employees', 'create', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 

@@ -1,4 +1,5 @@
 import { getPurchaseInvoiceById } from '../list/actions.server';
+import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
@@ -36,7 +37,8 @@ export async function PurchaseInvoiceDetail({ invoiceId }: Props) {
       : 'secondary';
 
   return (
-    <div className="space-y-6">
+    <PermissionGuard module="commercial.purchases" action="view" redirect>
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -430,5 +432,6 @@ export async function PurchaseInvoiceDetail({ invoiceId }: Props) {
         </div>
       </div>
     </div>
+    </PermissionGuard>
   );
 }

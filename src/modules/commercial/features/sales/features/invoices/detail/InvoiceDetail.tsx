@@ -1,3 +1,4 @@
+import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 import { getInvoiceById } from '../list/actions.server';
 import { Card } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
@@ -39,7 +40,8 @@ export async function InvoiceDetail({ id }: InvoiceDetailProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <PermissionGuard module="commercial.invoices" action="view" redirect>
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
@@ -303,5 +305,6 @@ export async function InvoiceDetail({ id }: InvoiceDetailProps) {
         documentUrl={invoice.documentUrl}
       />
     </div>
+    </PermissionGuard>
   );
 }

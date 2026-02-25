@@ -2,6 +2,7 @@
 
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import { prisma } from '@/shared/lib/prisma';
 import { getPresignedDownloadUrl } from '@/shared/lib/storage';
 import { isCreditNote } from '@/modules/commercial/shared/voucher-utils';
@@ -14,6 +15,7 @@ const relationSelect = { select: { id: true, name: true } } as const;
  * Obtiene un cliente por ID con información completa para el detalle
  */
 export async function getClientDetailById(id: string) {
+  await checkPermission('commercial.clients', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -89,6 +91,7 @@ export async function getClientDetailById(id: string) {
  * (vehículos que no están asignados a este cliente)
  */
 export async function getAvailableVehiclesForClient(clientId: string) {
+  await checkPermission('commercial.clients', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) return [];
 
@@ -127,6 +130,7 @@ export async function getAvailableVehiclesForClient(clientId: string) {
  * (empleados que no están asignados a este cliente)
  */
 export async function getAvailableEmployeesForClient(clientId: string) {
+  await checkPermission('commercial.clients', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) return [];
 
@@ -164,6 +168,7 @@ export async function getAvailableEmployeesForClient(clientId: string) {
  * Asigna un vehículo a un cliente
  */
 export async function assignVehicleToClient(clientId: string, vehicleId: string) {
+  await checkPermission('commercial.clients', 'update', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -209,6 +214,7 @@ export async function assignVehicleToClient(clientId: string, vehicleId: string)
  * Desasigna un vehículo de un cliente
  */
 export async function unassignVehicleFromClient(clientId: string, vehicleId: string) {
+  await checkPermission('commercial.clients', 'update', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -238,6 +244,7 @@ export async function unassignVehicleFromClient(clientId: string, vehicleId: str
  * Asigna un empleado a un cliente
  */
 export async function assignEmployeeToClient(clientId: string, employeeId: string) {
+  await checkPermission('commercial.clients', 'update', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -283,6 +290,7 @@ export async function assignEmployeeToClient(clientId: string, employeeId: strin
  * Desasigna un empleado de un cliente
  */
 export async function unassignEmployeeFromClient(clientId: string, employeeId: string) {
+  await checkPermission('commercial.clients', 'update', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -314,6 +322,7 @@ export async function unassignEmployeeFromClient(clientId: string, employeeId: s
  * Obtiene la cuenta corriente completa del cliente
  */
 export async function getClientAccountStatement(clientId: string) {
+  await checkPermission('commercial.clients', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 

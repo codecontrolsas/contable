@@ -1,3 +1,4 @@
+import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 import { getInvoiceById } from '../list/actions.server';
 import {
   getActiveCustomers,
@@ -43,24 +44,26 @@ export async function EditInvoice({ id }: EditInvoiceProps) {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">
-          Editar Factura {invoice.fullNumber}
-        </h2>
-        <p className="text-muted-foreground">
-          Modifica los datos de la factura en borrador
-        </p>
-      </div>
+    <PermissionGuard module="commercial.invoices" action="update" redirect>
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">
+            Editar Factura {invoice.fullNumber}
+          </h2>
+          <p className="text-muted-foreground">
+            Modifica los datos de la factura en borrador
+          </p>
+        </div>
 
-      <InvoiceForm
-        customers={customers}
-        pointsOfSale={pointsOfSale}
-        products={products}
-        mode="edit"
-        invoiceId={id}
-        initialData={initialData}
-      />
-    </div>
+        <InvoiceForm
+          customers={customers}
+          pointsOfSale={pointsOfSale}
+          products={products}
+          mode="edit"
+          invoiceId={id}
+          initialData={initialData}
+        />
+      </div>
+    </PermissionGuard>
   );
 }

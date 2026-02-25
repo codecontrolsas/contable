@@ -4,6 +4,7 @@ import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { revalidatePath } from 'next/cache';
 import { getActiveCompanyId } from '@/shared/lib/company';
+import { checkPermission } from '@/shared/lib/permissions';
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
 import {
   buildSearchWhere,
@@ -35,6 +36,7 @@ export interface UpdateJobPositionInput {
 export async function getJobPositionsPaginated(searchParams: DataTableSearchParams) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.job-positions', 'view', { redirect: true });
 
   try {
     const state = parseSearchParams(searchParams);
@@ -71,6 +73,7 @@ export async function getJobPositionsPaginated(searchParams: DataTableSearchPara
 export async function getAllJobPositions() {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.job-positions', 'view', { redirect: true });
 
   try {
     const jobPositions = await prisma.jobPosition.findMany({
@@ -121,6 +124,7 @@ export async function getJobPositionsForSelect() {
 export async function getJobPositionById(id: string) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.job-positions', 'view', { redirect: true });
 
   try {
     const jobPosition = await prisma.jobPosition.findFirst({
@@ -151,6 +155,7 @@ export async function getJobPositionById(id: string) {
 export async function createJobPosition(input: CreateJobPositionInput) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.job-positions', 'create', { redirect: true });
 
   try {
     const jobPosition = await prisma.jobPosition.create({
@@ -177,6 +182,7 @@ export async function createJobPosition(input: CreateJobPositionInput) {
 export async function updateJobPosition(id: string, input: UpdateJobPositionInput) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.job-positions', 'update', { redirect: true });
 
   try {
     const existing = await prisma.jobPosition.findFirst({
@@ -211,6 +217,7 @@ export async function updateJobPosition(id: string, input: UpdateJobPositionInpu
 export async function deleteJobPosition(id: string) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.job-positions', 'delete', { redirect: true });
 
   try {
     const existing = await prisma.jobPosition.findFirst({

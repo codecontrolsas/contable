@@ -4,6 +4,7 @@ import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/shared/lib/prisma';
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import type { Prisma } from '@prisma/client';
 import { isCreditNote } from '@/modules/commercial/shared/voucher-utils';
 
@@ -11,6 +12,7 @@ import { isCreditNote } from '@/modules/commercial/shared/voucher-utils';
  * Obtiene el detalle completo del proveedor con su cuenta corriente
  */
 export async function getSupplierAccountStatement(supplierId: string) {
+  await checkPermission('commercial.suppliers', 'view', { redirect: true });
   try {
     const { userId } = await auth();
     if (!userId) throw new Error('No autenticado');

@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu';
 import { useState } from 'react';
+import { usePermissions } from '@/shared/hooks/usePermissions';
 import { _EditAccountModal } from './_EditAccountModal';
 import { _DeleteAccountDialog } from './_DeleteAccountDialog';
 
@@ -30,9 +31,12 @@ interface AccountsTableProps {
 }
 
 export function _AccountsTable({ accounts, companyId }: AccountsTableProps) {
+  const { hasPermission } = usePermissions();
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [editAccount, setEditAccount] = useState<AccountWithChildren | null>(null);
   const [deleteAccount, setDeleteAccount] = useState<AccountWithChildren | null>(null);
+  const canUpdate = hasPermission('accounting.accounts', 'update');
+  const canDelete = hasPermission('accounting.accounts', 'delete');
 
   const toggleRow = (accountId: string) => {
     const newExpanded = new Set(expandedRows);
@@ -92,26 +96,32 @@ export function _AccountsTable({ accounts, companyId }: AccountsTableProps) {
           <td>{getAccountTypeLabel(account.type)}</td>
           <td>{getAccountNatureLabel(account.nature)}</td>
           <td className="text-right">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setEditAccount(account)}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Editar
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setDeleteAccount(account)}
-                  className="text-destructive"
-                >
-                  <Trash className="mr-2 h-4 w-4" />
-                  Eliminar
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {(canUpdate || canDelete) && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {canUpdate && (
+                    <DropdownMenuItem onClick={() => setEditAccount(account)}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Editar
+                    </DropdownMenuItem>
+                  )}
+                  {canDelete && (
+                    <DropdownMenuItem
+                      onClick={() => setDeleteAccount(account)}
+                      className="text-destructive"
+                    >
+                      <Trash className="mr-2 h-4 w-4" />
+                      Eliminar
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </td>
         </tr>
         {isExpanded &&

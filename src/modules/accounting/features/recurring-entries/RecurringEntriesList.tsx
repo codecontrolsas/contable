@@ -1,12 +1,10 @@
 import { getActiveCompanyId } from '@/shared/lib/company';
+import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 import { getRecurringEntries } from './actions.server';
 import { getActiveAccounts } from '../settings/actions.server';
 import { _RecurringEntriesTable } from './components/_RecurringEntriesTable';
 
-export async function RecurringEntriesList() {
-  const companyId = await getActiveCompanyId();
-  if (!companyId) throw new Error('No hay empresa activa');
-
+async function RecurringEntriesContent({ companyId }: { companyId: string }) {
   const [entries, accounts] = await Promise.all([
     getRecurringEntries(companyId),
     getActiveAccounts(companyId),
@@ -27,5 +25,16 @@ export async function RecurringEntriesList() {
         accounts={accounts}
       />
     </div>
+  );
+}
+
+export async function RecurringEntriesList() {
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  return (
+    <PermissionGuard module="accounting.recurring-entries" action="view" redirect>
+      <RecurringEntriesContent companyId={companyId} />
+    </PermissionGuard>
   );
 }

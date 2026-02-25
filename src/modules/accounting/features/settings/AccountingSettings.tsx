@@ -3,12 +3,11 @@ import { getAccountingSettings, getActiveAccounts } from './actions.server';
 import { _AccountingSettingsForm } from './components/_AccountingSettingsForm';
 import { _CommercialIntegrationForm } from './components/_CommercialIntegrationForm';
 import { _PeriodLockingForm } from './components/_PeriodLockingForm';
+import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 
 import { getActiveCompanyId } from '@/shared/lib/company';
 
-export async function AccountingSettings() {
-  const companyId = await getActiveCompanyId();
-  if (!companyId) throw new Error('No hay empresa activa');
+async function AccountingSettingsContent({ companyId }: { companyId: string }) {
   const settings = await getAccountingSettings(companyId);
   const accounts = await getActiveAccounts(companyId);
 
@@ -91,5 +90,16 @@ export async function AccountingSettings() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export async function AccountingSettings() {
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  return (
+    <PermissionGuard module="accounting.settings" action="view" redirect>
+      <AccountingSettingsContent companyId={companyId} />
+    </PermissionGuard>
   );
 }

@@ -10,6 +10,7 @@ import type {
 } from '@/generated/prisma/enums';
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import { prisma } from '@/shared/lib/prisma';
 import { getPresignedDownloadUrl } from '@/shared/lib/storage';
 import { revalidatePath } from 'next/cache';
@@ -92,6 +93,7 @@ function cleanUUID(id: string | null | undefined): string | null {
  * Optimizado: solo trae los campos necesarios de las relaciones
  */
 export async function getEmployeeForEdit(id: string) {
+  await checkPermission('employees', 'update', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -158,6 +160,7 @@ export type EmployeeForEdit = Awaited<ReturnType<typeof getEmployeeForEdit>>;
  * Actualiza un empleado existente
  */
 export async function updateEmployee(id: string, input: UpdateEmployeeInput) {
+  await checkPermission('employees', 'update', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 

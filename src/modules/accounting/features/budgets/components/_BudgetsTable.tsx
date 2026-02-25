@@ -30,6 +30,7 @@ import {
   AlertDialogTitle,
 } from '@/shared/components/ui/alert-dialog';
 import { Skeleton } from '@/shared/components/ui/skeleton';
+import { usePermissions } from '@/shared/hooks/usePermissions';
 
 import { BudgetStatus } from '@/generated/prisma/enums';
 import {
@@ -69,6 +70,10 @@ const TYPE_LABELS: Record<string, string> = {
 
 export function _BudgetsTable({ fiscalYear, onViewDetail }: BudgetsTableProps) {
   const queryClient = useQueryClient();
+  const { hasPermission } = usePermissions();
+  const canCreate = hasPermission('accounting.budgets', 'create');
+  const canApprove = hasPermission('accounting.budgets', 'approve');
+  const canDelete = hasPermission('accounting.budgets', 'delete');
 
   // Confirmation dialog state
   const [confirmAction, setConfirmAction] = useState<{
@@ -254,7 +259,7 @@ export function _BudgetsTable({ fiscalYear, onViewDetail }: BudgetsTableProps) {
                         Ver Detalle
                       </DropdownMenuItem>
 
-                      {budget.status === BudgetStatus.DRAFT && (
+                      {canApprove && budget.status === BudgetStatus.DRAFT && (
                         <DropdownMenuItem
                           onClick={() =>
                             setConfirmAction({
@@ -268,7 +273,7 @@ export function _BudgetsTable({ fiscalYear, onViewDetail }: BudgetsTableProps) {
                         </DropdownMenuItem>
                       )}
 
-                      {budget.status === BudgetStatus.ACTIVE && (
+                      {canApprove && budget.status === BudgetStatus.ACTIVE && (
                         <DropdownMenuItem
                           onClick={() =>
                             setConfirmAction({
@@ -282,7 +287,7 @@ export function _BudgetsTable({ fiscalYear, onViewDetail }: BudgetsTableProps) {
                         </DropdownMenuItem>
                       )}
 
-                      {budget.status === BudgetStatus.DRAFT && (
+                      {canDelete && budget.status === BudgetStatus.DRAFT && (
                         <DropdownMenuItem
                           className="text-destructive"
                           onClick={() =>

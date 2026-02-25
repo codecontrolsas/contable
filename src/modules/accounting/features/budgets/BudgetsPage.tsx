@@ -9,8 +9,9 @@ import {
 import { AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/shared/components/ui/button';
+import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 
-export async function BudgetsPage() {
+async function BudgetsPageContent() {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -87,5 +88,13 @@ export async function BudgetsPage() {
         }
       />
     </div>
+  );
+}
+
+export async function BudgetsPage() {
+  return (
+    <PermissionGuard module="accounting.budgets" action="view" redirect>
+      <BudgetsPageContent />
+    </PermissionGuard>
   );
 }

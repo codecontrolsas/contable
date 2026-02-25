@@ -4,6 +4,7 @@ import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { revalidatePath } from 'next/cache';
 import { getActiveCompanyId } from '@/shared/lib/company';
+import { checkPermission } from '@/shared/lib/permissions';
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
 import {
   buildSearchWhere,
@@ -33,6 +34,7 @@ export interface UpdateCostCenterInput {
 export async function getCostCentersPaginated(searchParams: DataTableSearchParams) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.cost-centers', 'view', { redirect: true });
 
   try {
     // Parsear parámetros de URL
@@ -73,6 +75,7 @@ export async function getCostCentersPaginated(searchParams: DataTableSearchParam
 export async function getAllCostCenters() {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.cost-centers', 'view', { redirect: true });
 
   try {
     const costCenters = await prisma.costCenter.findMany({
@@ -123,6 +126,7 @@ export async function getCostCentersForSelect() {
 export async function getCostCenterById(id: string) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.cost-centers', 'view', { redirect: true });
 
   try {
     const costCenter = await prisma.costCenter.findFirst({
@@ -153,6 +157,7 @@ export async function getCostCenterById(id: string) {
 export async function createCostCenter(input: CreateCostCenterInput) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.cost-centers', 'create', { redirect: true });
 
   try {
     const costCenter = await prisma.costCenter.create({
@@ -178,6 +183,7 @@ export async function createCostCenter(input: CreateCostCenterInput) {
 export async function updateCostCenter(id: string, input: UpdateCostCenterInput) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.cost-centers', 'update', { redirect: true });
 
   try {
     const existing = await prisma.costCenter.findFirst({
@@ -213,6 +219,7 @@ export async function updateCostCenter(id: string, input: UpdateCostCenterInput)
 export async function deleteCostCenter(id: string) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.cost-centers', 'delete', { redirect: true });
 
   try {
     const existing = await prisma.costCenter.findFirst({

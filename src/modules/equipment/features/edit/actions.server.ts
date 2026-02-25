@@ -9,6 +9,7 @@ import type {
 } from '@/generated/prisma/enums';
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import { prisma } from '@/shared/lib/prisma';
 import { revalidatePath } from 'next/cache';
 
@@ -60,6 +61,7 @@ export interface UpdateVehicleInput {
  * Obtiene un vehículo para edición con sus datos de formulario
  */
 export async function getVehicleForEdit(id: string) {
+  await checkPermission('equipment', 'update', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -95,6 +97,7 @@ export type GetVehicleForEditType = Awaited<ReturnType<typeof getVehicleForEdit>
  * Actualiza un vehículo/equipo
  */
 export async function updateVehicle(id: string, input: UpdateVehicleInput) {
+  await checkPermission('equipment', 'update', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 

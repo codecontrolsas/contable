@@ -10,6 +10,7 @@ import {
   parseSearchParams,
   stateToPrismaParams,
 } from '@/shared/components/common/DataTable/helpers';
+import { checkPermission } from '@/shared/lib/permissions';
 import type { CustomerTaxCondition } from '@/generated/prisma/enums';
 
 // ============================================
@@ -44,6 +45,7 @@ export interface UpdateContractorInput {
 export async function getContractorsPaginated(searchParams: DataTableSearchParams) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.contractors', 'view', { redirect: true });
 
   try {
     // Parsear parámetros de URL
@@ -89,6 +91,7 @@ export async function getContractorsPaginated(searchParams: DataTableSearchParam
 export async function getAllContractors() {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.contractors', 'view', { redirect: true });
 
   try {
     return await prisma.contractor.findMany({
@@ -127,6 +130,7 @@ export async function getContractorsForSelect() {
 export async function getContractorById(id: string) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.contractors', 'view', { redirect: true });
 
   try {
     const contractor = await prisma.contractor.findFirst({
@@ -154,6 +158,7 @@ export async function getContractorById(id: string) {
 export async function createContractor(input: CreateContractorInput) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.contractors', 'create', { redirect: true });
 
   try {
     const contractor = await prisma.contractor.create({
@@ -184,6 +189,7 @@ export async function createContractor(input: CreateContractorInput) {
 export async function updateContractor(id: string, input: UpdateContractorInput) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.contractors', 'update', { redirect: true });
 
   try {
     const existing = await prisma.contractor.findFirst({
@@ -222,6 +228,7 @@ export async function updateContractor(id: string, input: UpdateContractorInput)
 export async function deleteContractor(id: string) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.contractors', 'delete', { redirect: true });
 
   try {
     const existing = await prisma.contractor.findFirst({

@@ -7,6 +7,7 @@ import { CalendarDays, Lock, LockOpen } from 'lucide-react';
 import moment from 'moment';
 import Link from 'next/link';
 import { useState } from 'react';
+import { usePermissions } from '@/shared/hooks/usePermissions';
 import { _ClosePreviewDialog } from './_ClosePreviewDialog';
 
 interface FiscalYearStatusProps {
@@ -23,6 +24,8 @@ interface FiscalYearStatusProps {
 }
 
 export function _FiscalYearStatus({ companyId, status }: FiscalYearStatusProps) {
+  const { hasPermission } = usePermissions();
+  const canApprove = hasPermission('accounting.fiscal-year-close', 'approve');
   const [showCloseDialog, setShowCloseDialog] = useState(false);
 
   const missingConfig = !status.resultAccountId;
@@ -79,16 +82,18 @@ export function _FiscalYearStatus({ companyId, status }: FiscalYearStatusProps) 
                 )}
               </div>
 
-              <Button
-                onClick={() => setShowCloseDialog(true)}
-                disabled={missingConfig}
-                className="w-full"
-              >
-                <Lock className="mr-2 h-4 w-4" />
-                Cerrar Ejercicio Fiscal
-              </Button>
+              {canApprove && (
+                <Button
+                  onClick={() => setShowCloseDialog(true)}
+                  disabled={missingConfig}
+                  className="w-full"
+                >
+                  <Lock className="mr-2 h-4 w-4" />
+                  Cerrar Ejercicio Fiscal
+                </Button>
+              )}
 
-              {missingConfig && (
+              {canApprove && missingConfig && (
                 <p className="text-xs text-muted-foreground text-center">
                   Debe configurar la cuenta de Resultado del Ejercicio antes de cerrar
                 </p>

@@ -4,6 +4,7 @@ import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { getActiveCompanyId } from '@/shared/lib/company';
+import { checkPermission } from '@/shared/lib/permissions';
 import { revalidateAccountingRoutes } from '../../shared/utils';
 import {
   AccountType,
@@ -39,6 +40,7 @@ export async function getOpeningBalancesPageData() {
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
+  await checkPermission('accounting.opening-balances', 'view', { redirect: true });
 
   try {
     const [accounts, settings, contractors, suppliers, pointsOfSale] =
@@ -178,6 +180,7 @@ export async function getOpeningBalanceInvoices() {
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
+  await checkPermission('accounting.opening-balances', 'view', { redirect: true });
 
   try {
     const [salesInvoices, purchaseInvoices] = await Promise.all([
@@ -310,6 +313,7 @@ export async function saveOpeningBalanceEntry(
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
+  await checkPermission('accounting.opening-balances', 'create', { redirect: true });
 
   // Validar input
   const parsed = openingBalanceFormSchema.safeParse(input);
@@ -498,6 +502,7 @@ export async function createOpeningSalesInvoice(
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
+  await checkPermission('accounting.opening-balances', 'create', { redirect: true });
 
   const parsed = openingSalesInvoiceSchema.safeParse(input);
   if (!parsed.success) {
@@ -599,6 +604,7 @@ export async function createOpeningPurchaseInvoice(
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
+  await checkPermission('accounting.opening-balances', 'create', { redirect: true });
 
   const parsed = openingPurchaseInvoiceSchema.safeParse(input);
   if (!parsed.success) {
@@ -701,6 +707,7 @@ export async function deleteOpeningInvoice(
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
+  await checkPermission('accounting.opening-balances', 'delete', { redirect: true });
 
   try {
     if (type === 'sales') {
@@ -794,6 +801,7 @@ export async function importOpeningSalesInvoicesFromExcel(
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
+  await checkPermission('accounting.opening-balances', 'create', { redirect: true });
 
   try {
     const ExcelJS = (await import('exceljs')).default;
@@ -955,6 +963,7 @@ export async function importOpeningPurchaseInvoicesFromExcel(
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
+  await checkPermission('accounting.opening-balances', 'create', { redirect: true });
 
   try {
     const ExcelJS = (await import('exceljs')).default;

@@ -1,4 +1,4 @@
-import { checkPermission } from '@/shared/lib/permissions';
+import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 import { getSupplierById } from '../list/actions.server';
 import { getSupplierAccountStatement } from './actions.server';
 import { _SupplierDetailContent } from './components/_SupplierDetailContent';
@@ -11,8 +11,6 @@ interface SupplierDetailProps {
 }
 
 export async function SupplierDetail({ supplierId }: SupplierDetailProps) {
-  await checkPermission('commercial.suppliers', 'view');
-
   const [supplier, accountStatement] = await Promise.all([
     getSupplierById(supplierId),
     getSupplierAccountStatement(supplierId),
@@ -23,19 +21,21 @@ export async function SupplierDetail({ supplierId }: SupplierDetailProps) {
   }
 
   return (
-    <Tabs defaultValue="general" className="w-full">
-      <TabsList className="grid w-full max-w-md grid-cols-2">
-        <TabsTrigger value="general">Información General</TabsTrigger>
-        <TabsTrigger value="account">Cuenta Corriente</TabsTrigger>
-      </TabsList>
+    <PermissionGuard module="commercial.suppliers" action="view" redirect>
+      <Tabs defaultValue="general" className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="general">Información General</TabsTrigger>
+          <TabsTrigger value="account">Cuenta Corriente</TabsTrigger>
+        </TabsList>
 
-      <TabsContent value="general" className="mt-6">
-        <_SupplierDetailContent supplier={supplier} />
-      </TabsContent>
+        <TabsContent value="general" className="mt-6">
+          <_SupplierDetailContent supplier={supplier} />
+        </TabsContent>
 
-      <TabsContent value="account" className="mt-6">
-        <_SupplierAccountStatementTab accountStatement={accountStatement} />
-      </TabsContent>
-    </Tabs>
+        <TabsContent value="account" className="mt-6">
+          <_SupplierAccountStatementTab accountStatement={accountStatement} />
+        </TabsContent>
+      </Tabs>
+    </PermissionGuard>
   );
 }

@@ -4,6 +4,7 @@ import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { getActiveCompanyId } from '@/shared/lib/company';
+import { checkPermission } from '@/shared/lib/permissions';
 import { createInvoiceSchema } from '../shared/validators';
 import { revalidatePath } from 'next/cache';
 import { Prisma } from '@/generated/prisma/client';
@@ -19,6 +20,7 @@ import { applySalesCreditNote } from '@/modules/commercial/shared/credit-note-co
 
 // Obtener todas las facturas de venta
 export async function getInvoices() {
+  await checkPermission('commercial.invoices', 'view', { redirect: true });
   const { userId: authUserId } = await auth();
   if (!authUserId) throw new Error('No autenticado');
   const userId = authUserId;
@@ -85,6 +87,7 @@ export async function getInvoices() {
 
 // Obtener facturas de venta con paginación server-side para DataTable
 export async function getInvoicesPaginated(searchParams: DataTableSearchParams) {
+  await checkPermission('commercial.invoices', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -169,6 +172,7 @@ export async function getInvoicesPaginated(searchParams: DataTableSearchParams) 
 
 // Obtener una factura por ID
 export async function getInvoiceById(id: string) {
+  await checkPermission('commercial.invoices', 'view', { redirect: true });
   const { userId: authUserId } = await auth();
   if (!authUserId) throw new Error('No autenticado');
   const userId = authUserId;
@@ -350,6 +354,7 @@ export async function getNextInvoiceNumber(
   pointOfSaleId: string,
   voucherType: string
 ): Promise<number> {
+  await checkPermission('commercial.invoices', 'view', { redirect: true });
   const { userId: authUserId } = await auth();
   if (!authUserId) throw new Error('No autenticado');
 
@@ -404,6 +409,7 @@ function calculateLineAmounts(
 
 // Obtener facturas de un cliente para select de factura original (NC/ND)
 export async function getCustomerInvoicesForSelect(customerId: string) {
+  await checkPermission('commercial.invoices', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -441,6 +447,7 @@ export async function getCustomerInvoicesForSelect(customerId: string) {
 
 // Crear una nueva factura
 export async function createInvoice(data: unknown) {
+  await checkPermission('commercial.invoices', 'create', { redirect: true });
   const { userId: authUserId } = await auth();
   if (!authUserId) throw new Error('No autenticado');
   const userId = authUserId;
@@ -602,6 +609,7 @@ export async function createInvoice(data: unknown) {
 
 // Confirmar factura (cambia estado de DRAFT a CONFIRMED y descuenta stock)
 export async function confirmInvoice(id: string) {
+  await checkPermission('commercial.invoices', 'approve', { redirect: true });
   const { userId: authUserId } = await auth();
   if (!authUserId) throw new Error('No autenticado');
   const userId = authUserId;
@@ -827,6 +835,7 @@ export async function confirmInvoice(id: string) {
 
 // Obtener tipos de comprobante permitidos según cliente seleccionado
 export async function getAllowedVoucherTypesForCustomer(customerId: string) {
+  await checkPermission('commercial.invoices', 'view', { redirect: true });
   const { userId: authUserId } = await auth();
   if (!authUserId) throw new Error('No autenticado');
 
@@ -877,6 +886,7 @@ export async function getAllowedVoucherTypesForCustomer(customerId: string) {
 
 // Actualizar factura en borrador
 export async function updateInvoice(id: string, data: unknown) {
+  await checkPermission('commercial.invoices', 'update', { redirect: true });
   const { userId: authUserId } = await auth();
   if (!authUserId) throw new Error('No autenticado');
   const userId = authUserId;
@@ -956,6 +966,7 @@ export async function updateInvoice(id: string, data: unknown) {
 
 // Anular factura (con devolución de stock si estaba confirmada)
 export async function cancelInvoice(id: string) {
+  await checkPermission('commercial.invoices', 'delete', { redirect: true });
   const { userId: authUserId } = await auth();
   if (!authUserId) throw new Error('No autenticado');
   const userId = authUserId;

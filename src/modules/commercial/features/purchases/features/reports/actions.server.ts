@@ -4,12 +4,14 @@ import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { getActiveCompanyId } from '@/shared/lib/company';
+import { checkPermission } from '@/shared/lib/permissions';
 
 // ============================================
 // COMPRAS POR PERÍODO
 // ============================================
 
 export async function getPurchasesByPeriod(startDate: Date, endDate: Date) {
+  await checkPermission('commercial.purchases', 'view', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -72,6 +74,7 @@ export async function getPurchasesByPeriod(startDate: Date, endDate: Date) {
 // ============================================
 
 export async function getPurchasesBySupplier(startDate: Date, endDate: Date) {
+  await checkPermission('commercial.purchases', 'view', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -163,6 +166,7 @@ export async function getPurchasesBySupplier(startDate: Date, endDate: Date) {
 // ============================================
 
 export async function getPurchasesByProduct(startDate: Date, endDate: Date) {
+  await checkPermission('commercial.purchases', 'view', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -262,6 +266,7 @@ export async function getPurchasesByProduct(startDate: Date, endDate: Date) {
 // ============================================
 
 export async function getVATPurchaseBook(startDate: Date, endDate: Date) {
+  await checkPermission('commercial.purchases', 'view', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 

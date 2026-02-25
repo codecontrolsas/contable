@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import { prisma } from '@/shared/lib/prisma';
 import { recalculateVehicleStatus } from '@/shared/lib/vehicleStatus';
 import { uploadFile, deleteFile } from '@/shared/lib/storage';
@@ -48,6 +49,7 @@ export interface UploadDocumentResult {
 export async function uploadEquipmentDocument(
   input: UploadEquipmentDocumentInput
 ): Promise<UploadDocumentResult> {
+  await checkPermission('documents', 'create', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) {
     return { success: false, error: 'No hay empresa activa' };
@@ -295,6 +297,7 @@ export async function deleteEquipmentDocument(
   id: string,
   vehicleId: string
 ): Promise<UploadDocumentResult> {
+  await checkPermission('documents', 'delete', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) {
     return { success: false, error: 'No hay empresa activa' };
@@ -380,6 +383,7 @@ export async function revertEquipmentDocumentVersion(
   id: string,
   vehicleId: string
 ): Promise<UploadDocumentResult> {
+  await checkPermission('documents', 'update', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) {
     return { success: false, error: 'No hay empresa activa' };

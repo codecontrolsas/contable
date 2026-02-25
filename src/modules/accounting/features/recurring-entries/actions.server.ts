@@ -3,6 +3,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import { JournalEntryStatus } from '@/generated/prisma/enums';
 import { type RecurringFrequency } from '@/generated/prisma/enums';
 import { revalidateAccountingRoutes } from '../../shared/utils';
@@ -44,6 +45,7 @@ const FREQUENCY_LABELS: Record<string, string> = {
 export async function getRecurringEntries(companyId: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.recurring-entries', 'view', { redirect: true });
 
   try {
     const entries = await prisma.recurringEntry.findMany({
@@ -94,6 +96,7 @@ export async function createRecurringEntry(
 ) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.recurring-entries', 'create', { redirect: true });
 
   try {
     // Validar con Zod
@@ -143,6 +146,7 @@ export async function createRecurringEntry(
 export async function deleteRecurringEntry(companyId: string, id: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.recurring-entries', 'delete', { redirect: true });
 
   try {
     const entry = await prisma.recurringEntry.findUnique({
@@ -173,6 +177,7 @@ export async function deleteRecurringEntry(companyId: string, id: string) {
 export async function generateRecurringEntry(companyId: string, recurringEntryId: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.recurring-entries', 'create', { redirect: true });
 
   try {
     const recurring = await prisma.recurringEntry.findUnique({
@@ -264,6 +269,7 @@ export async function generateRecurringEntry(companyId: string, recurringEntryId
 export async function generateAllPendingRecurringEntries(companyId: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.recurring-entries', 'create', { redirect: true });
 
   try {
     const now = new Date();

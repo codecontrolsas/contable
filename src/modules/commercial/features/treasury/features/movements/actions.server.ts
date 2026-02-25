@@ -7,11 +7,13 @@ import { prisma } from '@/shared/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { Prisma } from '@/generated/prisma/client';
 import { cashMovementSchema, type CashMovementFormData } from '../../shared/validators';
+import { checkPermission } from '@/shared/lib/permissions';
 
 /**
  * Crea un nuevo movimiento de caja
  */
 export async function createCashMovement(data: CashMovementFormData) {
+  await checkPermission('commercial.treasury.cash-registers', 'create', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -113,6 +115,7 @@ export async function createCashMovement(data: CashMovementFormData) {
  * Obtiene los movimientos de una sesión
  */
 export async function getSessionMovements(sessionId: string) {
+  await checkPermission('commercial.treasury.cash-registers', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -149,6 +152,7 @@ export async function getSessionMovements(sessionId: string) {
  * Obtiene los movimientos de una caja (todas las sesiones)
  */
 export async function getCashRegisterMovements(cashRegisterId: string, limit = 50) {
+  await checkPermission('commercial.treasury.cash-registers', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -193,6 +197,7 @@ export async function getCashRegisterMovements(cashRegisterId: string, limit = 5
  * Elimina un movimiento de caja (solo si la sesión está abierta)
  */
 export async function deleteCashMovement(movementId: string) {
+  await checkPermission('commercial.treasury.cash-registers', 'delete', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 

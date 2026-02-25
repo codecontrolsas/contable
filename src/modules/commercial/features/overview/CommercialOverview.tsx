@@ -2,11 +2,9 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Package, Users, FolderTree, ArrowRight, DollarSign, Warehouse, ClipboardList, History } from 'lucide-react';
-import { checkPermission } from '@/shared/lib/permissions';
+import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 
 export async function CommercialOverview() {
-  await checkPermission('commercial', 'read');
-
   const modules = [
     {
       title: 'Proveedores',
@@ -67,6 +65,7 @@ export async function CommercialOverview() {
   ];
 
   return (
+    <PermissionGuard module="commercial" action="view" redirect>
     <div className="flex flex-1 flex-col gap-6">
       <div>
         <h1 className="text-3xl font-bold">Módulo Comercial</h1>
@@ -148,5 +147,6 @@ export async function CommercialOverview() {
         </div>
       </div>
     </div>
+    </PermissionGuard>
   );
 }

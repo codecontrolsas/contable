@@ -1,3 +1,4 @@
+import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import {
   TrendingUp,
@@ -28,23 +29,23 @@ interface DashboardContentProps {
 }
 
 export async function DashboardContent({ period }: DashboardContentProps) {
-  // Validar y normalizar el período
-  const validPeriod = period && moment(period, 'YYYY-MM', true).isValid() ? period : undefined;
-  const displayPeriod = validPeriod || moment().format('YYYY-MM');
-  const isCurrentMonth = !validPeriod || moment(validPeriod, 'YYYY-MM').isSame(moment(), 'month');
+  async function Content() {
+    const validPeriod = period && moment(period, 'YYYY-MM', true).isValid() ? period : undefined;
+    const displayPeriod = validPeriod || moment().format('YYYY-MM');
+    const isCurrentMonth = !validPeriod || moment(validPeriod, 'YYYY-MM').isSame(moment(), 'month');
 
-  const [kpis, salesTrend, purchasesTrend, criticalStock, alerts] = await Promise.all([
-    getDashboardKPIs(validPeriod),
-    getSalesTrend(validPeriod),
-    getPurchasesTrend(validPeriod),
-    getCriticalStockProducts(),
-    getRecentAlerts(validPeriod),
-  ]);
+    const [kpis, salesTrend, purchasesTrend, criticalStock, alerts] = await Promise.all([
+      getDashboardKPIs(validPeriod),
+      getSalesTrend(validPeriod),
+      getPurchasesTrend(validPeriod),
+      getCriticalStockProducts(),
+      getRecentAlerts(validPeriod),
+    ]);
 
-  const periodLabel = moment(displayPeriod, 'YYYY-MM').format('MMMM YYYY');
+    const periodLabel = moment(displayPeriod, 'YYYY-MM').format('MMMM YYYY');
 
-  return (
-    <div className="space-y-6">
+    return (
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -179,5 +180,12 @@ export async function DashboardContent({ period }: DashboardContentProps) {
         <_AlertsList alerts={alerts} />
       </div>
     </div>
+    );
+  }
+
+  return (
+    <PermissionGuard module="dashboard" action="view" redirect>
+      <Content />
+    </PermissionGuard>
   );
 }

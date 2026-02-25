@@ -4,6 +4,7 @@ import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/shared/lib/prisma';
 import { Prisma } from '@/generated/prisma/client';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import { AccountNature, AccountType, BudgetStatus, JournalEntryStatus } from '@/generated/prisma/enums';
 import moment from 'moment';
 import {
@@ -98,6 +99,7 @@ function startOfDay(date: Date): Date {
 export async function getTrialBalance(companyId: string, fromDate: Date, toDate: Date) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.reports', 'view', { redirect: true });
 
   // Ajustar fechas para incluir todo el rango
   const from = startOfDay(fromDate);
@@ -184,6 +186,7 @@ export async function getTrialBalance(companyId: string, fromDate: Date, toDate:
 export async function getJournalBook(companyId: string, fromDate: Date, toDate: Date) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.reports', 'view', { redirect: true });
 
   // Ajustar fechas para incluir todo el rango
   const from = startOfDay(fromDate);
@@ -230,6 +233,7 @@ export async function getJournalBook(companyId: string, fromDate: Date, toDate: 
 export async function getGeneralLedger(companyId: string, fromDate: Date, toDate: Date) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.reports', 'view', { redirect: true });
 
   // Ajustar fechas para incluir todo el rango
   const from = startOfDay(fromDate);
@@ -359,6 +363,7 @@ interface BalanceSheetResult {
 export async function getBalanceSheet(companyId: string, asOfDate: Date) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.reports', 'view', { redirect: true });
 
   const date = endOfDay(asOfDate);
 
@@ -484,6 +489,7 @@ interface IncomeStatementResult {
 export async function getIncomeStatement(companyId: string, fromDate: Date, toDate: Date) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.reports', 'view', { redirect: true });
 
   const from = startOfDay(fromDate);
   const to = endOfDay(toDate);
@@ -602,6 +608,7 @@ export async function getEntriesWithoutDocuments(
 ) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.reports', 'view', { redirect: true });
 
   const from = startOfDay(fromDate);
   const to = endOfDay(toDate);
@@ -658,6 +665,7 @@ export async function getReversalLog(
 ) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.reports', 'view', { redirect: true });
 
   const from = startOfDay(fromDate);
   const to = endOfDay(toDate);
@@ -717,6 +725,7 @@ export async function getDocumentEntryTraceability(
 ) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.reports', 'view', { redirect: true });
 
   const from = startOfDay(fromDate);
   const to = endOfDay(toDate);
@@ -900,6 +909,7 @@ export async function getDocumentEntryTraceability(
 export async function getFixedAssetsRegister(companyId: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.reports', 'view', { redirect: true });
 
   try {
     const vehicles = await prisma.vehicle.findMany({
@@ -982,6 +992,7 @@ export async function getFixedAssetsRegister(companyId: string) {
 export async function getPeriodDepreciations(companyId: string, fromDate: Date, toDate: Date) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.reports', 'view', { redirect: true });
 
   try {
     const from = new Date(fromDate);
@@ -1088,6 +1099,7 @@ export async function getBudgetVarianceReport(
 ): Promise<BudgetVarianceResult> {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.reports', 'view', { redirect: true });
 
   try {
     logger.info('Generando reporte de variación presupuestaria', {

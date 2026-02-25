@@ -1,4 +1,5 @@
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
+import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Wallet, Landmark, AlertTriangle } from 'lucide-react';
 import { formatCurrency } from '@/shared/utils/formatters';
@@ -24,6 +25,7 @@ export async function ChecksList({ searchParams = {} }: Props) {
   );
 
   return (
+    <PermissionGuard module="commercial.treasury.checks" action="view" redirect>
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Cheques</h1>
@@ -77,5 +79,6 @@ export async function ChecksList({ searchParams = {} }: Props) {
       {/* Table */}
       <_ChecksTable data={data} totalRows={totalRows} searchParams={searchParams} />
     </div>
+    </PermissionGuard>
   );
 }

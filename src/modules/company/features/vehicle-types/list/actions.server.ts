@@ -10,6 +10,7 @@ import {
   parseSearchParams,
   stateToPrismaParams,
 } from '@/shared/components/common/DataTable/helpers';
+import { checkPermission } from '@/shared/lib/permissions';
 
 // ============================================
 // TIPOS
@@ -37,6 +38,7 @@ export interface UpdateVehicleTypeInput {
 export async function getVehicleTypesPaginated(searchParams: DataTableSearchParams) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.vehicle-types', 'view', { redirect: true });
 
   try {
     // Parsear parámetros de URL
@@ -82,6 +84,7 @@ export async function getVehicleTypesPaginated(searchParams: DataTableSearchPara
 export async function getAllVehicleTypes() {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.vehicle-types', 'view', { redirect: true });
 
   try {
     return await prisma.vehicleType.findMany({
@@ -120,6 +123,7 @@ export async function getVehicleTypesForSelect() {
 export async function getVehicleTypeById(id: string) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.vehicle-types', 'view', { redirect: true });
 
   try {
     const type = await prisma.vehicleType.findFirst({
@@ -143,6 +147,7 @@ export async function getVehicleTypeById(id: string) {
 export async function createVehicleType(input: CreateVehicleTypeInput) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.vehicle-types', 'create', { redirect: true });
 
   try {
     const type = await prisma.vehicleType.create({
@@ -170,6 +175,7 @@ export async function createVehicleType(input: CreateVehicleTypeInput) {
 export async function updateVehicleType(id: string, input: UpdateVehicleTypeInput) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.vehicle-types', 'update', { redirect: true });
 
   try {
     const existing = await prisma.vehicleType.findFirst({
@@ -206,6 +212,7 @@ export async function updateVehicleType(id: string, input: UpdateVehicleTypeInpu
 export async function deleteVehicleType(id: string) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.vehicle-types', 'delete', { redirect: true });
 
   try {
     const existing = await prisma.vehicleType.findFirst({

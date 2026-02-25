@@ -20,6 +20,7 @@ import {
   CardTitle,
 } from '@/shared/components/ui/card';
 import { Skeleton } from '@/shared/components/ui/skeleton';
+import { usePermissions } from '@/shared/hooks/usePermissions';
 
 import { getAvailableFiscalYears } from '../actions.server';
 import { _BudgetsTable } from './_BudgetsTable';
@@ -35,6 +36,8 @@ export function _BudgetsContent({
   currentFiscalYear,
   fiscalYearStart,
 }: BudgetsContentProps) {
+  const { hasPermission } = usePermissions();
+  const canCreate = hasPermission('accounting.budgets', 'create');
   const [selectedFiscalYear, setSelectedFiscalYear] =
     useState<number>(currentFiscalYear);
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -79,10 +82,12 @@ export function _BudgetsContent({
                   </SelectContent>
                 </Select>
               )}
-              <Button onClick={() => setCreateModalOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Nuevo Presupuesto
-              </Button>
+              {canCreate && (
+                <Button onClick={() => setCreateModalOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nuevo Presupuesto
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>

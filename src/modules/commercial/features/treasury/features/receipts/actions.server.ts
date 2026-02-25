@@ -16,11 +16,13 @@ import { CREDIT_NOTE_TYPES, isCreditNote } from '@/modules/commercial/shared/vou
 import type { CreateReceiptFormData } from '../../shared/validators';
 import type { PendingInvoice, ReceiptListItem, ReceiptWithDetails } from '../../shared/types';
 import { createJournalEntryForReceipt } from '@/modules/accounting/features/integrations/commercial';
+import { checkPermission } from '@/shared/lib/permissions';
 
 /**
  * Obtiene las facturas pendientes de cobro de un cliente
  */
 export async function getPendingInvoices(customerId: string): Promise<PendingInvoice[]> {
+  await checkPermission('commercial.treasury.receipts', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -107,6 +109,7 @@ export async function getPendingInvoices(customerId: string): Promise<PendingInv
  * Crea un nuevo recibo de cobro (borrador)
  */
 export async function createReceipt(data: CreateReceiptFormData) {
+  await checkPermission('commercial.treasury.receipts', 'create', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -207,6 +210,7 @@ export async function createReceipt(data: CreateReceiptFormData) {
  * Confirma un recibo de cobro (actualiza facturas y crea movimientos)
  */
 export async function confirmReceipt(receiptId: string) {
+  await checkPermission('commercial.treasury.receipts', 'approve', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -417,6 +421,7 @@ export async function confirmReceipt(receiptId: string) {
  * Obtiene la lista de recibos
  */
 export async function getReceipts(params: { customerId?: string; status?: string } = {}): Promise<ReceiptListItem[]> {
+  await checkPermission('commercial.treasury.receipts', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -466,6 +471,7 @@ export async function getReceipts(params: { customerId?: string; status?: string
  * Obtiene recibos con paginación server-side para DataTable
  */
 export async function getReceiptsPaginated(searchParams: DataTableSearchParams) {
+  await checkPermission('commercial.treasury.receipts', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -533,6 +539,7 @@ export async function getReceiptsPaginated(searchParams: DataTableSearchParams) 
  * Obtiene el detalle de un recibo
  */
 export async function getReceipt(id: string): Promise<ReceiptWithDetails> {
+  await checkPermission('commercial.treasury.receipts', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -659,6 +666,7 @@ export async function getReceipt(id: string): Promise<ReceiptWithDetails> {
  * Obtiene cajas activas con sesión abierta (para selector de pago)
  */
 export async function getAvailableCashRegisters() {
+  await checkPermission('commercial.treasury.receipts', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -705,6 +713,7 @@ export async function getAvailableCashRegisters() {
  * Obtiene cuentas bancarias activas (para selector de pago)
  */
 export async function getAvailableBankAccounts() {
+  await checkPermission('commercial.treasury.receipts', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -737,6 +746,7 @@ export async function getAvailableBankAccounts() {
  * Elimina un recibo en estado DRAFT
  */
 export async function deleteReceipt(receiptId: string) {
+  await checkPermission('commercial.treasury.receipts', 'delete', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 

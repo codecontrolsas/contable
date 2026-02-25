@@ -4,6 +4,7 @@ import { getActiveCompanyId } from '@/shared/lib/company';
 import { getEmployeeStatusInfo } from '@/shared/lib/employeeStatus';
 import type { EmployeeStatusInfo } from '@/shared/lib/employeeStatus.types';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import { prisma } from '@/shared/lib/prisma';
 import { getPresignedDownloadUrl } from '@/shared/lib/storage';
 
@@ -16,6 +17,7 @@ const relationSelect = { select: { id: true, name: true } } as const;
  * Genera URL de foto dinámicamente si existe pictureKey
  */
 export async function getEmployeeById(id: string) {
+  await checkPermission('employees', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -77,6 +79,7 @@ export async function getEmployeeById(id: string) {
  * Obtiene la información del estado de documentos de un empleado (para tooltip)
  */
 export async function getEmployeeDocumentStatusInfo(employeeId: string): Promise<EmployeeStatusInfo> {
+  await checkPermission('employees', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 

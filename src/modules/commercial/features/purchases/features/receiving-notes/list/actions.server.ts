@@ -12,6 +12,7 @@ import {
   parseSearchParams,
   stateToPrismaParams,
 } from '@/shared/components/common/DataTable/helpers';
+import { checkPermission } from '@/shared/lib/permissions';
 import type { ReceivingNoteFormInput } from '../shared/validators';
 import moment from 'moment';
 
@@ -23,6 +24,7 @@ import moment from 'moment';
  * Obtiene remitos de recepción con paginación server-side para DataTable
  */
 export async function getReceivingNotesPaginated(searchParams: DataTableSearchParams) {
+  await checkPermission('commercial.receiving-notes', 'view', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -90,6 +92,7 @@ export async function getReceivingNotesPaginated(searchParams: DataTableSearchPa
  * Obtiene un remito de recepción por ID con todos sus detalles
  */
 export async function getReceivingNoteById(id: string) {
+  await checkPermission('commercial.receiving-notes', 'view', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -227,6 +230,7 @@ export async function getSuppliersForSelect() {
  * Obtiene OCs aprobadas/parcialmente recibidas del proveedor para asociar a remito
  */
 export async function getApprovedPurchaseOrdersForSupplier(supplierId: string) {
+  await checkPermission('commercial.receiving-notes', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) return [];
 
@@ -260,6 +264,7 @@ export async function getApprovedPurchaseOrdersForSupplier(supplierId: string) {
  * Obtiene líneas de una OC con cantidad pendiente de recibir
  */
 export async function getPurchaseOrderLinesForReceiving(orderId: string) {
+  await checkPermission('commercial.receiving-notes', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) return [];
 
@@ -311,6 +316,7 @@ export async function getPurchaseOrderLinesForReceiving(orderId: string) {
  * Obtiene FCs confirmadas del proveedor para asociar a remito
  */
 export async function getConfirmedPurchaseInvoicesForSupplier(supplierId: string) {
+  await checkPermission('commercial.receiving-notes', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) return [];
 
@@ -428,6 +434,7 @@ export async function getProductsForSelect() {
  * Crea un nuevo remito de recepción en estado DRAFT
  */
 export async function createReceivingNote(input: ReceivingNoteFormInput) {
+  await checkPermission('commercial.receiving-notes', 'create', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -487,6 +494,7 @@ export async function createReceivingNote(input: ReceivingNoteFormInput) {
  * Actualiza un remito de recepción (solo en DRAFT)
  */
 export async function updateReceivingNote(id: string, input: ReceivingNoteFormInput) {
+  await checkPermission('commercial.receiving-notes', 'update', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -551,6 +559,7 @@ export async function updateReceivingNote(id: string, input: ReceivingNoteFormIn
  * Elimina un remito de recepción (solo en DRAFT)
  */
 export async function deleteReceivingNote(id: string) {
+  await checkPermission('commercial.receiving-notes', 'delete', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -589,6 +598,7 @@ export async function deleteReceivingNote(id: string) {
  * Confirma un remito de recepción: crea movimientos de stock e incrementa receivedQty en OC
  */
 export async function confirmReceivingNote(id: string) {
+  await checkPermission('commercial.receiving-notes', 'approve', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -703,6 +713,7 @@ export async function confirmReceivingNote(id: string) {
  * Cancela un remito confirmado: revierte movimientos de stock y receivedQty
  */
 export async function cancelReceivingNote(id: string) {
+  await checkPermission('commercial.receiving-notes', 'delete', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 

@@ -13,11 +13,13 @@ import {
   type CloseSessionFormData,
 } from '../../shared/validators';
 import type { SessionWithMovements } from '../../shared/types';
+import { checkPermission } from '@/shared/lib/permissions';
 
 /**
  * Abre una nueva sesión de caja
  */
 export async function openCashSession(data: OpenSessionFormData) {
+  await checkPermission('commercial.treasury.cash-registers', 'create', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -122,6 +124,7 @@ export async function openCashSession(data: OpenSessionFormData) {
  * Cierra una sesión de caja
  */
 export async function closeCashSession(data: CloseSessionFormData) {
+  await checkPermission('commercial.treasury.cash-registers', 'update', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 
@@ -235,6 +238,7 @@ export async function closeCashSession(data: CloseSessionFormData) {
  * Obtiene el detalle de una sesión con sus movimientos
  */
 export async function getSession(sessionId: string): Promise<SessionWithMovements> {
+  await checkPermission('commercial.treasury.cash-registers', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -306,6 +310,7 @@ export async function getSession(sessionId: string): Promise<SessionWithMovement
  * Obtiene las sesiones de una caja
  */
 export async function getCashRegisterSessions(cashRegisterId: string, limit = 10) {
+  await checkPermission('commercial.treasury.cash-registers', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 

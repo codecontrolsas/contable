@@ -3,6 +3,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import ExcelJS from 'exceljs';
 import { AccountType, AccountNature } from '@/generated/prisma/enums';
 import { generateAccountsTemplate } from './excel-template';
@@ -13,6 +14,7 @@ import { generateAccountsTemplate } from './excel-template';
 export async function downloadAccountsTemplate() {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.accounts', 'view', { redirect: true });
 
   try {
     const buffer = await generateAccountsTemplate();
@@ -36,6 +38,7 @@ export async function downloadAccountsTemplate() {
 export async function exportAccountsToExcel(companyId: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.accounts', 'view', { redirect: true });
 
   try {
     // Obtener todas las cuentas de la empresa
@@ -185,6 +188,7 @@ function validateAccountRow(row: {
 export async function importAccountsFromExcel(companyId: string, fileBuffer: number[]) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.accounts', 'create', { redirect: true });
 
   try {
     const buffer = Buffer.from(fileBuffer);

@@ -13,6 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu';
+import { usePermissions } from '@/shared/hooks/usePermissions';
 import { _PostEntryDialog } from './_PostEntryDialog';
 import { _ReverseEntryDialog } from './_ReverseEntryDialog';
 import { formatAmount } from '../../../shared/utils';
@@ -152,10 +153,12 @@ function getEntrySource(entry: JournalEntryWithLines) {
 // --- Main Component ---
 
 export function _EntriesTable({ entries }: EntriesTableProps) {
+  const { hasPermission } = usePermissions();
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [postEntry, setPostEntry] = useState<JournalEntryWithLines | null>(null);
   const [reverseEntry, setReverseEntry] = useState<JournalEntryWithLines | null>(null);
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
+  const canApprove = hasPermission('accounting.entries', 'approve');
 
   const handleSort = useCallback((key: string) => {
     setSortConfig((prev) => {
@@ -257,30 +260,32 @@ export function _EntriesTable({ entries }: EntriesTableProps) {
           <td className={getStatusColor(entry.status)}>{getStatusLabel(entry.status)}</td>
           <td className="text-right">{formatAmount(entry._totalDebit)}</td>
           <td className="text-right">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {entry.status === JournalEntryStatus.DRAFT && (
-                  <DropdownMenuItem onClick={() => setPostEntry(entry)}>
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Registrar
-                  </DropdownMenuItem>
-                )}
-                {entry.status === JournalEntryStatus.POSTED && (
-                  <DropdownMenuItem
-                    onClick={() => setReverseEntry(entry)}
-                    className="text-destructive"
-                  >
-                    <XCircle className="mr-2 h-4 w-4" />
-                    Anular
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {canApprove && (entry.status === JournalEntryStatus.DRAFT || entry.status === JournalEntryStatus.POSTED) && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {entry.status === JournalEntryStatus.DRAFT && (
+                    <DropdownMenuItem onClick={() => setPostEntry(entry)}>
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Registrar
+                    </DropdownMenuItem>
+                  )}
+                  {entry.status === JournalEntryStatus.POSTED && (
+                    <DropdownMenuItem
+                      onClick={() => setReverseEntry(entry)}
+                      className="text-destructive"
+                    >
+                      <XCircle className="mr-2 h-4 w-4" />
+                      Anular
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </td>
         </tr>
         {isExpanded && (

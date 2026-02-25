@@ -1,5 +1,6 @@
 import { getSuppliersForSelect, getProductsForSelect } from '../list/actions.server';
 import { _PurchaseInvoiceForm } from './components/_PurchaseInvoiceForm';
+import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 
 export async function CreatePurchaseInvoice() {
   const [suppliers, products] = await Promise.all([
@@ -8,15 +9,17 @@ export async function CreatePurchaseInvoice() {
   ]);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Nueva Factura de Compra</h1>
-        <p className="text-muted-foreground">
-          Registra una nueva factura de compra de un proveedor
-        </p>
-      </div>
+    <PermissionGuard module="commercial.purchases" action="create" redirect>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Nueva Factura de Compra</h1>
+          <p className="text-muted-foreground">
+            Registra una nueva factura de compra de un proveedor
+          </p>
+        </div>
 
-      <_PurchaseInvoiceForm suppliers={suppliers} products={products} />
-    </div>
+        <_PurchaseInvoiceForm suppliers={suppliers} products={products} />
+      </div>
+    </PermissionGuard>
   );
 }

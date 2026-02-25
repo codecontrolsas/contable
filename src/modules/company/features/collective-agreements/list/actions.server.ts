@@ -4,6 +4,7 @@ import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { revalidatePath } from 'next/cache';
 import { getActiveCompanyId } from '@/shared/lib/company';
+import { checkPermission } from '@/shared/lib/permissions';
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
 import {
   buildSearchWhere,
@@ -35,6 +36,7 @@ export interface UpdateCollectiveAgreementInput {
 export async function getCollectiveAgreementsPaginated(searchParams: DataTableSearchParams) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.collective-agreements', 'view', { redirect: true });
 
   try {
     // Parsear parámetros de URL
@@ -89,6 +91,7 @@ export async function getCollectiveAgreementsPaginated(searchParams: DataTableSe
 export async function getAllCollectiveAgreements() {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.collective-agreements', 'view', { redirect: true });
 
   try {
     const agreements = await prisma.collectiveAgreement.findMany({
@@ -192,6 +195,7 @@ export async function getCollectiveAgreementsByUnion(unionId: string) {
 export async function getCollectiveAgreementById(id: string) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.collective-agreements', 'view', { redirect: true });
 
   try {
     const agreement = await prisma.collectiveAgreement.findFirst({
@@ -236,6 +240,7 @@ export async function getCollectiveAgreementById(id: string) {
 export async function createCollectiveAgreement(input: CreateCollectiveAgreementInput) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.collective-agreements', 'create', { redirect: true });
 
   try {
     // Verificar que el sindicato pertenezca a la empresa
@@ -276,6 +281,7 @@ export async function createCollectiveAgreement(input: CreateCollectiveAgreement
 export async function updateCollectiveAgreement(id: string, input: UpdateCollectiveAgreementInput) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.collective-agreements', 'update', { redirect: true });
 
   try {
     const existing = await prisma.collectiveAgreement.findFirst({
@@ -333,6 +339,7 @@ export async function updateCollectiveAgreement(id: string, input: UpdateCollect
 export async function deleteCollectiveAgreement(id: string) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.collective-agreements', 'delete', { redirect: true });
 
   try {
     const existing = await prisma.collectiveAgreement.findFirst({

@@ -211,15 +211,16 @@ export function _GettingStarted() {
           <p>Dependiendo de tu actividad, configura los módulos relevantes:</p>
           <ul className="list-disc pl-6 space-y-1 text-muted-foreground">
             <li>
-              <strong>Comercial</strong>: carga clientes, proveedores, productos
-              y puntos de venta
+              <strong>Comercial</strong>: carga clientes, proveedores, productos,
+              puntos de venta, almacenes y configura el CRM
             </li>
             <li>
-              <strong>Tesorería</strong>: registra tus cuentas bancarias
+              <strong>Tesorería</strong>: registra tus cuentas bancarias, cajas
+              registradoras y configura cheques
             </li>
             <li>
-              <strong>Contabilidad</strong>: configura el plan de cuentas y el
-              ejercicio fiscal
+              <strong>Contabilidad</strong>: configura el plan de cuentas, el
+              ejercicio fiscal, presupuestos y saldos de apertura
             </li>
             <li>
               <strong>Documentos</strong>: crea los tipos de documento que
@@ -255,14 +256,19 @@ export function _GettingStarted() {
               <strong>Documentos</strong>: definir tipos y asignar a empleados/equipos
             </li>
             <li>
-              <strong>Comercial</strong>: clientes, proveedores, productos
+              <strong>Comercial</strong>: clientes, proveedores, productos y
+              puntos de venta
             </li>
             <li>
-              <strong>Tesorería</strong>: cuentas bancarias
+              <strong>Almacenes</strong>: configurar depósitos para control de
+              stock
+            </li>
+            <li>
+              <strong>Tesorería</strong>: cuentas bancarias, cajas y cheques
             </li>
             <li>
               <strong>Contabilidad</strong>: plan de cuentas, ejercicio fiscal,
-              integración
+              integración, presupuestos y saldos de apertura
             </li>
           </ol>
         </CardContent>

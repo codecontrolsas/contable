@@ -5,6 +5,7 @@ import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
 import { prisma } from '@/shared/lib/prisma';
 import moment from 'moment';
+import { checkPermission } from '@/shared/lib/permissions';
 
 // ============================================
 // TIPOS
@@ -68,6 +69,7 @@ export async function getCashflowData(
   granularity: Granularity = 'weekly',
   startMonth?: string,
 ): Promise<CashflowData> {
+  await checkPermission('commercial.treasury.cashflow', 'view', { redirect: true });
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
 

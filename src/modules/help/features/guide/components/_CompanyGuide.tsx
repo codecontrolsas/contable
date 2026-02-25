@@ -1,12 +1,13 @@
 'use client';
 
 import {
+  Building2,
   ClipboardList,
   Info,
   KeyRound,
+  ScrollText,
   Shield,
   UserPlus,
-  Users,
 } from 'lucide-react';
 
 import { Alert, AlertDescription } from '@/shared/components/ui/alert';
@@ -180,25 +181,49 @@ export function _CompanyGuide() {
         </CardContent>
       </Card>
 
-      {/* Auditoría */}
+      {/* Auditoría del Sistema */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Auditoría de Permisos
+            <ScrollText className="h-5 w-5" />
+            Auditoría del Sistema
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <p>
-            El sistema registra un log de todos los cambios realizados en
-            permisos y roles:
+            El sistema registra un log completo de todas las acciones
+            administrativas realizadas por los usuarios:
           </p>
           <ul className="list-disc pl-6 space-y-1 text-muted-foreground">
-            <li>Quién cambió el permiso</li>
-            <li>Cuándo se realizó el cambio</li>
-            <li>Qué permiso se modificó</li>
-            <li>Valor anterior y nuevo</li>
+            <li>
+              <strong>Acciones de roles</strong>: creación, modificación y
+              eliminación de roles
+            </li>
+            <li>
+              <strong>Acciones de permisos</strong>: permisos otorgados o
+              revocados (tanto de rol como individuales)
+            </li>
+            <li>
+              <strong>Acciones de miembros</strong>: invitaciones enviadas,
+              aceptadas, canceladas o expiradas; cambios de rol;
+              activación/desactivación de usuarios
+            </li>
           </ul>
+
+          <p className="mt-3">
+            <strong>Cada registro muestra:</strong>
+          </p>
+          <ul className="list-disc pl-6 space-y-1 text-muted-foreground">
+            <li>Quién realizó la acción (usuario con nombre y foto)</li>
+            <li>Cuándo se realizó</li>
+            <li>Qué se modificó (módulo, tipo de acción)</li>
+            <li>Valores anterior y nuevo (cuando aplica)</li>
+          </ul>
+          <p className="text-sm text-muted-foreground">
+            La auditoría se encuentra en{' '}
+            <strong>Empresa → Auditoría</strong> y permite filtrar por tipo
+            de acción.
+          </p>
         </CardContent>
       </Card>
 
@@ -253,6 +278,76 @@ export function _CompanyGuide() {
         </CardContent>
       </Card>
 
+      {/* Gestión de Empresas (Multi-empresa) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Building2 className="h-5 w-5" />
+            Gestión de Empresas
+          </CardTitle>
+          <CardDescription>
+            Administra múltiples empresas desde una misma cuenta
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p>
+            El sistema soporta múltiples empresas. Puedes crear varias empresas
+            y alternar entre ellas. Todos los datos (empleados, facturas,
+            contabilidad, etc.) son independientes por empresa.
+          </p>
+
+          <p>
+            <strong>Crear una nueva empresa:</strong>
+          </p>
+          <ol className="list-decimal pl-6 space-y-2 text-muted-foreground">
+            <li>
+              Desde el menú superior, haz clic en el{' '}
+              <strong>selector de empresa</strong>
+            </li>
+            <li>
+              Haz clic en <strong>Crear nueva empresa</strong>
+            </li>
+            <li>
+              Completa los datos:
+              <ul className="list-disc pl-6 mt-1 space-y-1">
+                <li>Razón social (obligatorio)</li>
+                <li>Nombre comercial</li>
+                <li>CUIT</li>
+                <li>Condición ante IVA</li>
+                <li>Dirección, ciudad, provincia, código postal</li>
+                <li>Email y teléfono</li>
+                <li>Logo (opcional)</li>
+              </ul>
+            </li>
+            <li>
+              Haz clic en <strong>Guardar</strong> para crear la empresa
+            </li>
+          </ol>
+
+          <p className="mt-3">
+            <strong>Cambiar de empresa:</strong>
+          </p>
+          <ul className="list-disc pl-6 space-y-1 text-muted-foreground">
+            <li>
+              Desde el menú superior, selecciona la empresa deseada en el
+              selector
+            </li>
+            <li>
+              Todos los datos del sistema se actualizan para mostrar la
+              información de la empresa seleccionada
+            </li>
+            <li>
+              Cada empresa tiene su propia configuración, usuarios, roles y
+              datos independientes
+            </li>
+          </ul>
+          <p className="text-sm text-muted-foreground">
+            Cada empresa tiene sus propios datos completamente aislados. Los
+            usuarios y roles se gestionan por empresa.
+          </p>
+        </CardContent>
+      </Card>
+
       <Separator />
 
       <Alert>
@@ -275,6 +370,10 @@ export function _CompanyGuide() {
             <li>
               <strong>Documentos</strong>: las condiciones de aplicación de
               documentos usan los catálogos
+            </li>
+            <li>
+              <strong>Multi-empresa</strong>: al cambiar de empresa, todos los
+              módulos muestran los datos correspondientes a la empresa activa
             </li>
           </ul>
         </AlertDescription>

@@ -4,6 +4,7 @@ import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
 import { prisma } from '@/shared/lib/prisma';
 import type { CashRegisterWithActiveSession } from '../../../shared/types';
+import { checkPermission } from '@/shared/lib/permissions';
 
 interface GetCashRegistersParams {
   includeInactive?: boolean;
@@ -16,6 +17,7 @@ export async function getCashRegisters(
   params: GetCashRegistersParams = {}
 ): Promise<CashRegisterWithActiveSession[]> {
   const { includeInactive = false } = params;
+  await checkPermission('commercial.treasury.cash-registers', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -77,6 +79,7 @@ export async function getCashRegisters(
  * Obtiene el detalle de una caja específica
  */
 export async function getCashRegister(id: string) {
+  await checkPermission('commercial.treasury.cash-registers', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -132,6 +135,7 @@ export async function getCashRegister(id: string) {
  * Verifica si existe una caja con el código especificado
  */
 export async function checkCashRegisterCodeExists(code: string, excludeId?: string): Promise<boolean> {
+  await checkPermission('commercial.treasury.cash-registers', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 

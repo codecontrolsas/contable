@@ -2,6 +2,7 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
@@ -47,6 +48,7 @@ export async function BankAccountDetail({ bankAccountId, searchParams }: Props) 
   }
 
   return (
+    <PermissionGuard module="commercial.treasury.bank-accounts" action="view" redirect>
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -116,5 +118,6 @@ export async function BankAccountDetail({ bankAccountId, searchParams }: Props) 
         </UrlTabsContent>
       </UrlTabs>
     </div>
+    </PermissionGuard>
   );
 }

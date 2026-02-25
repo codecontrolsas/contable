@@ -3,12 +3,16 @@
 import {
   BarChart3,
   BookOpen,
+  BookOpenCheck,
   Calculator,
   CalendarCheck,
   Info,
   Link2,
+  Lock,
+  PiggyBank,
   RefreshCcw,
   Settings,
+  TrendingDown,
 } from 'lucide-react';
 
 import { Alert, AlertDescription } from '@/shared/components/ui/alert';
@@ -344,6 +348,262 @@ export function _AccountingGuide() {
         </CardContent>
       </Card>
 
+      {/* Presupuestos */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <PiggyBank className="h-5 w-5" />
+            Presupuestos
+          </CardTitle>
+          <CardDescription>
+            Control presupuestario por cuenta y período
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p>
+            Los presupuestos permiten definir montos planificados por cuenta
+            contable y año fiscal, y luego comparar lo ejecutado vs lo
+            presupuestado.
+          </p>
+          <p>
+            <strong>Crear un presupuesto:</strong>
+          </p>
+          <ol className="list-decimal pl-6 space-y-2 text-muted-foreground">
+            <li>
+              Ve a <strong>Contabilidad → Presupuestos</strong>
+            </li>
+            <li>
+              Haz clic en <strong>Nuevo Presupuesto</strong>
+            </li>
+            <li>
+              Selecciona la <strong>cuenta contable</strong> a presupuestar
+            </li>
+            <li>
+              Selecciona el <strong>año fiscal</strong>
+            </li>
+            <li>
+              Ingresa los <strong>montos mensuales</strong> (12 meses)
+            </li>
+            <li>Agrega notas opcionales</li>
+            <li>
+              Guarda (queda en <strong>Borrador</strong>)
+            </li>
+          </ol>
+
+          <p className="mt-3">
+            <strong>Estados:</strong>
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="secondary">Borrador</Badge>
+            <span>→</span>
+            <Badge>Activo</Badge>
+            <span>→</span>
+            <Badge variant="outline">Cerrado</Badge>
+          </div>
+          <ul className="list-disc pl-6 space-y-1 text-muted-foreground mt-2">
+            <li>
+              <strong>Borrador</strong>: se puede editar libremente los montos
+              mensuales
+            </li>
+            <li>
+              <strong>Activo</strong>: el presupuesto está vigente, se compara
+              contra la ejecución real
+            </li>
+            <li>
+              <strong>Cerrado</strong>: el presupuesto fue cerrado al finalizar
+              el período
+            </li>
+          </ul>
+
+          <p className="mt-3">
+            <strong>Control de ejecución:</strong>
+          </p>
+          <ul className="list-disc pl-6 space-y-1 text-muted-foreground">
+            <li>
+              En el detalle del presupuesto puedes ver mes a mes:{' '}
+              <strong>monto presupuestado</strong>,{' '}
+              <strong>monto ejecutado</strong> y{' '}
+              <strong>porcentaje de ejecución</strong>
+            </li>
+            <li>
+              Los montos ejecutados se calculan automáticamente desde los
+              asientos contables registrados en la cuenta
+            </li>
+          </ul>
+
+          <p className="mt-3">
+            <strong>Revisiones:</strong>
+          </p>
+          <ul className="list-disc pl-6 space-y-1 text-muted-foreground">
+            <li>
+              Un presupuesto activo puede tener <strong>revisiones</strong> si
+              necesitas ajustar los montos
+            </li>
+            <li>
+              Cada revisión registra los nuevos montos y el motivo del ajuste
+            </li>
+            <li>Se mantiene un historial completo de revisiones</li>
+          </ul>
+        </CardContent>
+      </Card>
+
+      {/* Bloqueo de Períodos */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Lock className="h-5 w-5" />
+            Bloqueo de Períodos
+          </CardTitle>
+          <CardDescription>
+            Impedir modificaciones en períodos cerrados
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p>
+            El bloqueo de períodos impide que se registren o modifiquen asientos
+            contables en meses ya cerrados, protegiendo la integridad de la
+            información contable.
+          </p>
+          <ol className="list-decimal pl-6 space-y-2 text-muted-foreground">
+            <li>
+              Ve a <strong>Contabilidad → Configuración</strong>
+            </li>
+            <li>
+              En la sección <strong>Bloqueo de Períodos</strong>, verás una
+              grilla con los meses del ejercicio fiscal
+            </li>
+            <li>
+              Cada mes muestra un icono de candado (bloqueado) o candado abierto
+              (desbloqueado)
+            </li>
+            <li>
+              Haz clic en el <strong>primer mes desbloqueado</strong> para
+              bloquearlo
+            </li>
+            <li>
+              Haz clic en el <strong>último mes bloqueado</strong> para
+              desbloquearlo
+            </li>
+            <li>Confirma la acción en el diálogo</li>
+          </ol>
+          <p className="text-sm text-muted-foreground mt-2">
+            Al bloquear un período, cualquier intento de registrar un asiento
+            con fecha dentro de ese período será rechazado por el sistema. El
+            bloqueo es progresivo: se bloquean todos los meses hasta el
+            seleccionado.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Saldos de Apertura */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BookOpenCheck className="h-5 w-5" />
+            Saldos de Apertura
+          </CardTitle>
+          <CardDescription>
+            Carga inicial de saldos contables y facturas pendientes
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p>
+            Al comenzar a usar el sistema, puedes cargar los saldos iniciales de
+            tus cuentas contables y las facturas pendientes de cobro/pago para
+            arrancar con datos reales.
+          </p>
+          <p>
+            <strong>La pantalla de apertura tiene tres pestañas:</strong>
+          </p>
+          <ul className="list-disc pl-6 space-y-1 text-muted-foreground">
+            <li>
+              <strong>Saldos de Cuentas</strong>: ingresa el debe y haber de
+              cada cuenta contable. El sistema valida que el total del debe sea
+              igual al total del haber
+            </li>
+            <li>
+              <strong>Facturas de Venta Pendientes</strong>: carga facturas de
+              venta que aún no fueron cobradas (cliente, tipo de comprobante,
+              número, fecha, total)
+            </li>
+            <li>
+              <strong>Facturas de Compra Pendientes</strong>: carga facturas de
+              compra que aún no fueron pagadas (proveedor, tipo de comprobante,
+              número, fecha, total)
+            </li>
+          </ul>
+          <p className="mt-3">
+            <strong>Cargar saldos:</strong>
+          </p>
+          <ol className="list-decimal pl-6 space-y-2 text-muted-foreground">
+            <li>
+              Ve a <strong>Contabilidad → Saldos de Apertura</strong>
+            </li>
+            <li>
+              Selecciona las cuentas y carga los montos en <strong>Debe</strong>{' '}
+              y <strong>Haber</strong>
+            </li>
+            <li>
+              Verifica que el total cuadre (<strong>Debe = Haber</strong>)
+            </li>
+            <li>Confirma para generar el asiento de apertura</li>
+          </ol>
+          <p className="text-sm text-muted-foreground mt-2">
+            Las facturas de apertura se pueden cargar manualmente una por una o
+            importar desde un archivo Excel.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Depreciación de Activos Fijos */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingDown className="h-5 w-5" />
+            Depreciación de Activos Fijos
+          </CardTitle>
+          <CardDescription>
+            Generación automática de asientos de depreciación
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p>
+            El sistema genera automáticamente asientos contables de
+            depreciación para los equipos configurados en el módulo de
+            Equipamiento.
+          </p>
+          <p>
+            <strong>Cómo funciona:</strong>
+          </p>
+          <ul className="list-disc pl-6 space-y-1 text-muted-foreground">
+            <li>
+              Desde el detalle de un equipo (módulo Equipamiento), se configura
+              la <strong>depreciación</strong> con valor de origen, vida útil y
+              método
+            </li>
+            <li>
+              El sistema calcula el <strong>plan de depreciación</strong> mes a
+              mes
+            </li>
+            <li>
+              Desde Contabilidad, puedes <strong>generar los asientos</strong>{' '}
+              de depreciación para el período actual
+            </li>
+            <li>
+              Los asientos se crean automáticamente con las cuentas de
+              depreciación configuradas en la integración comercial
+            </li>
+          </ul>
+          <p className="text-sm text-muted-foreground mt-2">
+            Los métodos de depreciación disponibles son:{' '}
+            <strong>Línea recta</strong> (cuotas iguales) y{' '}
+            <strong>Saldo decreciente</strong> (cuotas decrecientes). Consulta
+            la guía de Equipamiento para configurar la depreciación en cada
+            equipo.
+          </p>
+        </CardContent>
+      </Card>
+
       <Separator />
 
       <Alert>
@@ -362,6 +622,14 @@ export function _AccountingGuide() {
             <li>
               <strong>Dashboard</strong>: los reportes contables alimentan
               indicadores financieros
+            </li>
+            <li>
+              <strong>Equipamiento</strong>: la depreciación de activos fijos
+              genera asientos contables automáticos
+            </li>
+            <li>
+              <strong>Presupuestos</strong>: los asientos registrados alimentan
+              la ejecución presupuestaria automáticamente
             </li>
           </ul>
           <p className="mt-2">

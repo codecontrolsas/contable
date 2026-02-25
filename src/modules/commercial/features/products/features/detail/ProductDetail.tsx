@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { checkPermission } from '@/shared/lib/permissions';
+import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 import { getProductById } from '../list/actions.server';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
@@ -17,8 +17,6 @@ interface ProductDetailProps {
 }
 
 export async function ProductDetail({ productId }: ProductDetailProps) {
-  await checkPermission('commercial.products', 'read');
-
   const product = await getProductById(productId);
 
   if (!product) {
@@ -26,6 +24,7 @@ export async function ProductDetail({ productId }: ProductDetailProps) {
   }
 
   return (
+    <PermissionGuard module="commercial.products" action="view" redirect>
     <div className="flex flex-1 flex-col gap-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -188,5 +187,6 @@ export async function ProductDetail({ productId }: ProductDetailProps) {
         </Card>
       </div>
     </div>
+    </PermissionGuard>
   );
 }

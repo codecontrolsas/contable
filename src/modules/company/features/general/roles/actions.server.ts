@@ -6,7 +6,7 @@ import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { getActiveCompanyId } from '@/shared/lib/company';
-import { createAuditLog, AUDIT_ACTIONS, MODULES, ACTIONS } from '@/shared/lib/permissions';
+import { checkPermission, createAuditLog, AUDIT_ACTIONS, MODULES, ACTIONS } from '@/shared/lib/permissions';
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
 import {
   parseSearchParams,
@@ -41,6 +41,8 @@ export interface UpdateRoleInput {
  * Obtiene los roles con paginación
  */
 export async function getRolesPaginated(searchParams: DataTableSearchParams) {
+  await checkPermission('company.general.roles', 'view', { redirect: true });
+
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -92,6 +94,8 @@ export async function getRolesPaginated(searchParams: DataTableSearchParams) {
  * Obtiene un rol por ID con sus permisos
  */
 export async function getRoleById(roleId: string) {
+  await checkPermission('company.general.roles', 'view', { redirect: true });
+
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -132,6 +136,8 @@ export async function getRoleById(roleId: string) {
  * Obtiene todas las acciones disponibles del sistema
  */
 export async function getSystemActions() {
+  await checkPermission('company.general.roles', 'view', { redirect: true });
+
   try {
     return await prisma.action.findMany({
       select: {
@@ -152,6 +158,8 @@ export async function getSystemActions() {
  * Obtiene la configuración de módulos y acciones para la matriz de permisos
  */
 export async function getPermissionsConfig() {
+  await checkPermission('company.general.roles', 'view', { redirect: true });
+
   const actions = await getSystemActions();
 
   // Estructura de módulos organizada en grupos
@@ -172,25 +180,79 @@ export async function getPermissionsConfig() {
         { key: MODULES['commercial.leads'], label: 'Leads' },
         { key: MODULES['commercial.contacts'], label: 'Contactos' },
         { key: MODULES['commercial.quotes'], label: 'Presupuestos' },
+        { key: MODULES['commercial.suppliers'], label: 'Proveedores' },
+        { key: MODULES['commercial.categories'], label: 'Categorías' },
+        { key: MODULES['commercial.products'], label: 'Productos' },
+        { key: MODULES['commercial.price-lists'], label: 'Listas de Precios' },
+        { key: MODULES['commercial.points-of-sale'], label: 'Puntos de Venta' },
+        { key: MODULES['commercial.invoices'], label: 'Facturas de Venta' },
+        { key: MODULES['commercial.purchases'], label: 'Facturas de Compra' },
+        { key: MODULES['commercial.purchase-orders'], label: 'Órdenes de Compra' },
+        { key: MODULES['commercial.receiving-notes'], label: 'Remitos de Recepción' },
+        { key: MODULES['commercial.expenses'], label: 'Gastos' },
       ],
     },
     {
-      name: 'Configuración Empresa',
+      name: 'Almacenes y Stock',
+      modules: [
+        { key: MODULES['commercial.warehouses'], label: 'Almacenes' },
+        { key: MODULES['commercial.stock'], label: 'Control de Stock' },
+        { key: MODULES['commercial.movements'], label: 'Movimientos' },
+      ],
+    },
+    {
+      name: 'Tesorería',
+      modules: [
+        { key: MODULES['commercial.treasury.cash-registers'], label: 'Cajas' },
+        { key: MODULES['commercial.treasury.bank-accounts'], label: 'Bancos' },
+        { key: MODULES['commercial.treasury.receipts'], label: 'Recibos de Cobro' },
+        { key: MODULES['commercial.treasury.payment-orders'], label: 'Órdenes de Pago' },
+        { key: MODULES['commercial.treasury.checks'], label: 'Cheques' },
+        { key: MODULES['commercial.treasury.projections'], label: 'Proyecciones' },
+        { key: MODULES['commercial.treasury.cashflow'], label: 'Flujo de Caja' },
+      ],
+    },
+    {
+      name: 'Contabilidad',
+      modules: [
+        { key: MODULES['accounting.accounts'], label: 'Plan de Cuentas' },
+        { key: MODULES['accounting.entries'], label: 'Asientos' },
+        { key: MODULES['accounting.recurring-entries'], label: 'Asientos Recurrentes' },
+        { key: MODULES['accounting.opening-balances'], label: 'Saldos de Apertura' },
+        { key: MODULES['accounting.budgets'], label: 'Presupuestos Contables' },
+        { key: MODULES['accounting.reports'], label: 'Informes' },
+        { key: MODULES['accounting.settings'], label: 'Configuración Contable' },
+        { key: MODULES['accounting.fiscal-year-close'], label: 'Cierre de Ejercicio' },
+      ],
+    },
+    {
+      name: 'Configuración - General',
       modules: [
         { key: MODULES['company.general.users'], label: 'Usuarios' },
         { key: MODULES['company.general.roles'], label: 'Roles' },
         { key: MODULES['company.general.audit'], label: 'Auditoría' },
+      ],
+    },
+    {
+      name: 'Configuración - RRHH',
+      modules: [
         { key: MODULES['company.cost-centers'], label: 'Centros de Costo' },
-        { key: MODULES['company.equipment-owners'], label: 'Titulares' },
+        { key: MODULES['company.contract-types'], label: 'Tipos Contrato' },
         { key: MODULES['company.job-positions'], label: 'Puestos' },
         { key: MODULES['company.job-categories'], label: 'Categorías' },
-        { key: MODULES['company.sectors'], label: 'Sectores' },
-        { key: MODULES['company.contract-types'], label: 'Tipos Contrato' },
+        { key: MODULES['company.unions'], label: 'Sindicatos' },
         { key: MODULES['company.collective-agreements'], label: 'Convenios' },
+      ],
+    },
+    {
+      name: 'Configuración - Equipos',
+      modules: [
+        { key: MODULES['company.equipment-owners'], label: 'Titulares' },
+        { key: MODULES['company.sectors'], label: 'Sectores' },
+        { key: MODULES['company.type-operatives'], label: 'Tipo Operativos' },
         { key: MODULES['company.contractors'], label: 'Contratistas' },
         { key: MODULES['company.vehicle-types'], label: 'Tipos Vehículo' },
         { key: MODULES['company.vehicle-brands'], label: 'Marcas Vehículo' },
-        { key: MODULES['company.type-operatives'], label: 'Tipo Operativos' },
       ],
     },
   ];
@@ -212,6 +274,7 @@ export async function getPermissionsConfig() {
 export async function createRole(input: CreateRoleInput) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('company.general.roles', 'create', { redirect: true });
 
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
@@ -290,6 +353,7 @@ export async function createRole(input: CreateRoleInput) {
 export async function updateRole(roleId: string, input: UpdateRoleInput) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('company.general.roles', 'update', { redirect: true });
 
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
@@ -382,6 +446,7 @@ export async function updateRole(roleId: string, input: UpdateRoleInput) {
 export async function deleteRole(roleId: string) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
+  await checkPermission('company.general.roles', 'delete', { redirect: true });
 
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { getWarehouseById, getWarehouseStocks } from '../list/actions.server';
 import { WAREHOUSE_TYPE_LABELS } from '../../shared/types';
 import { WarehouseStockTable } from './components/_WarehouseStockTable';
+import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 
 interface WarehouseDetailProps {
   warehouseId: string;
@@ -21,6 +22,7 @@ export async function WarehouseDetail({ warehouseId }: WarehouseDetailProps) {
   const totalAvailable = stocks.reduce((sum, stock) => sum + stock.availableQty, 0);
 
   return (
+    <PermissionGuard module="commercial.warehouses" action="view" redirect>
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between">
@@ -180,5 +182,6 @@ export async function WarehouseDetail({ warehouseId }: WarehouseDetailProps) {
         </CardContent>
       </Card>
     </div>
+    </PermissionGuard>
   );
 }

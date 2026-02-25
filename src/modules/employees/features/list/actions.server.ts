@@ -10,6 +10,7 @@ import {
 } from '@/shared/components/common/DataTable/helpers';
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import { prisma } from '@/shared/lib/prisma';
 
 // ============================================
@@ -32,6 +33,7 @@ export interface EmployeeFilters {
  * Obtiene empleados con paginación server-side para DataTable
  */
 export async function getEmployeesPaginated(searchParams: DataTableSearchParams) {
+  await checkPermission('employees', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -118,6 +120,7 @@ export async function getEmployeesPaginated(searchParams: DataTableSearchParams)
  * @deprecated Usar getEmployeesPaginated para listas grandes
  */
 export async function getAllEmployees(filters?: EmployeeFilters) {
+  await checkPermission('employees', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -247,6 +250,7 @@ export async function getContractTypesForFilter() {
  * Elimina un empleado permanentemente
  */
 export async function deleteEmployee(id: string) {
+  await checkPermission('employees', 'delete', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -281,6 +285,7 @@ export async function deleteEmployee(id: string) {
  * Usa los mismos filtros que getEmployeesPaginated pero sin paginación
  */
 export async function getAllEmployeesForExport(searchParams: DataTableSearchParams) {
+  await checkPermission('employees', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 

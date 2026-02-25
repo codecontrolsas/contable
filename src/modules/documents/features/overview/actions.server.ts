@@ -8,6 +8,7 @@ import {
 } from '@/shared/components/common/DataTable/helpers';
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import { prisma } from '@/shared/lib/prisma';
 
 // ============================================
@@ -40,6 +41,7 @@ export async function getEmployeeDocumentsPaginated(
   searchParams: DataTableSearchParams,
   isMonthly: boolean = false
 ) {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -151,6 +153,7 @@ export async function getEmployeeDocumentTypesForFilter(isMonthly?: boolean) {
  * Obtiene estadísticas generales de documentos de empleados
  */
 export async function getEmployeeDocumentsStats(isMonthly?: boolean) {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -230,6 +233,7 @@ export async function getEmployeeDocumentsStats(isMonthly?: boolean) {
 export async function getMultiResourceEmployeeDocumentsPaginated(
   searchParams: DataTableSearchParams
 ) {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -317,6 +321,7 @@ export async function getMultiResourceEmployeeDocumentsPaginated(
  * Obtiene estadísticas de documentos multirrecurso de empleados
  */
 export async function getMultiResourceEmployeeDocumentsStats() {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -379,6 +384,7 @@ export async function getEquipmentDocumentsPaginated(
   searchParams: DataTableSearchParams,
   isMonthly: boolean = false
 ) {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -485,6 +491,7 @@ export async function getEquipmentDocumentTypesForFilter(isMonthly?: boolean) {
  * Obtiene estadísticas generales de documentos de equipos
  */
 export async function getEquipmentDocumentsStats(isMonthly?: boolean) {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -522,6 +529,7 @@ export async function getEquipmentDocumentsStats(isMonthly?: boolean) {
 export async function getMultiResourceEquipmentDocumentsPaginated(
   searchParams: DataTableSearchParams
 ) {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -607,6 +615,7 @@ export async function getMultiResourceEquipmentDocumentsPaginated(
  * Obtiene estadísticas de documentos multirrecurso de equipos
  */
 export async function getMultiResourceEquipmentDocumentsStats() {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -666,6 +675,7 @@ export async function getMultiResourceEquipmentDocumentTypesForFilter() {
  * Obtiene documentos de empresa con paginación server-side para DataTable
  */
 export async function getCompanyDocumentsPaginated(searchParams: DataTableSearchParams) {
+  await checkPermission('company.documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -753,6 +763,7 @@ export async function getCompanyDocumentTypesForFilter() {
  * Obtiene estadísticas de documentos de empresa
  */
 export async function getCompanyDocumentsStats() {
+  await checkPermission('company.documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -785,6 +796,7 @@ import { getPresignedDownloadUrl } from '@/shared/lib/storage';
  * Soporta documentos normales (con employeeId) y multirrecurso (sin employeeId)
  */
 export async function getEmployeeDocumentDownloadUrl(documentId: string) {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) return { success: false as const, error: 'No hay empresa activa' };
 
@@ -824,6 +836,7 @@ export async function getEmployeeDocumentDownloadUrl(documentId: string) {
  * Soporta documentos normales (con vehicleId) y multirrecurso (sin vehicleId)
  */
 export async function getEquipmentDocumentDownloadUrl(documentId: string) {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) return { success: false as const, error: 'No hay empresa activa' };
 
@@ -862,6 +875,7 @@ export async function getEquipmentDocumentDownloadUrl(documentId: string) {
  * Obtiene una URL de descarga presignada para un documento de empresa
  */
 export async function getCompanyDocumentDownloadUrl(documentId: string) {
+  await checkPermission('company.documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) return { success: false as const, error: 'No hay empresa activa' };
 
@@ -894,6 +908,7 @@ export async function getCompanyDocumentDownloadUrl(documentId: string) {
  * Busca empleados para el selector de upload universal
  */
 export async function searchEmployeesForUpload(query: string, limit = 10) {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -932,6 +947,7 @@ export async function searchEmployeesForUpload(query: string, limit = 10) {
  * Busca equipos para el selector de upload universal
  */
 export async function searchEquipmentForUpload(query: string, limit = 10) {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -1042,6 +1058,7 @@ export async function getDocumentTypesForUpload(
  * Retorna cada tipo y si tiene documento subido o no
  */
 export async function getMultiResourceEmployeeDocumentTypesWithStatus() {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -1110,6 +1127,7 @@ export async function getMultiResourceEmployeeDocumentTypesWithStatus() {
  * Retorna cada tipo y si tiene documento subido o no
  */
 export async function getMultiResourceEquipmentDocumentTypesWithStatus() {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -1198,6 +1216,7 @@ interface UploadMultiResourceDocumentInput {
 export async function uploadMultiResourceDocument(
   input: UploadMultiResourceDocumentInput
 ): Promise<{ success: boolean; documentId?: string; error?: string }> {
+  await checkPermission('documents', 'create', { redirect: true });
   const company = await getActiveCompany();
   if (!company) {
     return { success: false, error: 'No hay empresa activa' };
@@ -1365,6 +1384,7 @@ export async function getAllEmployeeDocumentsForExport(
   searchParams: DataTableSearchParams,
   isMonthly: boolean = false
 ) {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -1448,6 +1468,7 @@ export async function getAllEquipmentDocumentsForExport(
   searchParams: DataTableSearchParams,
   isMonthly: boolean = false
 ) {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -1520,6 +1541,7 @@ export async function getAllEquipmentDocumentsForExport(
  * Usa los mismos filtros pero sin paginación
  */
 export async function getAllCompanyDocumentsForExport(searchParams: DataTableSearchParams) {
+  await checkPermission('company.documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 

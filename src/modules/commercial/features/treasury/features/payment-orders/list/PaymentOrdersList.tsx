@@ -1,4 +1,5 @@
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
+import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { DollarSign, FileText, CheckCircle2 } from 'lucide-react';
 import { getPaymentOrders, getPaymentOrdersPaginated } from '../actions.server';
@@ -20,6 +21,7 @@ export async function PaymentOrdersList({ searchParams = {} }: Props) {
   const draftCount = allOrders.filter((po) => po.status === 'DRAFT').length;
 
   return (
+    <PermissionGuard module="commercial.treasury.payment-orders" action="view" redirect>
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Órdenes de Pago</h1>
@@ -71,5 +73,6 @@ export async function PaymentOrdersList({ searchParams = {} }: Props) {
         searchParams={searchParams}
       />
     </div>
+    </PermissionGuard>
   );
 }

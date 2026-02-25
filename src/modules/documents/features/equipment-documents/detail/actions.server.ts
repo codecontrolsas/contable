@@ -7,6 +7,7 @@ import {
 } from '@/shared/lib/documentConditions';
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
+import { checkPermission } from '@/shared/lib/permissions';
 import { prisma } from '@/shared/lib/prisma';
 import { getPresignedDownloadUrl } from '@/shared/lib/storage';
 
@@ -69,6 +70,7 @@ function mapDocumentTypeConditions(docType: {
  * Obtiene el detalle completo de un documento de equipo con su historial
  */
 export async function getEquipmentDocumentDetailById(documentId: string, equipmentId: string) {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -164,6 +166,7 @@ export async function getEquipmentHistoryVersionDownloadUrl(
   documentId: string,
   equipmentId: string
 ): Promise<{ success: boolean; url?: string; error?: string }> {
+  await checkPermission('documents', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) {
     return { success: false, error: 'No hay empresa activa' };

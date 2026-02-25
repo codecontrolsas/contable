@@ -10,6 +10,7 @@ import {
   parseSearchParams,
   stateToPrismaParams,
 } from '@/shared/components/common/DataTable/helpers';
+import { checkPermission } from '@/shared/lib/permissions';
 
 // ============================================
 // TIPOS
@@ -35,6 +36,7 @@ export interface UpdateSectorInput {
 export async function getSectorsPaginated(searchParams: DataTableSearchParams) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.sectors', 'view', { redirect: true });
 
   try {
     const state = parseSearchParams(searchParams);
@@ -72,6 +74,7 @@ export async function getSectorsPaginated(searchParams: DataTableSearchParams) {
 export async function getAllSectors() {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.sectors', 'view', { redirect: true });
 
   try {
     const sectors = await prisma.sector.findMany({
@@ -114,6 +117,7 @@ export async function getSectorsForSelect() {
 export async function getSectorById(id: string) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.sectors', 'view', { redirect: true });
 
   try {
     const sector = await prisma.sector.findFirst({
@@ -147,6 +151,7 @@ export async function getSectorById(id: string) {
 export async function createSector(input: CreateSectorInput) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.sectors', 'create', { redirect: true });
 
   try {
     const sector = await prisma.sector.create({
@@ -173,6 +178,7 @@ export async function createSector(input: CreateSectorInput) {
 export async function updateSector(id: string, input: UpdateSectorInput) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.sectors', 'update', { redirect: true });
 
   try {
     const existing = await prisma.sector.findFirst({
@@ -207,6 +213,7 @@ export async function updateSector(id: string, input: UpdateSectorInput) {
 export async function deleteSector(id: string) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
+  await checkPermission('company.sectors', 'delete', { redirect: true });
 
   try {
     const existing = await prisma.sector.findFirst({

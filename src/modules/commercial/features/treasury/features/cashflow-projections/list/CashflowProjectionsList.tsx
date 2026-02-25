@@ -1,4 +1,5 @@
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
+import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { TrendingUp, TrendingDown, BarChart3 } from 'lucide-react';
 import { formatCurrency } from '@/shared/utils/formatters';
@@ -18,6 +19,7 @@ export async function CashflowProjectionsList({ searchParams = {} }: Props) {
   const isPositiveBalance = totals.netBalance >= 0;
 
   return (
+    <PermissionGuard module="commercial.treasury.projections" action="view" redirect>
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Proyecciones de Cashflow</h1>
@@ -75,5 +77,6 @@ export async function CashflowProjectionsList({ searchParams = {} }: Props) {
         searchParams={searchParams}
       />
     </div>
+    </PermissionGuard>
   );
 }

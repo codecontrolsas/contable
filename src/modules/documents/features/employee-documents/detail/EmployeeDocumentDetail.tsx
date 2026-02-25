@@ -9,6 +9,7 @@ import {
   ResizablePanelGroup,
 } from '@/shared/components/ui/resizable';
 import { ScrollArea } from '@/shared/components/ui/scroll-area';
+import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 
 import { getDocumentDetailById } from './actions.server';
 import { _DocumentActions } from './components/_DocumentActions';
@@ -52,6 +53,7 @@ export async function EmployeeDocumentDetail({ employeeId, documentId }: Props) 
     ) ?? false;
 
   return (
+    <PermissionGuard module="documents" action="view" redirect>
     <div className="flex h-full flex-col">
       {/* Header */}
       <div className="flex items-center gap-4 border-b pb-4 mb-4">
@@ -136,5 +138,6 @@ export async function EmployeeDocumentDetail({ employeeId, documentId }: Props) 
         </ResizablePanelGroup>
       </div>
     </div>
+    </PermissionGuard>
   );
 }
