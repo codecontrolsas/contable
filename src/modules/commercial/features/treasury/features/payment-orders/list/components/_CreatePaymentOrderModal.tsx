@@ -41,7 +41,7 @@ export function CreatePaymentOrderModal({ onSuccess }: CreatePaymentOrderModalPr
   const form = useForm<CreatePaymentOrderFormData>({
     resolver: zodResolver(createPaymentOrderSchema),
     defaultValues: {
-      supplierId: '',
+      supplierId: null,
       date: new Date(),
       notes: null,
       items: [],
@@ -179,72 +179,6 @@ export function CreatePaymentOrderModal({ onSuccess }: CreatePaymentOrderModalPr
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-            {/* ── Datos Básicos ── */}
-            <section className="space-y-3">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Datos Básicos</h3>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <FormField
-                  control={form.control}
-                  name="supplierId"
-                  render={({ field }) => (
-                    <FormItem className="sm:col-span-2">
-                      <FormLabel>Proveedor (opcional)</FormLabel>
-                      <Select onValueChange={handleSupplierChange} value={field.value || ''}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccionar proveedor" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {suppliersData.length === 0 && (
-                            <div className="p-2 text-sm text-muted-foreground">No hay proveedores</div>
-                          )}
-                          {suppliersData.map((supplier) => (
-                            <SelectItem key={supplier.id} value={supplier.id}>
-                              {supplier.tradeName || supplier.businessName}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="date"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Fecha *</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="date"
-                          value={moment(field.value).format('YYYY-MM-DD')}
-                          onChange={(e) => field.onChange(new Date(e.target.value + 'T12:00:00'))}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <FormField
-                control={form.control}
-                name="notes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Notas (opcional)</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Observaciones" className="resize-none" rows={2} {...field} value={field.value || ''} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </section>
-
-            <Separator />
-
             {/* ── Items a Pagar ── */}
             <section className="space-y-3">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Items a Pagar</h3>
@@ -255,7 +189,34 @@ export function CreatePaymentOrderModal({ onSuccess }: CreatePaymentOrderModalPr
                   <TabsTrigger value="expenses">Gastos</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="invoices" className="mt-3">
+                <TabsContent value="invoices" className="mt-3 space-y-3">
+                  <FormField
+                    control={form.control}
+                    name="supplierId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Proveedor *</FormLabel>
+                        <Select onValueChange={handleSupplierChange} value={field.value || ''}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Seleccionar proveedor" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {suppliersData.length === 0 && (
+                              <div className="p-2 text-sm text-muted-foreground">No hay proveedores</div>
+                            )}
+                            {suppliersData.map((supplier) => (
+                              <SelectItem key={supplier.id} value={supplier.id}>
+                                {supplier.tradeName || supplier.businessName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   {!selectedSupplierId && (
                     <p className="text-sm text-muted-foreground">Seleccione un proveedor para ver facturas pendientes</p>
                   )}
@@ -374,6 +335,45 @@ export function CreatePaymentOrderModal({ onSuccess }: CreatePaymentOrderModalPr
                   </table>
                 </div>
               )}
+            </section>
+
+            <Separator />
+
+            {/* ── Datos de la Orden ── */}
+            <section className="space-y-3">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Datos de la Orden</h3>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="date"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Fecha *</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="date"
+                          value={moment(field.value).format('YYYY-MM-DD')}
+                          onChange={(e) => field.onChange(new Date(e.target.value + 'T12:00:00'))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Notas (opcional)</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Observaciones" className="resize-none" rows={2} {...field} value={field.value || ''} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </section>
 
             <Separator />
