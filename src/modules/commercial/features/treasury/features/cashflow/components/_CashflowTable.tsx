@@ -222,7 +222,7 @@ export function _CashflowTable({ data }: Props) {
                     {categories.map((cat) => {
                       const catKey = `${row.period}-${cat.key}`;
                       const isCatExpanded = expandedCategories.has(catKey);
-                      const hasSubItems = cat.items.length > 1;
+                      const hasSubItems = cat.items.length > 0;
 
                       return (
                         <>
