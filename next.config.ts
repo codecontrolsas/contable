@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 import { instanceConfig } from "./instance.config";
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   // Aumentar límite de body para Server Actions (subida de archivos)
   // El límite de storage es 10MB, ponemos 12MB para incluir overhead
   experimental: {
