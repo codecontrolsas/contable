@@ -22,19 +22,13 @@ COPY . .
 # Generar Prisma Client
 RUN npx prisma generate
 
-# Build args - Dokploy inyecta las env vars del servicio como build args
-ARG DATABASE_URL
-ARG NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
-ARG CLERK_SECRET_KEY
-ARG RESEND_API_KEY
-ARG NEXT_PUBLIC_APP_URL
-
+# Variables dummy para build - las reales se inyectan en runtime
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV DATABASE_URL=${DATABASE_URL}
-ENV NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
-ENV CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
-ENV RESEND_API_KEY=${RESEND_API_KEY}
-ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
+ENV NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_dummy"
+ENV CLERK_SECRET_KEY="sk_test_dummy"
+ENV RESEND_API_KEY="re_dummy"
+ENV NEXT_PUBLIC_APP_URL="http://localhost:3000"
 
 # Build Next.js
 RUN npm run build
