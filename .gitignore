@@ -36,6 +36,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.production
 
 # vercel
 .vercel
@@ -56,4 +57,5 @@ next-env.d.ts
 .windsurf
 notas.md
 .opencode
-.agentsbackup_db.sql
+.agents
+backup_db.sql
