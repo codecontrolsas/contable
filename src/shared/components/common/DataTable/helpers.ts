@@ -177,8 +177,13 @@ export function buildFiltersWhere(
   const where: Record<string, unknown> = {};
   const excludeSet = new Set(options?.exclude ?? []);
 
+  const hasColumnMap = Object.keys(columnMap).length > 0;
+
   Object.entries(filters).forEach(([columnId, values]) => {
     if (values.length > 0 && !excludeSet.has(columnId)) {
+      // When columnMap is provided, only process known columns to prevent
+      // unknown URL params (e.g. "tab") from leaking into Prisma queries
+      if (hasColumnMap && !(columnId in columnMap)) return;
       const field = columnMap[columnId] || columnId;
       where[field] = values.length === 1 ? values[0] : { in: values };
     }

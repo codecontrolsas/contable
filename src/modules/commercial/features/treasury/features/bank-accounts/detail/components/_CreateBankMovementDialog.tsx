@@ -4,11 +4,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { CalendarIcon } from 'lucide-react';
 import moment from 'moment';
 
 import { Button } from '@/shared/components/ui/button';
-import { Calendar } from '@/shared/components/ui/calendar';
 import {
   Dialog,
   DialogContent,
@@ -27,7 +25,6 @@ import {
   FormMessage,
 } from '@/shared/components/ui/form';
 import { Input } from '@/shared/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -36,7 +33,6 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select';
 import { Textarea } from '@/shared/components/ui/textarea';
-import { cn } from '@/shared/lib/utils';
 
 import { createBankMovement, getAccountsForBankMovement } from '../../../bank-movements/actions.server';
 import {
@@ -137,30 +133,13 @@ export function _CreateBankMovementDialog({ open, onOpenChange, bankAccountId, o
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Fecha *</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              'w-full pl-3 text-left font-normal',
-                              !field.value && 'text-muted-foreground'
-                            )}
-                          >
-                            {field.value ? moment(field.value).format('DD/MM/YYYY') : 'Seleccionar fecha'}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <FormControl>
+                      <Input
+                        type="date"
+                        value={field.value ? moment(field.value).format('YYYY-MM-DD') : ''}
+                        onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value + 'T12:00:00') : undefined)}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

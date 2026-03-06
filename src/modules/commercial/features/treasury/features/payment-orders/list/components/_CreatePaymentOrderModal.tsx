@@ -141,10 +141,10 @@ export function CreatePaymentOrderModal({ onSuccess }: CreatePaymentOrderModalPr
     const items = form.watch('items');
     const payments = form.watch('payments');
     const withholdings = form.watch('withholdings');
-    const totalItems = items.reduce((sum, item) => sum + parseFloat(item.amount || '0'), 0);
-    const totalPayments = payments.reduce((sum, payment) => sum + parseFloat(payment.amount || '0'), 0);
-    const totalWithholdings = withholdings.reduce((sum, w) => sum + parseFloat(w.amount || '0'), 0);
-    return { totalItems, totalPayments, totalWithholdings, difference: totalItems - totalPayments - totalWithholdings };
+    const totalItems = items.reduce((sum, item) => sum + Math.round(parseFloat(item.amount || '0') * 100), 0) / 100;
+    const totalPayments = payments.reduce((sum, payment) => sum + Math.round(parseFloat(payment.amount || '0') * 100), 0) / 100;
+    const totalWithholdings = withholdings.reduce((sum, w) => sum + Math.round(parseFloat(w.amount || '0') * 100), 0) / 100;
+    return { totalItems, totalPayments, totalWithholdings, difference: Math.round((totalItems - totalPayments - totalWithholdings) * 100) / 100 };
   };
 
   const { totalItems, totalPayments, totalWithholdings, difference } = calculateTotals();

@@ -33,15 +33,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
-import { Calendar } from '@/shared/components/ui/calendar';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/shared/components/ui/popover';
-import { CalendarIcon, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import moment from 'moment';
-import { cn } from '@/shared/lib/utils';
 
 import { createStockTransfer } from '../actions.server';
 import { stockTransferSchema } from '../../../shared/validators';
@@ -206,39 +199,15 @@ export function _StockTransferModal({ open, onOpenChange, warehouses, products }
                   control={form.control}
                   name="date"
                   render={({ field }) => (
-                    <FormItem className="flex flex-col">
+                    <FormItem>
                       <FormLabel>Fecha *</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                'w-full pl-3 text-left font-normal',
-                                !field.value && 'text-muted-foreground'
-                              )}
-                            >
-                              {field.value ? (
-                                moment(field.value).format('DD/MM/YYYY')
-                              ) : (
-                                <span>Seleccionar fecha</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) =>
-                              date > new Date() || date < new Date('1900-01-01')
-                            }
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
+                      <FormControl>
+                        <Input
+                          type="date"
+                          value={field.value ? moment(field.value).format('YYYY-MM-DD') : ''}
+                          onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value + 'T12:00:00') : undefined)}
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

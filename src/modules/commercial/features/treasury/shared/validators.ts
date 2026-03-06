@@ -321,10 +321,11 @@ export const createReceiptSchema = z
       // Sin pagos ni retenciones es válido (se vincula después a movimiento bancario)
       if (data.payments.length === 0 && data.withholdings.length === 0) return true;
       // Con pagos/retenciones, validar que el total sea igual al de facturas
-      const totalItems = data.items.reduce((sum, item) => sum + parseFloat(item.amount), 0);
-      const totalPayments = data.payments.reduce((sum, payment) => sum + parseFloat(payment.amount), 0);
-      const totalWithholdings = data.withholdings.reduce((sum, w) => sum + parseFloat(w.amount), 0);
-      return Math.abs(totalItems - totalPayments - totalWithholdings) < 0.01;
+      // Usar multiplicación por 100 y redondeo para evitar errores de punto flotante con montos grandes
+      const totalItems = data.items.reduce((sum, item) => sum + Math.round(parseFloat(item.amount) * 100), 0);
+      const totalPayments = data.payments.reduce((sum, payment) => sum + Math.round(parseFloat(payment.amount) * 100), 0);
+      const totalWithholdings = data.withholdings.reduce((sum, w) => sum + Math.round(parseFloat(w.amount) * 100), 0);
+      return totalItems === totalPayments + totalWithholdings;
     },
     {
       message: 'El total de facturas debe ser igual al total de pagos + retenciones',
@@ -401,10 +402,11 @@ export const createPaymentOrderSchema = z
       // Sin pagos ni retenciones es válido (se vincula después a movimiento bancario)
       if (data.payments.length === 0 && data.withholdings.length === 0) return true;
       // Con pagos/retenciones, validar que el total sea igual al de facturas
-      const totalItems = data.items.reduce((sum, item) => sum + parseFloat(item.amount), 0);
-      const totalPayments = data.payments.reduce((sum, payment) => sum + parseFloat(payment.amount), 0);
-      const totalWithholdings = data.withholdings.reduce((sum, w) => sum + parseFloat(w.amount), 0);
-      return Math.abs(totalItems - totalPayments - totalWithholdings) < 0.01;
+      // Usar multiplicación por 100 y redondeo para evitar errores de punto flotante con montos grandes
+      const totalItems = data.items.reduce((sum, item) => sum + Math.round(parseFloat(item.amount) * 100), 0);
+      const totalPayments = data.payments.reduce((sum, payment) => sum + Math.round(parseFloat(payment.amount) * 100), 0);
+      const totalWithholdings = data.withholdings.reduce((sum, w) => sum + Math.round(parseFloat(w.amount) * 100), 0);
+      return totalItems === totalPayments + totalWithholdings;
     },
     {
       message: 'El total de facturas debe ser igual al total de pagos + retenciones',

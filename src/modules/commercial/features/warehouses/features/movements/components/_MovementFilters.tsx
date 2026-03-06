@@ -11,19 +11,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
-import { Calendar } from '@/shared/components/ui/calendar';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/shared/components/ui/popover';
-import { CalendarIcon, Filter, X } from 'lucide-react';
+import { Filter, X } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { getWarehouses } from '../../list/actions.server';
 import { getProducts } from '@/modules/commercial/features/products/features/list/actions.server';
 import { STOCK_MOVEMENT_TYPE_LABELS } from '../../../shared/types';
-import { cn } from '@/shared/lib/utils';
 import moment from 'moment';
 
 export function MovementFilters() {
@@ -33,12 +26,8 @@ export function MovementFilters() {
   const [warehouseId, setWarehouseId] = useState(searchParams.get('warehouseId') || '');
   const [productId, setProductId] = useState(searchParams.get('productId') || '');
   const [type, setType] = useState(searchParams.get('type') || '');
-  const [dateFrom, setDateFrom] = useState<Date | undefined>(
-    searchParams.get('dateFrom') ? new Date(searchParams.get('dateFrom')!) : undefined
-  );
-  const [dateTo, setDateTo] = useState<Date | undefined>(
-    searchParams.get('dateTo') ? new Date(searchParams.get('dateTo')!) : undefined
-  );
+  const [dateFrom, setDateFrom] = useState(searchParams.get('dateFrom') || '');
+  const [dateTo, setDateTo] = useState(searchParams.get('dateTo') || '');
 
   const { data: warehousesData } = useQuery({
     queryKey: ['warehouses-for-filter'],
@@ -59,8 +48,8 @@ export function MovementFilters() {
     if (warehouseId) params.set('warehouseId', warehouseId);
     if (productId) params.set('productId', productId);
     if (type) params.set('type', type);
-    if (dateFrom) params.set('dateFrom', moment(dateFrom).format('YYYY-MM-DD'));
-    if (dateTo) params.set('dateTo', moment(dateTo).format('YYYY-MM-DD'));
+    if (dateFrom) params.set('dateFrom', dateFrom);
+    if (dateTo) params.set('dateTo', dateTo);
 
     router.push(`/dashboard/commercial/movements?${params.toString()}`);
   };
@@ -69,8 +58,8 @@ export function MovementFilters() {
     setWarehouseId('');
     setProductId('');
     setType('');
-    setDateFrom(undefined);
-    setDateTo(undefined);
+    setDateFrom('');
+    setDateTo('');
     router.push('/dashboard/commercial/movements');
   };
 
@@ -133,55 +122,21 @@ export function MovementFilters() {
         {/* Date From */}
         <div className="space-y-2">
           <Label>Desde</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  'w-full justify-start text-left font-normal',
-                  !dateFrom && 'text-muted-foreground'
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {dateFrom ? moment(dateFrom).format('DD/MM/YYYY') : 'Seleccionar'}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={dateFrom}
-                onSelect={setDateFrom}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
+          <Input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+          />
         </div>
 
         {/* Date To */}
         <div className="space-y-2">
           <Label>Hasta</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  'w-full justify-start text-left font-normal',
-                  !dateTo && 'text-muted-foreground'
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {dateTo ? moment(dateTo).format('DD/MM/YYYY') : 'Seleccionar'}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={dateTo}
-                onSelect={setDateTo}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
+          <Input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+          />
         </div>
       </div>
 

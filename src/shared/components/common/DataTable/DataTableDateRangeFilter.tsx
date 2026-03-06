@@ -78,7 +78,7 @@ export function DataTableDateRangeFilter<TData, TValue>({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
+      <PopoverContent className="w-auto p-0" align="start" side="bottom" sideOffset={4}>
         <Calendar
           mode="range"
           selected={from || to ? { from, to } : undefined}
