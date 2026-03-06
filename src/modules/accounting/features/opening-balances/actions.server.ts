@@ -40,6 +40,7 @@ export async function getOpeningBalancesPageData() {
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No se encontró la empresa activa');
   await checkPermission('accounting.opening-balances', 'view', { redirect: true });
 
   try {
@@ -180,6 +181,7 @@ export async function getOpeningBalanceInvoices() {
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No se encontró la empresa activa');
   await checkPermission('accounting.opening-balances', 'view', { redirect: true });
 
   try {
@@ -208,7 +210,7 @@ export async function getOpeningBalanceInvoices() {
           companyId,
           status: PurchaseInvoiceStatus.CONFIRMED,
           journalEntryId: null,
-          internalNotes: OPENING_BALANCE_MARKER,
+          notes: OPENING_BALANCE_MARKER,
         },
         select: {
           id: true,
@@ -313,13 +315,14 @@ export async function saveOpeningBalanceEntry(
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No se encontró la empresa activa');
   await checkPermission('accounting.opening-balances', 'create', { redirect: true });
 
   // Validar input
   const parsed = openingBalanceFormSchema.safeParse(input);
   if (!parsed.success) {
     throw new Error(
-      `Datos inválidos: ${parsed.error.errors.map((e) => e.message).join(', ')}`
+      `Datos inválidos: ${parsed.error.issues.map((e) => e.message).join(', ')}`
     );
   }
 
@@ -502,12 +505,13 @@ export async function createOpeningSalesInvoice(
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No se encontró la empresa activa');
   await checkPermission('accounting.opening-balances', 'create', { redirect: true });
 
   const parsed = openingSalesInvoiceSchema.safeParse(input);
   if (!parsed.success) {
     throw new Error(
-      `Datos inválidos: ${parsed.error.errors.map((e) => e.message).join(', ')}`
+      `Datos inválidos: ${parsed.error.issues.map((e) => e.message).join(', ')}`
     );
   }
 
@@ -604,12 +608,13 @@ export async function createOpeningPurchaseInvoice(
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No se encontró la empresa activa');
   await checkPermission('accounting.opening-balances', 'create', { redirect: true });
 
   const parsed = openingPurchaseInvoiceSchema.safeParse(input);
   if (!parsed.success) {
     throw new Error(
-      `Datos inválidos: ${parsed.error.errors.map((e) => e.message).join(', ')}`
+      `Datos inválidos: ${parsed.error.issues.map((e) => e.message).join(', ')}`
     );
   }
 
@@ -707,6 +712,7 @@ export async function deleteOpeningInvoice(
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No se encontró la empresa activa');
   await checkPermission('accounting.opening-balances', 'delete', { redirect: true });
 
   try {
@@ -801,6 +807,7 @@ export async function importOpeningSalesInvoicesFromExcel(
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No se encontró la empresa activa');
   await checkPermission('accounting.opening-balances', 'create', { redirect: true });
 
   try {
@@ -963,6 +970,7 @@ export async function importOpeningPurchaseInvoicesFromExcel(
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No se encontró la empresa activa');
   await checkPermission('accounting.opening-balances', 'create', { redirect: true });
 
   try {

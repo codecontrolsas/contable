@@ -56,4 +56,4 @@ next-env.d.ts
 .windsurf
 notas.md
 .opencode
-.agents
+.agentsbackup_db.sql
