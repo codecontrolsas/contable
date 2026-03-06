@@ -2,33 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { isS3Provider } from '@/shared/config/storage.config';
 import { getContentType } from '@/shared/config/storage.config';
-import { localFileExists, readLocalFile } from '@/shared/lib/storage';
+import { localFileExists, readLocalFile, getPresignedDownloadUrl } from '@/shared/lib/storage';
 import { logger } from '@/shared/lib/logger';
 
 /**
- * API Route para servir archivos del storage local
+ * API Route para servir archivos del storage
  *
  * GET /api/storage/[...path]
  *
- * NOTA: Esta ruta solo funciona cuando STORAGE_PROVIDER="local"
- * Con S3/MinIO/R2, los archivos se sirven directamente o con presigned URLs
+ * - Con STORAGE_PROVIDER=local: sirve archivos del filesystem
+ * - Con STORAGE_PROVIDER=s3: redirige a presigned URL de S3/MinIO
  */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
   try {
-    // Si usamos S3, esta ruta no debería usarse
-    if (isS3Provider()) {
-      return NextResponse.json(
-        {
-          error: 'Esta ruta solo está disponible con STORAGE_PROVIDER=local',
-          hint: 'Use presigned URLs para acceder a archivos en S3/MinIO/R2',
-        },
-        { status: 400 }
-      );
-    }
-
     const { path: pathSegments } = await params;
     const key = pathSegments.join('/');
 
@@ -37,17 +26,21 @@ export async function GET(
       return NextResponse.json({ error: 'Ruta inválida' }, { status: 400 });
     }
 
-    // Verificar que el archivo existe
+    // Si usamos S3, redirigir a presigned URL
+    if (isS3Provider()) {
+      const presignedUrl = await getPresignedDownloadUrl(key);
+      return NextResponse.redirect(presignedUrl);
+    }
+
+    // Storage local: servir archivo directamente
     const exists = await localFileExists(key);
     if (!exists) {
       return NextResponse.json({ error: 'Archivo no encontrado' }, { status: 404 });
     }
 
-    // Leer el archivo
     const file = await readLocalFile(key);
     const contentType = getContentType(key);
 
-    // Determinar si es descarga o visualización
     const download = request.nextUrl.searchParams.get('download');
     const filename = key.split('/').pop() || 'file';
 
@@ -57,7 +50,6 @@ export async function GET(
       'Cache-Control': 'public, max-age=31536000, immutable',
     };
 
-    // Si es descarga, agregar Content-Disposition
     if (download === 'true') {
       headers['Content-Disposition'] = `attachment; filename="${filename}"`;
     }
