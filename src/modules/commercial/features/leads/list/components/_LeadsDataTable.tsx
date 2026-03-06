@@ -32,11 +32,16 @@ import {
 } from '../actions.server';
 import type { LeadStatus } from '@/generated/prisma/enums';
 
+interface FacetCounts {
+  status: Record<string, number>;
+}
+
 interface Props {
   data: LeadListItem[];
   totalRows: number;
   searchParams: DataTableSearchParams;
   permissions: ModulePermissions;
+  facetCounts?: FacetCounts;
 }
 
 export function _LeadsDataTable({
@@ -44,6 +49,7 @@ export function _LeadsDataTable({
   totalRows,
   searchParams,
   permissions,
+  facetCounts,
 }: Props) {
   const router = useRouter();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -99,9 +105,10 @@ export function _LeadsDataTable({
           value,
           label,
         })),
+        externalCounts: facetCounts?.status ? new Map(Object.entries(facetCounts.status)) : undefined,
       },
     ],
-    []
+    [facetCounts]
   );
 
   return (

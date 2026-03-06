@@ -3,6 +3,7 @@ import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 import { getModulePermissions } from '@/shared/lib/permissions';
 
 import {
+  getEquipmentFacetCounts,
   getEquipmentPaginated,
   getEquipmentTabCounts,
   getVehicleBrandsForFilter,
@@ -19,12 +20,13 @@ export async function EquipmentList({ searchParams }: Props) {
   // Obtener tab actual de searchParams (default: 'all')
   const currentTab = (searchParams.tab as EquipmentTab) || 'all';
 
-  // Fetch data, opciones de filtros y permisos en paralelo
-  const [{ data, total }, tabCounts, vehicleTypes, vehicleBrands, permissions] = await Promise.all([
+  // Fetch data, opciones de filtros, conteos facetados y permisos en paralelo
+  const [{ data, total }, tabCounts, vehicleTypes, vehicleBrands, facetCounts, permissions] = await Promise.all([
     getEquipmentPaginated(searchParams, currentTab),
     getEquipmentTabCounts(),
     getVehicleTypesForFilter(),
     getVehicleBrandsForFilter(),
+    getEquipmentFacetCounts(),
     getModulePermissions('equipment'),
   ]);
 
@@ -48,6 +50,7 @@ export async function EquipmentList({ searchParams }: Props) {
           currentTab={currentTab}
           vehicleTypes={vehicleTypes}
           vehicleBrands={vehicleBrands}
+          facetCounts={facetCounts}
           permissions={permissions}
         />
       </div>

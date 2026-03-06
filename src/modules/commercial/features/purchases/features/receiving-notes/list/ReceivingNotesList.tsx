@@ -1,7 +1,7 @@
 import { Button } from '@/shared/components/ui/button';
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
-import { getReceivingNotesPaginated } from './actions.server';
+import { getReceivingNotesPaginated, getReceivingNoteFacetCounts } from './actions.server';
 import { _ReceivingNotesTable } from './components/_ReceivingNotesTable';
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
 import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
@@ -11,7 +11,10 @@ interface Props {
 }
 
 export async function ReceivingNotesList({ searchParams }: Props) {
-  const initialData = await getReceivingNotesPaginated(searchParams);
+  const [initialData, facetCounts] = await Promise.all([
+    getReceivingNotesPaginated(searchParams),
+    getReceivingNoteFacetCounts(),
+  ]);
 
   return (
     <PermissionGuard module="commercial.receiving-notes" action="view" redirect>
@@ -31,7 +34,7 @@ export async function ReceivingNotesList({ searchParams }: Props) {
           </Button>
         </div>
 
-        <_ReceivingNotesTable data={initialData.data} totalRows={initialData.total} searchParams={searchParams} />
+        <_ReceivingNotesTable data={initialData.data} totalRows={initialData.total} searchParams={searchParams} facetCounts={facetCounts} />
       </div>
     </PermissionGuard>
   );

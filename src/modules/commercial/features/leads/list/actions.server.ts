@@ -26,7 +26,7 @@ export async function getLeads(params: GetLeadsParams = {}) {
   if (!companyId) throw new Error('No hay empresa activa');
 
   try {
-    const filtersWhere = buildFiltersWhere(filters, ['status']);
+    const filtersWhere = buildFiltersWhere(filters, { status: 'status' });
 
     const where = {
       companyId,
@@ -440,6 +440,26 @@ export async function deleteLead(id: string) {
     logger.error('Error deleting lead', { data: { error, id } });
     throw error instanceof Error ? error : new Error('Error al eliminar el lead');
   }
+}
+
+// ============================================
+// Facet Counts
+// ============================================
+
+export async function getLeadFacetCounts() {
+  await checkPermission('commercial.leads', 'view', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  const statusCounts = await prisma.lead.groupBy({
+    by: ['status'],
+    where: { companyId, isActive: true },
+    _count: { status: true },
+  });
+
+  return {
+    status: Object.fromEntries(statusCounts.map((s) => [s.status, s._count.status])),
+  };
 }
 
 // Tipos inferidos

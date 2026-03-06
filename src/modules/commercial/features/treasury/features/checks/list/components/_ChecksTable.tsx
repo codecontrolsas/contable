@@ -26,13 +26,19 @@ import { _DepositCheckModal } from './_DepositCheckModal';
 import { _EndorseCheckModal } from './_EndorseCheckModal';
 import { usePermissions } from '@/shared/hooks/usePermissions';
 
+interface FacetCounts {
+  status: Record<string, number>;
+  type: Record<string, number>;
+}
+
 interface Props {
   data: CheckListItem[];
   totalRows: number;
   searchParams: DataTableSearchParams;
+  facetCounts?: FacetCounts;
 }
 
-export function _ChecksTable({ data, totalRows, searchParams }: Props) {
+export function _ChecksTable({ data, totalRows, searchParams, facetCounts }: Props) {
   const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -87,6 +93,7 @@ export function _ChecksTable({ data, totalRows, searchParams }: Props) {
           label,
           value,
         })),
+        externalCounts: facetCounts?.status ? new Map(Object.entries(facetCounts.status)) : undefined,
       },
       {
         columnId: 'type',
@@ -95,6 +102,7 @@ export function _ChecksTable({ data, totalRows, searchParams }: Props) {
           label,
           value,
         })),
+        externalCounts: facetCounts?.type ? new Map(Object.entries(facetCounts.type)) : undefined,
       },
       {
         columnId: 'issueDate',
@@ -107,7 +115,7 @@ export function _ChecksTable({ data, totalRows, searchParams }: Props) {
         type: 'dateRange' as const,
       },
     ],
-    []
+    [facetCounts]
   );
 
   const columns = useMemo(

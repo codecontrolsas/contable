@@ -29,13 +29,19 @@ import { getColumns } from '../columns';
 
 type Invoice = Awaited<ReturnType<typeof getInvoices>>[number];
 
+interface FacetCounts {
+  status: Record<string, number>;
+  voucherType: Record<string, number>;
+}
+
 interface Props {
   data: Invoice[];
   totalRows: number;
   searchParams: DataTableSearchParams;
+  facetCounts?: FacetCounts;
 }
 
-export function _InvoicesTable({ data, totalRows, searchParams }: Props) {
+export function _InvoicesTable({ data, totalRows, searchParams, facetCounts }: Props) {
   const router = useRouter();
   const { hasPermission } = usePermissions();
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
@@ -83,12 +89,25 @@ export function _InvoicesTable({ data, totalRows, searchParams }: Props) {
   const facetedFilters: DataTableFacetedFilterConfig[] = useMemo(
     () => [
       {
+        columnId: 'fullNumber',
+        title: 'Número',
+        type: 'text' as const,
+        placeholder: 'Buscar por número...',
+      },
+      {
+        columnId: 'customer_name',
+        title: 'Cliente',
+        type: 'text' as const,
+        placeholder: 'Buscar por cliente...',
+      },
+      {
         columnId: 'status',
         title: 'Estado',
         options: Object.entries(INVOICE_STATUS_LABELS).map(([value, label]) => ({
           label,
           value,
         })),
+        externalCounts: facetCounts?.status ? new Map(Object.entries(facetCounts.status)) : undefined,
       },
       {
         columnId: 'voucherType',
@@ -97,6 +116,7 @@ export function _InvoicesTable({ data, totalRows, searchParams }: Props) {
           label,
           value,
         })),
+        externalCounts: facetCounts?.voucherType ? new Map(Object.entries(facetCounts.voucherType)) : undefined,
       },
       {
         columnId: 'issueDate',
@@ -104,7 +124,7 @@ export function _InvoicesTable({ data, totalRows, searchParams }: Props) {
         type: 'dateRange' as const,
       },
     ],
-    []
+    [facetCounts]
   );
 
   const columns = useMemo(
@@ -145,7 +165,7 @@ export function _InvoicesTable({ data, totalRows, searchParams }: Props) {
         data={data}
         totalRows={totalRows}
         searchParams={searchParams}
-        searchPlaceholder="Buscar facturas..."
+        showSearch={false}
         facetedFilters={facetedFilters}
         tableId="commercial-sales-invoices"
         showFilterToggle

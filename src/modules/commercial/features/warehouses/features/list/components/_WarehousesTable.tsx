@@ -27,14 +27,20 @@ import type { WarehouseListItem } from '../actions.server';
 import { deleteWarehouse, toggleWarehouseActive } from '../actions.server';
 import { WAREHOUSE_TYPE_LABELS } from '../../../shared/types';
 
+interface FacetCounts {
+  type: Record<string, number>;
+  isActive: Record<string, number>;
+}
+
 interface WarehousesTableProps {
   data: WarehouseListItem[];
   totalRows: number;
   searchParams: DataTableSearchParams;
   permissions: ModulePermissions;
+  facetCounts?: FacetCounts;
 }
 
-export function _WarehousesTable({ data, totalRows, searchParams, permissions }: WarehousesTableProps) {
+export function _WarehousesTable({ data, totalRows, searchParams, permissions, facetCounts }: WarehousesTableProps) {
   const router = useRouter();
   const [editingWarehouse, setEditingWarehouse] = useState<WarehouseListItem | null>(null);
   const [deletingWarehouse, setDeletingWarehouse] = useState<WarehouseListItem | null>(null);
@@ -88,6 +94,7 @@ export function _WarehousesTable({ data, totalRows, searchParams, permissions }:
           value,
           label,
         })),
+        externalCounts: facetCounts?.type ? new Map(Object.entries(facetCounts.type)) : undefined,
       },
       {
         columnId: 'isActive',
@@ -96,9 +103,10 @@ export function _WarehousesTable({ data, totalRows, searchParams, permissions }:
           { value: 'true', label: 'Activo' },
           { value: 'false', label: 'Inactivo' },
         ],
+        externalCounts: facetCounts?.isActive ? new Map(Object.entries(facetCounts.isActive)) : undefined,
       },
     ],
-    []
+    [facetCounts]
   );
 
   return (

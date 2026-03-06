@@ -22,13 +22,18 @@ import { EXPENSE_STATUS_LABELS } from '../../validators';
 import { _CreateExpenseModal } from './_CreateExpenseModal';
 import { _ExpenseDetailModal } from './_ExpenseDetailModal';
 
+interface FacetCounts {
+  status: Record<string, number>;
+}
+
 interface Props {
   data: ExpenseListItem[];
   totalRows: number;
   searchParams: DataTableSearchParams;
+  facetCounts?: FacetCounts;
 }
 
-export function _ExpensesTable({ data, totalRows, searchParams }: Props) {
+export function _ExpensesTable({ data, totalRows, searchParams, facetCounts }: Props) {
   const router = useRouter();
   const { hasPermission } = usePermissions();
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
@@ -104,6 +109,7 @@ export function _ExpensesTable({ data, totalRows, searchParams }: Props) {
           label,
           value,
         })),
+        externalCounts: facetCounts?.status ? new Map(Object.entries(facetCounts.status)) : undefined,
       },
       {
         columnId: 'date',
@@ -116,7 +122,7 @@ export function _ExpensesTable({ data, totalRows, searchParams }: Props) {
         type: 'dateRange' as const,
       },
     ],
-    []
+    [facetCounts]
   );
 
   const columns = useMemo(

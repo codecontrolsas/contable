@@ -24,13 +24,18 @@ import { EditPaymentOrderModal } from './_EditPaymentOrderModal';
 import { CreatePaymentOrderModal } from './_CreatePaymentOrderModal';
 import { usePermissions } from '@/shared/hooks/usePermissions';
 
+interface FacetCounts {
+  status: Record<string, number>;
+}
+
 interface Props {
   data: PaymentOrderListItem[];
   totalRows: number;
   searchParams: DataTableSearchParams;
+  facetCounts?: FacetCounts;
 }
 
-export function _PaymentOrdersTable({ data, totalRows, searchParams }: Props) {
+export function _PaymentOrdersTable({ data, totalRows, searchParams, facetCounts }: Props) {
   const router = useRouter();
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -89,6 +94,7 @@ export function _PaymentOrdersTable({ data, totalRows, searchParams }: Props) {
           label,
           value,
         })),
+        externalCounts: facetCounts?.status ? new Map(Object.entries(facetCounts.status)) : undefined,
       },
       {
         columnId: 'date',
@@ -96,7 +102,7 @@ export function _PaymentOrdersTable({ data, totalRows, searchParams }: Props) {
         type: 'dateRange' as const,
       },
     ],
-    []
+    [facetCounts]
   );
 
   const columns = useMemo(

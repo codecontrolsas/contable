@@ -1,7 +1,7 @@
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
 import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
-import { getBankAccounts, getBankAccountsPaginated } from './actions.server';
+import { getBankAccounts, getBankAccountsPaginated, getBankAccountFacetCounts } from './actions.server';
 import { _BankAccountsTable } from './components/_BankAccountsTable';
 
 interface Props {
@@ -9,9 +9,10 @@ interface Props {
 }
 
 export async function BankAccountsList({ searchParams = {} }: Props) {
-  const [allAccounts, paginatedResult] = await Promise.all([
+  const [allAccounts, paginatedResult, facetCounts] = await Promise.all([
     getBankAccounts({ includeInactive: true }),
     getBankAccountsPaginated(searchParams),
+    getBankAccountFacetCounts(),
   ]);
 
   // Calcular KPIs desde todas las cuentas
@@ -81,6 +82,7 @@ export async function BankAccountsList({ searchParams = {} }: Props) {
         data={paginatedResult.data}
         totalRows={paginatedResult.total}
         searchParams={searchParams}
+        facetCounts={facetCounts}
       />
     </div>
     </PermissionGuard>

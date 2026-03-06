@@ -1,7 +1,7 @@
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
 import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 import { getModulePermissions } from '@/shared/lib/permissions';
-import { getSuppliers } from './actions.server';
+import { getSuppliers, getSupplierFacetCounts } from './actions.server';
 import { _SuppliersTable } from './components/_SuppliersTable';
 
 interface Props {
@@ -9,9 +9,10 @@ interface Props {
 }
 
 export async function SuppliersList({ searchParams = {} }: Props) {
-  const [result, permissions] = await Promise.all([
+  const [result, permissions, facetCounts] = await Promise.all([
     getSuppliers(searchParams),
     getModulePermissions('commercial.suppliers'),
+    getSupplierFacetCounts(),
   ]);
 
   return (
@@ -29,6 +30,7 @@ export async function SuppliersList({ searchParams = {} }: Props) {
           totalRows={result.pagination.total}
           searchParams={searchParams}
           permissions={permissions}
+          facetCounts={facetCounts}
         />
       </div>
     </PermissionGuard>

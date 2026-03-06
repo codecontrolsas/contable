@@ -30,14 +30,20 @@ import {
 } from '../../../shared/types';
 import { deleteProduct } from '../actions.server';
 
+interface FacetCounts {
+  type: Record<string, number>;
+  status: Record<string, number>;
+}
+
 interface ProductsTableProps {
   data: Product[];
   totalRows: number;
   searchParams: DataTableSearchParams;
   permissions: ModulePermissions;
+  facetCounts?: FacetCounts;
 }
 
-export function _ProductsTable({ data, totalRows, searchParams, permissions }: ProductsTableProps) {
+export function _ProductsTable({ data, totalRows, searchParams, permissions, facetCounts }: ProductsTableProps) {
   const router = useRouter();
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
@@ -79,6 +85,7 @@ export function _ProductsTable({ data, totalRows, searchParams, permissions }: P
           value,
           label,
         })),
+        externalCounts: facetCounts?.type ? new Map(Object.entries(facetCounts.type)) : undefined,
       },
       {
         columnId: 'status',
@@ -87,9 +94,10 @@ export function _ProductsTable({ data, totalRows, searchParams, permissions }: P
           value,
           label,
         })),
+        externalCounts: facetCounts?.status ? new Map(Object.entries(facetCounts.status)) : undefined,
       },
     ],
-    []
+    [facetCounts]
   );
 
   return (

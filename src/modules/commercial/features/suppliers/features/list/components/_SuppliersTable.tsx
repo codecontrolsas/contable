@@ -27,14 +27,20 @@ import { getColumns } from '../columns';
 import type { Supplier } from '../../../shared/types';
 import { deleteSupplier } from '../actions.server';
 
+interface FacetCounts {
+  status: Record<string, number>;
+  taxCondition: Record<string, number>;
+}
+
 interface SuppliersTableProps {
   data: Supplier[];
   totalRows: number;
   searchParams: DataTableSearchParams;
   permissions: ModulePermissions;
+  facetCounts?: FacetCounts;
 }
 
-export function _SuppliersTable({ data, totalRows, searchParams, permissions }: SuppliersTableProps) {
+export function _SuppliersTable({ data, totalRows, searchParams, permissions, facetCounts }: SuppliersTableProps) {
   const router = useRouter();
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [deletingSupplier, setDeletingSupplier] = useState<Supplier | null>(null);
@@ -76,6 +82,7 @@ export function _SuppliersTable({ data, totalRows, searchParams, permissions }: 
           value,
           label,
         })),
+        externalCounts: facetCounts?.status ? new Map(Object.entries(facetCounts.status)) : undefined,
       },
       {
         columnId: 'taxCondition',
@@ -84,9 +91,10 @@ export function _SuppliersTable({ data, totalRows, searchParams, permissions }: 
           value,
           label,
         })),
+        externalCounts: facetCounts?.taxCondition ? new Map(Object.entries(facetCounts.taxCondition)) : undefined,
       },
     ],
-    []
+    [facetCounts]
   );
 
   return (

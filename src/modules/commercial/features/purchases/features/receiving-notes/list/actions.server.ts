@@ -878,6 +878,29 @@ async function updatePurchaseOrderStatus(
 }
 
 // ============================================
+// FACET COUNTS
+// ============================================
+
+/**
+ * Obtiene conteos globales por status para filtros facetados (server-side)
+ */
+export async function getReceivingNoteFacetCounts() {
+  await checkPermission('commercial.receiving-notes', 'view', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  const statusCounts = await prisma.receivingNote.groupBy({
+    by: ['status'],
+    where: { companyId },
+    _count: { status: true },
+  });
+
+  return {
+    status: Object.fromEntries(statusCounts.map((s) => [s.status, s._count.status])),
+  };
+}
+
+// ============================================
 // TIPOS INFERIDOS
 // ============================================
 

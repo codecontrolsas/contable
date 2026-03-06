@@ -3,7 +3,7 @@ import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 import { Button } from '@/shared/components/ui/button';
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
-import { getInvoicesPaginated } from './actions.server';
+import { getInvoicesPaginated, getInvoiceFacetCounts } from './actions.server';
 import { _InvoicesTable } from './components/_InvoicesTable';
 
 interface Props {
@@ -11,7 +11,10 @@ interface Props {
 }
 
 export async function InvoicesList({ searchParams = {} }: Props) {
-  const paginatedResult = await getInvoicesPaginated(searchParams);
+  const [paginatedResult, facetCounts] = await Promise.all([
+    getInvoicesPaginated(searchParams),
+    getInvoiceFacetCounts(),
+  ]);
 
   return (
     <PermissionGuard module="commercial.invoices" action="view" redirect>
@@ -35,6 +38,7 @@ export async function InvoicesList({ searchParams = {} }: Props) {
           data={paginatedResult.data}
           totalRows={paginatedResult.total}
           searchParams={searchParams}
+          facetCounts={facetCounts}
         />
       </div>
     </PermissionGuard>

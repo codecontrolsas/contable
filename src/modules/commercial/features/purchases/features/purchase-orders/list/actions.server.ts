@@ -22,6 +22,31 @@ import moment from 'moment';
 // QUERIES
 // ============================================
 
+// Obtener conteos globales para filtros facetados (server-side)
+export async function getPurchaseOrderFacetCounts() {
+  await checkPermission('commercial.purchase-orders', 'view', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  const [statusCounts, invoicingStatusCounts] = await Promise.all([
+    prisma.purchaseOrder.groupBy({
+      by: ['status'],
+      where: { companyId },
+      _count: { status: true },
+    }),
+    prisma.purchaseOrder.groupBy({
+      by: ['invoicingStatus'],
+      where: { companyId },
+      _count: { invoicingStatus: true },
+    }),
+  ]);
+
+  return {
+    status: Object.fromEntries(statusCounts.map((s) => [s.status, s._count.status])),
+    invoicingStatus: Object.fromEntries(invoicingStatusCounts.map((v) => [v.invoicingStatus, v._count.invoicingStatus])),
+  };
+}
+
 /**
  * Obtiene órdenes de compra con paginación server-side para DataTable
  */

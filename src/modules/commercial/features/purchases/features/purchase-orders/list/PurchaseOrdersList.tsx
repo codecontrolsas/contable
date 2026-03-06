@@ -1,7 +1,7 @@
 import { Button } from '@/shared/components/ui/button';
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
-import { getPurchaseOrdersPaginated } from './actions.server';
+import { getPurchaseOrdersPaginated, getPurchaseOrderFacetCounts } from './actions.server';
 import { _PurchaseOrdersTable } from './components/_PurchaseOrdersTable';
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
 import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
@@ -11,7 +11,10 @@ interface Props {
 }
 
 export async function PurchaseOrdersList({ searchParams }: Props) {
-  const initialData = await getPurchaseOrdersPaginated(searchParams);
+  const [initialData, facetCounts] = await Promise.all([
+    getPurchaseOrdersPaginated(searchParams),
+    getPurchaseOrderFacetCounts(),
+  ]);
 
   return (
     <PermissionGuard module="commercial.purchase-orders" action="view" redirect>
@@ -31,7 +34,7 @@ export async function PurchaseOrdersList({ searchParams }: Props) {
           </Button>
         </div>
 
-        <_PurchaseOrdersTable data={initialData.data} totalRows={initialData.total} searchParams={searchParams} />
+        <_PurchaseOrdersTable data={initialData.data} totalRows={initialData.total} searchParams={searchParams} facetCounts={facetCounts} />
       </div>
     </PermissionGuard>
   );

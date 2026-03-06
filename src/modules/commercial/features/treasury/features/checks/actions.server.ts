@@ -154,6 +154,37 @@ export async function getCheckById(id: string): Promise<CheckWithDetails | null>
 }
 
 // ============================================
+// CONTEOS FACETADOS
+// ============================================
+
+/**
+ * Obtiene conteos globales para filtros facetados (server-side)
+ */
+export async function getCheckFacetCounts() {
+  await checkPermission('commercial.treasury.checks', 'view', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  const [statusCounts, typeCounts] = await Promise.all([
+    prisma.check.groupBy({
+      by: ['status'],
+      where: { companyId },
+      _count: { status: true },
+    }),
+    prisma.check.groupBy({
+      by: ['type'],
+      where: { companyId },
+      _count: { type: true },
+    }),
+  ]);
+
+  return {
+    status: Object.fromEntries(statusCounts.map((s) => [s.status, s._count.status])),
+    type: Object.fromEntries(typeCounts.map((t) => [t.type, t._count.type])),
+  };
+}
+
+// ============================================
 // CREAR CHEQUE MANUAL
 // ============================================
 

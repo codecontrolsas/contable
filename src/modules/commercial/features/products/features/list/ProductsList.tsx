@@ -2,7 +2,7 @@ import type { DataTableSearchParams } from '@/shared/components/common/DataTable
 import { parseSearchParams } from '@/shared/components/common/DataTable/helpers';
 import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 import { getModulePermissions } from '@/shared/lib/permissions';
-import { getProducts } from './actions.server';
+import { getProducts, getProductFacetCounts } from './actions.server';
 import { _ProductsTable } from './components/_ProductsTable';
 
 interface Props {
@@ -14,7 +14,7 @@ export async function ProductsList({ searchParams = {} }: Props) {
   const page = state.page + 1;
   const { search, pageSize, filters } = state;
 
-  const [result, permissions] = await Promise.all([
+  const [result, permissions, facetCounts] = await Promise.all([
     getProducts({
       page,
       pageSize,
@@ -22,6 +22,7 @@ export async function ProductsList({ searchParams = {} }: Props) {
       filters,
     }),
     getModulePermissions('commercial.products'),
+    getProductFacetCounts(),
   ]);
 
   return (
@@ -39,6 +40,7 @@ export async function ProductsList({ searchParams = {} }: Props) {
           totalRows={result.pagination.total}
           searchParams={searchParams}
           permissions={permissions}
+          facetCounts={facetCounts}
         />
       </div>
     </PermissionGuard>

@@ -2,7 +2,7 @@ import type { DataTableSearchParams } from '@/shared/components/common/DataTable
 import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { DollarSign, FileText, CheckCircle2 } from 'lucide-react';
-import { getPaymentOrders, getPaymentOrdersPaginated } from '../actions.server';
+import { getPaymentOrders, getPaymentOrdersPaginated, getPaymentOrderFacetCounts } from '../actions.server';
 import { _PaymentOrdersTable } from './components/_PaymentOrdersTable';
 
 interface Props {
@@ -10,9 +10,10 @@ interface Props {
 }
 
 export async function PaymentOrdersList({ searchParams = {} }: Props) {
-  const [allOrders, paginatedResult] = await Promise.all([
+  const [allOrders, paginatedResult, facetCounts] = await Promise.all([
     getPaymentOrders(),
     getPaymentOrdersPaginated(searchParams),
+    getPaymentOrderFacetCounts(),
   ]);
 
   // KPIs desde todos los registros
@@ -71,6 +72,7 @@ export async function PaymentOrdersList({ searchParams = {} }: Props) {
         data={paginatedResult.data}
         totalRows={paginatedResult.total}
         searchParams={searchParams}
+        facetCounts={facetCounts}
       />
     </div>
     </PermissionGuard>

@@ -30,10 +30,16 @@ import {
   PURCHASE_ORDER_INVOICING_STATUS_LABELS,
 } from '../../shared/validators';
 
+interface FacetCounts {
+  status: Record<string, number>;
+  invoicingStatus: Record<string, number>;
+}
+
 interface PurchaseOrdersTableProps {
   data: PurchaseOrderListItem[];
   totalRows: number;
   searchParams: DataTableSearchParams;
+  facetCounts?: FacetCounts;
 }
 
 interface PendingAction {
@@ -44,7 +50,7 @@ interface PendingAction {
   destructive?: boolean;
 }
 
-export function _PurchaseOrdersTable({ data, totalRows, searchParams }: PurchaseOrdersTableProps) {
+export function _PurchaseOrdersTable({ data, totalRows, searchParams, facetCounts }: PurchaseOrdersTableProps) {
   const router = useRouter();
   const { hasPermission } = usePermissions();
   const [loading, setLoading] = useState<string | null>(null);
@@ -123,6 +129,7 @@ export function _PurchaseOrdersTable({ data, totalRows, searchParams }: Purchase
           label,
           value,
         })),
+        externalCounts: facetCounts?.status ? new Map(Object.entries(facetCounts.status)) : undefined,
       },
       {
         columnId: 'invoicingStatus',
@@ -131,6 +138,7 @@ export function _PurchaseOrdersTable({ data, totalRows, searchParams }: Purchase
           label,
           value,
         })),
+        externalCounts: facetCounts?.invoicingStatus ? new Map(Object.entries(facetCounts.invoicingStatus)) : undefined,
       },
       {
         columnId: 'issueDate',
@@ -138,7 +146,7 @@ export function _PurchaseOrdersTable({ data, totalRows, searchParams }: Purchase
         type: 'dateRange' as const,
       },
     ],
-    []
+    [facetCounts]
   );
 
   const columns = useMemo(

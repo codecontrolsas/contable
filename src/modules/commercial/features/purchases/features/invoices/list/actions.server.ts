@@ -187,6 +187,33 @@ export async function getPurchaseInvoicesPaginated(searchParams: DataTableSearch
 }
 
 /**
+ * Obtiene conteos globales para filtros facetados (server-side)
+ */
+export async function getPurchaseInvoiceFacetCounts() {
+  await checkPermission('commercial.purchases', 'view', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  const [statusCounts, voucherTypeCounts] = await Promise.all([
+    prisma.purchaseInvoice.groupBy({
+      by: ['status'],
+      where: { companyId },
+      _count: { status: true },
+    }),
+    prisma.purchaseInvoice.groupBy({
+      by: ['voucherType'],
+      where: { companyId },
+      _count: { voucherType: true },
+    }),
+  ]);
+
+  return {
+    status: Object.fromEntries(statusCounts.map((s) => [s.status, s._count.status])),
+    voucherType: Object.fromEntries(voucherTypeCounts.map((v) => [v.voucherType, v._count.voucherType])),
+  };
+}
+
+/**
  * Obtiene una factura de compra por ID con todos sus detalles
  */
 export async function getPurchaseInvoiceById(id: string) {

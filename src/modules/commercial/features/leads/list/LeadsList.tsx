@@ -2,7 +2,7 @@ import type { DataTableSearchParams } from '@/shared/components/common/DataTable
 import { parseSearchParams } from '@/shared/components/common/DataTable/helpers';
 import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 import { getModulePermissions } from '@/shared/lib/permissions';
-import { getLeads } from './actions.server';
+import { getLeads, getLeadFacetCounts } from './actions.server';
 import { _LeadsDataTable } from './components/_LeadsDataTable';
 
 interface Props {
@@ -13,7 +13,7 @@ export async function LeadsList({ searchParams = {} }: Props) {
   const state = parseSearchParams(searchParams);
   const { page, pageSize, search, filters } = state;
 
-  const [result, permissions] = await Promise.all([
+  const [result, permissions, facetCounts] = await Promise.all([
     getLeads({
       page: page + 1,
       pageSize,
@@ -21,6 +21,7 @@ export async function LeadsList({ searchParams = {} }: Props) {
       filters,
     }),
     getModulePermissions('commercial.leads'),
+    getLeadFacetCounts(),
   ]);
 
   return (
@@ -38,6 +39,7 @@ export async function LeadsList({ searchParams = {} }: Props) {
           totalRows={result.pagination.total}
           searchParams={searchParams}
           permissions={permissions}
+          facetCounts={facetCounts}
         />
       </div>
     </PermissionGuard>

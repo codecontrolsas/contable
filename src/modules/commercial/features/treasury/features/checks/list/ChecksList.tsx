@@ -3,7 +3,7 @@ import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Wallet, Landmark, AlertTriangle } from 'lucide-react';
 import { formatCurrency } from '@/shared/utils/formatters';
-import { getChecksPaginated } from '../actions.server';
+import { getChecksPaginated, getCheckFacetCounts } from '../actions.server';
 import { _ChecksTable } from './components/_ChecksTable';
 
 interface Props {
@@ -11,7 +11,10 @@ interface Props {
 }
 
 export async function ChecksList({ searchParams = {} }: Props) {
-  const { data, totalRows } = await getChecksPaginated(searchParams);
+  const [{ data, totalRows }, facetCounts] = await Promise.all([
+    getChecksPaginated(searchParams),
+    getCheckFacetCounts(),
+  ]);
 
   // KPIs
   const inPortfolio = data.filter((c) => c.status === 'PORTFOLIO');
@@ -77,7 +80,7 @@ export async function ChecksList({ searchParams = {} }: Props) {
       </div>
 
       {/* Table */}
-      <_ChecksTable data={data} totalRows={totalRows} searchParams={searchParams} />
+      <_ChecksTable data={data} totalRows={totalRows} searchParams={searchParams} facetCounts={facetCounts} />
     </div>
     </PermissionGuard>
   );

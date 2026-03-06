@@ -92,6 +92,33 @@ export async function getProducts(params: GetProductsParams = {}) {
 }
 
 /**
+ * Obtiene los conteos de facetas para los filtros de productos
+ */
+export async function getProductFacetCounts() {
+  await checkPermission('commercial.products', 'view', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  const [typeCounts, statusCounts] = await Promise.all([
+    prisma.product.groupBy({
+      by: ['type'],
+      where: { companyId },
+      _count: { type: true },
+    }),
+    prisma.product.groupBy({
+      by: ['status'],
+      where: { companyId },
+      _count: { status: true },
+    }),
+  ]);
+
+  return {
+    type: Object.fromEntries(typeCounts.map((t) => [t.type, t._count.type])),
+    status: Object.fromEntries(statusCounts.map((s) => [s.status, s._count.status])),
+  };
+}
+
+/**
  * Obtiene un producto por ID
  */
 export async function getProductById(id: string): Promise<Product | null> {

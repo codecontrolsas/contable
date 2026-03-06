@@ -2,7 +2,7 @@ import type { DataTableSearchParams } from '@/shared/components/common/DataTable
 import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { DollarSign, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
-import { getExpensesPaginated } from '../actions.server';
+import { getExpensesPaginated, getExpenseFacetCounts } from '../actions.server';
 import { _ExpensesTable } from './components/_ExpensesTable';
 
 interface Props {
@@ -10,7 +10,10 @@ interface Props {
 }
 
 export async function ExpensesList({ searchParams = {} }: Props) {
-  const { data, total } = await getExpensesPaginated(searchParams);
+  const [{ data, total }, facetCounts] = await Promise.all([
+    getExpensesPaginated(searchParams),
+    getExpenseFacetCounts(),
+  ]);
 
   const totalAmount = data.reduce((acc, e) => acc + e.amount, 0);
   const confirmedCount = data.filter((e) => e.status === 'CONFIRMED').length;
@@ -85,6 +88,7 @@ export async function ExpensesList({ searchParams = {} }: Props) {
           data={data}
           totalRows={total}
           searchParams={searchParams}
+          facetCounts={facetCounts}
         />
       </div>
     </PermissionGuard>

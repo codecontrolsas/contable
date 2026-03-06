@@ -31,10 +31,16 @@ import { confirmPurchaseInvoice, cancelPurchaseInvoice } from '../actions.server
 import { getColumns } from '../columns';
 import { PURCHASE_INVOICE_STATUS_LABELS, VOUCHER_TYPE_LABELS } from '../../shared/validators';
 
+interface FacetCounts {
+  status: Record<string, number>;
+  voucherType: Record<string, number>;
+}
+
 interface PurchaseInvoicesTableProps {
   data: PurchaseInvoiceListItem[];
   totalRows: number;
   searchParams: DataTableSearchParams;
+  facetCounts?: FacetCounts;
 }
 
 type AlertAction = {
@@ -47,7 +53,7 @@ type ReceivingNotePrompt = {
   supplierId: string;
 };
 
-export function _PurchaseInvoicesTable({ data, totalRows, searchParams }: PurchaseInvoicesTableProps) {
+export function _PurchaseInvoicesTable({ data, totalRows, searchParams, facetCounts }: PurchaseInvoicesTableProps) {
   const router = useRouter();
   const { hasPermission } = usePermissions();
   const [loading, setLoading] = useState<string | null>(null);
@@ -112,6 +118,7 @@ export function _PurchaseInvoicesTable({ data, totalRows, searchParams }: Purcha
           label,
           value,
         })),
+        externalCounts: facetCounts?.status ? new Map(Object.entries(facetCounts.status)) : undefined,
       },
       {
         columnId: 'voucherType',
@@ -120,6 +127,7 @@ export function _PurchaseInvoicesTable({ data, totalRows, searchParams }: Purcha
           label,
           value,
         })),
+        externalCounts: facetCounts?.voucherType ? new Map(Object.entries(facetCounts.voucherType)) : undefined,
       },
       {
         columnId: 'issueDate',
@@ -127,7 +135,7 @@ export function _PurchaseInvoicesTable({ data, totalRows, searchParams }: Purcha
         type: 'dateRange' as const,
       },
     ],
-    []
+    [facetCounts]
   );
 
   const columns = useMemo(

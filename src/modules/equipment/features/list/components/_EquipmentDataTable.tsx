@@ -52,6 +52,14 @@ import {
 import { getColumns } from '../columns';
 import { _BulkDepreciationDialog } from './_BulkDepreciationDialog';
 
+interface FacetCounts {
+  status: Record<string, number>;
+  condition: Record<string, number>;
+  type: Record<string, number>;
+  brand: Record<string, number>;
+  isActive: Record<string, number>;
+}
+
 // Iconos para estados
 const statusIcons = {
   INCOMPLETE: Clock,
@@ -69,6 +77,7 @@ interface Props {
   currentTab: EquipmentTab;
   vehicleTypes: VehicleTypeOption[];
   vehicleBrands: VehicleBrandOption[];
+  facetCounts?: FacetCounts;
   permissions: ModulePermissions;
 }
 
@@ -80,6 +89,7 @@ export function _EquipmentDataTable({
   currentTab,
   vehicleTypes,
   vehicleBrands,
+  facetCounts,
   permissions,
 }: Props) {
   const router = useRouter();
@@ -173,50 +183,58 @@ export function _EquipmentDataTable({
     router.push(`/dashboard/equipment?${newParams.toString()}`);
   };
 
-  // Configurar filtros faceteados
-  const facetedFilters: DataTableFacetedFilterConfig[] = [
-    {
-      columnId: 'status',
-      title: 'Estado',
-      options: Object.values(VehicleStatus).map((value) => ({
-        value,
-        label: vehicleStatusLabels[value],
-        icon: statusIcons[value],
-      })),
-    },
-    {
-      columnId: 'condition',
-      title: 'Condición',
-      options: Object.values(VehicleCondition).map((value) => ({
-        value,
-        label: vehicleConditionLabels[value],
-      })),
-    },
-    {
-      columnId: 'type',
-      title: 'Tipo',
-      options: vehicleTypes.map((t) => ({
-        value: t.id,
-        label: t.name,
-      })),
-    },
-    {
-      columnId: 'brand',
-      title: 'Marca',
-      options: vehicleBrands.map((b) => ({
-        value: b.id,
-        label: b.name,
-      })),
-    },
-    {
-      columnId: 'isActive',
-      title: 'Activo',
-      options: [
-        { value: 'true', label: 'Activo' },
-        { value: 'false', label: 'Inactivo' },
-      ],
-    },
-  ];
+  // Configurar filtros faceteados con conteos externos
+  const facetedFilters: DataTableFacetedFilterConfig[] = useMemo(
+    () => [
+      {
+        columnId: 'status',
+        title: 'Estado',
+        options: Object.values(VehicleStatus).map((value) => ({
+          value,
+          label: vehicleStatusLabels[value],
+          icon: statusIcons[value],
+        })),
+        externalCounts: facetCounts?.status ? new Map(Object.entries(facetCounts.status)) : undefined,
+      },
+      {
+        columnId: 'condition',
+        title: 'Condición',
+        options: Object.values(VehicleCondition).map((value) => ({
+          value,
+          label: vehicleConditionLabels[value],
+        })),
+        externalCounts: facetCounts?.condition ? new Map(Object.entries(facetCounts.condition)) : undefined,
+      },
+      {
+        columnId: 'type',
+        title: 'Tipo',
+        options: vehicleTypes.map((t) => ({
+          value: t.id,
+          label: t.name,
+        })),
+        externalCounts: facetCounts?.type ? new Map(Object.entries(facetCounts.type)) : undefined,
+      },
+      {
+        columnId: 'brand',
+        title: 'Marca',
+        options: vehicleBrands.map((b) => ({
+          value: b.id,
+          label: b.name,
+        })),
+        externalCounts: facetCounts?.brand ? new Map(Object.entries(facetCounts.brand)) : undefined,
+      },
+      {
+        columnId: 'isActive',
+        title: 'Activo',
+        options: [
+          { value: 'true', label: 'Activo' },
+          { value: 'false', label: 'Inactivo' },
+        ],
+        externalCounts: facetCounts?.isActive ? new Map(Object.entries(facetCounts.isActive)) : undefined,
+      },
+    ],
+    [vehicleTypes, vehicleBrands, facetCounts]
+  );
 
   // Botones del toolbar
   const toolbarActions = (

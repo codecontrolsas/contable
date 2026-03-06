@@ -969,6 +969,34 @@ export async function transferStock(data: DirectStockTransferFormData): Promise<
 
 
 // ============================================
+// Facet Counts
+// ============================================
+
+export async function getWarehouseFacetCounts() {
+  await checkPermission('commercial.warehouses', 'view', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No se encontró empresa activa');
+
+  const [typeCounts, isActiveCounts] = await Promise.all([
+    prisma.warehouse.groupBy({
+      by: ['type'],
+      where: { companyId },
+      _count: { type: true },
+    }),
+    prisma.warehouse.groupBy({
+      by: ['isActive'],
+      where: { companyId },
+      _count: { isActive: true },
+    }),
+  ]);
+
+  return {
+    type: Object.fromEntries(typeCounts.map((t) => [t.type, t._count.type])),
+    isActive: Object.fromEntries(isActiveCounts.map((a) => [String(a.isActive), a._count.isActive])),
+  };
+}
+
+// ============================================
 // Type Exports
 // ============================================
 

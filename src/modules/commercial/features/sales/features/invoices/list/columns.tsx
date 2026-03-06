@@ -110,7 +110,7 @@ export function getColumns({ onView, onEdit, onConfirm, onCancel, onAttach }: Co
     {
       accessorKey: 'total',
       meta: { title: 'Total' },
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Total" />,
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Total" className="justify-end" />,
       cell: ({ row }) => (
         <div className="font-semibold text-right">
           ${Number(row.original.total).toLocaleString('es-AR', { minimumFractionDigits: 2 })}

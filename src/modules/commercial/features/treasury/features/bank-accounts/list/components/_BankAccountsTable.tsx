@@ -21,13 +21,19 @@ import { getColumns } from '../columns';
 import { _BankAccountFormModal } from './_BankAccountFormModal';
 import { usePermissions } from '@/shared/hooks/usePermissions';
 
+interface FacetCounts {
+  status: Record<string, number>;
+  accountType: Record<string, number>;
+}
+
 interface Props {
   data: BankAccountWithBalance[];
   totalRows: number;
   searchParams: DataTableSearchParams;
+  facetCounts?: FacetCounts;
 }
 
-export function _BankAccountsTable({ data, totalRows, searchParams }: Props) {
+export function _BankAccountsTable({ data, totalRows, searchParams, facetCounts }: Props) {
   const router = useRouter();
   const [selectedAccount, setSelectedAccount] = useState<BankAccountWithBalance | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -88,6 +94,7 @@ export function _BankAccountsTable({ data, totalRows, searchParams }: Props) {
           label,
           value,
         })),
+        externalCounts: facetCounts?.status ? new Map(Object.entries(facetCounts.status)) : undefined,
       },
       {
         columnId: 'accountType',
@@ -96,6 +103,7 @@ export function _BankAccountsTable({ data, totalRows, searchParams }: Props) {
           label,
           value,
         })),
+        externalCounts: facetCounts?.accountType ? new Map(Object.entries(facetCounts.accountType)) : undefined,
       },
       {
         columnId: 'currency',
@@ -107,7 +115,7 @@ export function _BankAccountsTable({ data, totalRows, searchParams }: Props) {
         ],
       },
     ],
-    []
+    [facetCounts]
   );
 
   const columns = useMemo(

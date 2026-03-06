@@ -605,6 +605,26 @@ export async function deleteExpense(id: string) {
 }
 
 // ============================================
+// Facet Counts
+// ============================================
+
+export async function getExpenseFacetCounts() {
+  await checkPermission('commercial.expenses', 'view', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  const statusCounts = await prisma.expense.groupBy({
+    by: ['status'],
+    where: { companyId },
+    _count: { status: true },
+  });
+
+  return {
+    status: Object.fromEntries(statusCounts.map((s) => [s.status, s._count.status])),
+  };
+}
+
+// ============================================
 // GASTOS PENDIENTES (para Órdenes de Pago)
 // ============================================
 

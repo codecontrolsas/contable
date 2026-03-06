@@ -26,10 +26,15 @@ import {
 import { getColumns } from '../columns';
 import { RECEIVING_NOTE_STATUS_LABELS } from '../../shared/validators';
 
+interface FacetCounts {
+  status: Record<string, number>;
+}
+
 interface ReceivingNotesTableProps {
   data: ReceivingNoteListItem[];
   totalRows: number;
   searchParams: DataTableSearchParams;
+  facetCounts?: FacetCounts;
 }
 
 interface PendingAction {
@@ -40,7 +45,7 @@ interface PendingAction {
   destructive?: boolean;
 }
 
-export function _ReceivingNotesTable({ data, totalRows, searchParams }: ReceivingNotesTableProps) {
+export function _ReceivingNotesTable({ data, totalRows, searchParams, facetCounts }: ReceivingNotesTableProps) {
   const router = useRouter();
   const { hasPermission } = usePermissions();
   const [loading, setLoading] = useState<string | null>(null);
@@ -124,6 +129,7 @@ export function _ReceivingNotesTable({ data, totalRows, searchParams }: Receivin
           label,
           value,
         })),
+        externalCounts: facetCounts?.status ? new Map(Object.entries(facetCounts.status)) : undefined,
       },
       {
         columnId: 'receptionDate',
@@ -131,7 +137,7 @@ export function _ReceivingNotesTable({ data, totalRows, searchParams }: Receivin
         type: 'dateRange' as const,
       },
     ],
-    []
+    [facetCounts]
   );
 
   return (

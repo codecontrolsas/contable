@@ -9,7 +9,7 @@ import { createInvoiceSchema } from '../shared/validators';
 import { revalidatePath } from 'next/cache';
 import { Prisma } from '@/generated/prisma/client';
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
-import { buildFiltersWhere, buildDateRangeFiltersWhere, parseSearchParams, stateToPrismaParams } from '@/shared/components/common/DataTable/helpers';
+import { buildFiltersWhere, buildDateRangeFiltersWhere, buildTextFiltersWhere, parseSearchParams, stateToPrismaParams } from '@/shared/components/common/DataTable/helpers';
 import {
   validateVoucherType,
   mapTaxStatusToCustomerTaxCondition,
@@ -99,21 +99,23 @@ export async function getInvoicesPaginated(searchParams: DataTableSearchParams) 
     const filtersWhere = buildFiltersWhere(parsed.filters, {
       status: 'status',
       voucherType: 'voucherType',
-    }, { exclude: ['issueDate'] });
+    }, { exclude: ['issueDate', 'fullNumber', 'customer_name'] });
 
     const dateFiltersWhere = buildDateRangeFiltersWhere(parsed.filters, ['issueDate']);
+    const textFiltersWhere = buildTextFiltersWhere(parsed.filters, ['fullNumber']);
+
+    // Filtro de texto para cliente (relación anidada)
+    const customerNameFilter = parsed.filters['customer_name'];
+    const customerWhere = customerNameFilter?.[0]
+      ? { customer: { name: { contains: customerNameFilter[0], mode: 'insensitive' as const } } }
+      : {};
 
     const where: Prisma.SalesInvoiceWhereInput = {
       companyId,
       ...filtersWhere,
       ...dateFiltersWhere,
-      ...(search && {
-        OR: [
-          { fullNumber: { contains: search, mode: 'insensitive' } },
-          { customer: { name: { contains: search, mode: 'insensitive' } } },
-          { customer: { taxId: { contains: search, mode: 'insensitive' } } },
-        ],
-      }),
+      ...textFiltersWhere,
+      ...customerWhere,
     };
 
     const orderBy = prismaOrderBy && Object.keys(prismaOrderBy).length > 0
@@ -177,6 +179,31 @@ export async function getInvoicesPaginated(searchParams: DataTableSearchParams) 
     logger.error('Error al obtener facturas paginadas', { data: { error } });
     throw error;
   }
+}
+
+// Obtener conteos globales para filtros facetados (server-side)
+export async function getInvoiceFacetCounts() {
+  await checkPermission('commercial.invoices', 'view', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  const [statusCounts, voucherTypeCounts] = await Promise.all([
+    prisma.salesInvoice.groupBy({
+      by: ['status'],
+      where: { companyId },
+      _count: { status: true },
+    }),
+    prisma.salesInvoice.groupBy({
+      by: ['voucherType'],
+      where: { companyId },
+      _count: { voucherType: true },
+    }),
+  ]);
+
+  return {
+    status: Object.fromEntries(statusCounts.map((s) => [s.status, s._count.status])),
+    voucherType: Object.fromEntries(voucherTypeCounts.map((v) => [v.voucherType, v._count.voucherType])),
+  };
 }
 
 // Obtener una factura por ID

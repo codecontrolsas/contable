@@ -85,6 +85,33 @@ export async function getSuppliers(searchParams: DataTableSearchParams = {}) {
 }
 
 /**
+ * Obtiene los conteos de facetas para los filtros de proveedores
+ */
+export async function getSupplierFacetCounts() {
+  await checkPermission('commercial.suppliers', 'view', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  const [statusCounts, taxConditionCounts] = await Promise.all([
+    prisma.supplier.groupBy({
+      by: ['status'],
+      where: { companyId },
+      _count: { status: true },
+    }),
+    prisma.supplier.groupBy({
+      by: ['taxCondition'],
+      where: { companyId },
+      _count: { taxCondition: true },
+    }),
+  ]);
+
+  return {
+    status: Object.fromEntries(statusCounts.map((s) => [s.status, s._count.status])),
+    taxCondition: Object.fromEntries(taxConditionCounts.map((t) => [t.taxCondition, t._count.taxCondition])),
+  };
+}
+
+/**
  * Obtiene un proveedor por ID
  */
 export async function getSupplierById(id: string): Promise<Supplier | null> {

@@ -431,6 +431,25 @@ export async function confirmPaymentOrder(paymentOrderId: string) {
 }
 
 /**
+ * Obtiene conteos globales para filtros facetados (server-side)
+ */
+export async function getPaymentOrderFacetCounts() {
+  await checkPermission('commercial.treasury.payment-orders', 'view', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  const statusCounts = await prisma.paymentOrder.groupBy({
+    by: ['status'],
+    where: { companyId },
+    _count: { status: true },
+  });
+
+  return {
+    status: Object.fromEntries(statusCounts.map((s) => [s.status, s._count.status])),
+  };
+}
+
+/**
  * Obtiene la lista de órdenes de pago
  */
 export async function getPaymentOrders(params: { supplierId?: string; status?: string } = {}): Promise<PaymentOrderListItem[]> {

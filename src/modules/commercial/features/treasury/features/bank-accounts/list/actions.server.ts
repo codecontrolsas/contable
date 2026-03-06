@@ -212,6 +212,33 @@ export async function checkAccountNumberExists(accountNumber: string, excludeId?
 }
 
 /**
+ * Obtiene conteos globales para filtros facetados (server-side)
+ */
+export async function getBankAccountFacetCounts() {
+  await checkPermission('commercial.treasury.bank-accounts', 'view', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  const [statusCounts, accountTypeCounts] = await Promise.all([
+    prisma.bankAccount.groupBy({
+      by: ['status'],
+      where: { companyId },
+      _count: { status: true },
+    }),
+    prisma.bankAccount.groupBy({
+      by: ['accountType'],
+      where: { companyId },
+      _count: { accountType: true },
+    }),
+  ]);
+
+  return {
+    status: Object.fromEntries(statusCounts.map((s) => [s.status, s._count.status])),
+    accountType: Object.fromEntries(accountTypeCounts.map((a) => [a.accountType, a._count.accountType])),
+  };
+}
+
+/**
  * Obtiene cuentas contables disponibles para vincular
  */
 export async function getAvailableAccounts() {

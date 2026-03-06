@@ -138,6 +138,51 @@ export async function getEquipmentPaginated(
 }
 
 /**
+ * Obtiene conteos globales para filtros facetados (server-side)
+ */
+export async function getEquipmentFacetCounts() {
+  await checkPermission('equipment', 'view', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  const [statusCounts, conditionCounts, typeCounts, brandCounts, isActiveCounts] = await Promise.all([
+    prisma.vehicle.groupBy({
+      by: ['status'],
+      where: { companyId },
+      _count: { status: true },
+    }),
+    prisma.vehicle.groupBy({
+      by: ['condition'],
+      where: { companyId },
+      _count: { condition: true },
+    }),
+    prisma.vehicle.groupBy({
+      by: ['typeId'],
+      where: { companyId },
+      _count: { typeId: true },
+    }),
+    prisma.vehicle.groupBy({
+      by: ['brandId'],
+      where: { companyId },
+      _count: { brandId: true },
+    }),
+    prisma.vehicle.groupBy({
+      by: ['isActive'],
+      where: { companyId },
+      _count: { isActive: true },
+    }),
+  ]);
+
+  return {
+    status: Object.fromEntries(statusCounts.map((s) => [s.status, s._count.status])),
+    condition: Object.fromEntries(conditionCounts.map((c) => [c.condition, c._count.condition])),
+    type: Object.fromEntries(typeCounts.map((t) => [t.typeId, t._count.typeId])),
+    brand: Object.fromEntries(brandCounts.map((b) => [b.brandId, b._count.brandId])),
+    isActive: Object.fromEntries(isActiveCounts.map((a) => [String(a.isActive), a._count.isActive])),
+  };
+}
+
+/**
  * Obtiene contadores para cada tab
  */
 export async function getEquipmentTabCounts() {
