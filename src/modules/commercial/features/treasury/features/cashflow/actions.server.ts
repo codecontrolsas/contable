@@ -211,6 +211,10 @@ export async function getCashflowData(
           amount: true,
           fullNumber: true,
           description: true,
+          paymentOrderItems: {
+            where: { paymentOrder: { status: 'CONFIRMED' } },
+            select: { amount: true },
+          },
         },
       }),
       // Cheques de terceros en cartera (ingresos)
@@ -409,19 +413,22 @@ export async function getCashflowData(
       }
     }
 
-    // Gastos (sin OP draft vinculada)
+    // Gastos (sin OP draft vinculada) - descontar pagos confirmados
     for (const exp of pendingExpenses) {
+      const paidAmount = exp.paymentOrderItems.reduce((sum, item) => sum + Number(item.amount), 0);
+      const pendingAmount = Number(exp.amount) - paidAmount;
+      if (pendingAmount <= 0) continue;
+
       const date = exp.dueDate ? moment.utc(exp.dueDate) : moment();
       const bucket = findBucket(buckets, date, granularity);
-      const amount = Number(exp.amount);
       if (bucket) {
-        bucket.details.expenses += amount;
+        bucket.details.expenses += pendingAmount;
         bucket.details.expensesItems.push({
           label: `${exp.fullNumber} — ${exp.description}`,
-          amount,
+          amount: pendingAmount,
         });
       } else {
-        prePeriodOutflows += amount;
+        prePeriodOutflows += pendingAmount;
       }
     }
 
