@@ -14,8 +14,9 @@ import {
   buildFiltersWhere,
   buildDateRangeFiltersWhere,
 } from '@/shared/components/common/DataTable/helpers';
-import { bankMovementSchema, type BankMovementFormData } from '../../shared/validators';
+import { bankMovementSchema, bankTransferSchema, type BankMovementFormData, type BankTransferFormData } from '../../shared/validators';
 import { checkPermission } from '@/shared/lib/permissions';
+import moment from 'moment';
 
 // Tipo para el cliente de transacción de Prisma
 type PrismaTransactionClient = Omit<
@@ -529,7 +530,7 @@ export async function deleteBankMovement(movementId: string) {
   if (!companyId) throw new Error('No hay empresa activa');
 
   try {
-    // Verificar que el movimiento existe y no está conciliado
+    // Verificar que el movimiento existe, no está conciliado y no está vinculado
     const movement = await prisma.bankMovement.findFirst({
       where: {
         id: movementId,
@@ -540,6 +541,8 @@ export async function deleteBankMovement(movementId: string) {
         type: true,
         amount: true,
         reconciled: true,
+        receiptId: true,
+        paymentOrderId: true,
         bankAccount: {
           select: {
             id: true,
@@ -555,6 +558,10 @@ export async function deleteBankMovement(movementId: string) {
 
     if (movement.reconciled) {
       throw new Error('No se puede eliminar un movimiento conciliado');
+    }
+
+    if (movement.receiptId || movement.paymentOrderId) {
+      throw new Error('No se puede eliminar un movimiento vinculado a un documento');
     }
 
     // Eliminar movimiento y actualizar saldo en transacción
@@ -815,6 +822,414 @@ export async function unlinkBankMovementFromDocument(movementId: string) {
     logger.error('Error al desvincular movimiento', { data: { error, movementId } });
     if (error instanceof Error) throw error;
     throw new Error('Error al desvincular movimiento');
+  }
+}
+
+/**
+ * Obtiene cuentas bancarias activas para transferencias (excluye la cuenta origen)
+ */
+export async function getBankAccountsForTransfer(excludeAccountId?: string) {
+  await checkPermission('commercial.treasury.bank-accounts', 'view', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  const accounts = await prisma.bankAccount.findMany({
+    where: {
+      companyId,
+      status: 'ACTIVE',
+      ...(excludeAccountId && { id: { not: excludeAccountId } }),
+    },
+    select: {
+      id: true,
+      bankName: true,
+      accountNumber: true,
+      accountType: true,
+      balance: true,
+    },
+    orderBy: { bankName: 'asc' },
+  });
+
+  return accounts.map((a) => ({
+    ...a,
+    balance: Number(a.balance),
+  }));
+}
+
+/**
+ * Obtiene cajas con sesión abierta para transferencias banco→caja
+ */
+export async function getCashRegistersForTransfer() {
+  await checkPermission('commercial.treasury.bank-accounts', 'view', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  const cashRegisters = await prisma.cashRegister.findMany({
+    where: {
+      companyId,
+      status: 'ACTIVE',
+      sessions: {
+        some: { status: 'OPEN' },
+      },
+    },
+    select: {
+      id: true,
+      code: true,
+      name: true,
+      sessions: {
+        where: { status: 'OPEN' },
+        select: {
+          id: true,
+          expectedBalance: true,
+        },
+        take: 1,
+      },
+    },
+    orderBy: { code: 'asc' },
+  });
+
+  return cashRegisters.map((cr) => ({
+    id: cr.id,
+    code: cr.code,
+    name: cr.name,
+    activeSessionId: cr.sessions[0]?.id || null,
+    currentBalance: cr.sessions[0] ? Number(cr.sessions[0].expectedBalance) : 0,
+  }));
+}
+
+/**
+ * Realiza una transferencia entre cuentas propias (banco→banco o banco→caja)
+ */
+export async function createBankTransfer(data: BankTransferFormData) {
+  await checkPermission('commercial.treasury.bank-accounts', 'create', { redirect: true });
+  const { userId } = await auth();
+  if (!userId) throw new Error('No autenticado');
+
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  try {
+    const validated = bankTransferSchema.parse(data);
+    const amount = new Prisma.Decimal(validated.amount);
+    const transferRef = `TRF-${moment(validated.date).format('YYYYMMDD')}-${Date.now().toString(36).toUpperCase()}`;
+
+    // Verificar cuenta origen
+    const sourceAccount = await prisma.bankAccount.findFirst({
+      where: { id: validated.sourceBankAccountId, companyId, status: 'ACTIVE' },
+      select: {
+        id: true,
+        bankName: true,
+        accountNumber: true,
+        balance: true,
+        accountId: true,
+      },
+    });
+
+    if (!sourceAccount) throw new Error('Cuenta origen no encontrada o inactiva');
+
+    if (validated.destinationType === 'BANK') {
+      // Transferencia Banco → Banco
+      const destAccount = await prisma.bankAccount.findFirst({
+        where: { id: validated.destinationBankAccountId!, companyId, status: 'ACTIVE' },
+        select: {
+          id: true,
+          bankName: true,
+          accountNumber: true,
+          balance: true,
+          accountId: true,
+        },
+      });
+
+      if (!destAccount) throw new Error('Cuenta destino no encontrada o inactiva');
+
+      await prisma.$transaction(async (tx) => {
+        // 1. Crear TRANSFER_OUT en cuenta origen
+        await tx.bankMovement.create({
+          data: {
+            bankAccountId: sourceAccount.id,
+            companyId,
+            type: BankMovementType.TRANSFER_OUT,
+            amount,
+            date: validated.date,
+            description: validated.description,
+            reference: validated.reference || transferRef,
+            createdBy: userId,
+          },
+        });
+
+        // 2. Crear TRANSFER_IN en cuenta destino
+        await tx.bankMovement.create({
+          data: {
+            bankAccountId: destAccount.id,
+            companyId,
+            type: BankMovementType.TRANSFER_IN,
+            amount,
+            date: validated.date,
+            description: validated.description,
+            reference: validated.reference || transferRef,
+            createdBy: userId,
+          },
+        });
+
+        // 3. Actualizar saldos
+        await tx.bankAccount.update({
+          where: { id: sourceAccount.id },
+          data: { balance: sourceAccount.balance.sub(amount) },
+        });
+
+        await tx.bankAccount.update({
+          where: { id: destAccount.id },
+          data: { balance: destAccount.balance.add(amount) },
+        });
+
+        // 4. Asiento contable si ambas cuentas tienen cuenta contable
+        if (sourceAccount.accountId && destAccount.accountId) {
+          const settings = await tx.accountingSettings.findUnique({
+            where: { companyId },
+            select: { lastEntryNumber: true },
+          });
+
+          if (settings) {
+            const nextNumber = settings.lastEntryNumber + 1;
+            await tx.journalEntry.create({
+              data: {
+                companyId,
+                number: nextNumber,
+                date: validated.date,
+                description: `Transferencia bancaria - ${validated.description}`,
+                createdBy: 'system',
+                lines: {
+                  create: [
+                    {
+                      accountId: destAccount.accountId,
+                      debit: amount,
+                      credit: new Prisma.Decimal(0),
+                      description: `Transferencia desde ${sourceAccount.bankName} ${sourceAccount.accountNumber}`,
+                    },
+                    {
+                      accountId: sourceAccount.accountId,
+                      debit: new Prisma.Decimal(0),
+                      credit: amount,
+                      description: `Transferencia a ${destAccount.bankName} ${destAccount.accountNumber}`,
+                    },
+                  ],
+                },
+              },
+            });
+
+            await tx.accountingSettings.update({
+              where: { companyId },
+              data: { lastEntryNumber: nextNumber },
+            });
+          }
+        }
+      });
+
+      logger.info('Transferencia banco→banco realizada', {
+        data: {
+          from: `${sourceAccount.bankName} ${sourceAccount.accountNumber}`,
+          to: `${destAccount.bankName} ${destAccount.accountNumber}`,
+          amount: validated.amount,
+          reference: transferRef,
+        },
+      });
+    } else {
+      // Transferencia Banco → Caja
+      const cashRegister = await prisma.cashRegister.findFirst({
+        where: { id: validated.destinationCashRegisterId!, companyId, status: 'ACTIVE' },
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          accountId: true,
+          sessions: {
+            where: { status: 'OPEN' },
+            select: { id: true, expectedBalance: true },
+            take: 1,
+          },
+        },
+      });
+
+      if (!cashRegister) throw new Error('Caja destino no encontrada o inactiva');
+      if (!cashRegister.sessions[0]) throw new Error('La caja no tiene una sesión abierta');
+
+      const session = cashRegister.sessions[0];
+
+      await prisma.$transaction(async (tx) => {
+        // 1. Crear TRANSFER_OUT en banco
+        await tx.bankMovement.create({
+          data: {
+            bankAccountId: sourceAccount.id,
+            companyId,
+            type: BankMovementType.TRANSFER_OUT,
+            amount,
+            date: validated.date,
+            description: validated.description,
+            reference: validated.reference || transferRef,
+            createdBy: userId,
+          },
+        });
+
+        // 2. Actualizar saldo banco
+        await tx.bankAccount.update({
+          where: { id: sourceAccount.id },
+          data: { balance: sourceAccount.balance.sub(amount) },
+        });
+
+        // 3. Crear movimiento INCOME en caja
+        await tx.cashMovement.create({
+          data: {
+            sessionId: session.id,
+            cashRegisterId: cashRegister.id,
+            companyId,
+            type: 'INCOME',
+            amount,
+            date: validated.date,
+            description: validated.description,
+            reference: validated.reference || transferRef,
+            createdBy: userId,
+          },
+        });
+
+        // 4. Actualizar expectedBalance de la sesión
+        await tx.cashRegisterSession.update({
+          where: { id: session.id },
+          data: { expectedBalance: session.expectedBalance.add(amount) },
+        });
+
+        // 5. Asiento contable si ambos tienen cuenta contable
+        if (sourceAccount.accountId && cashRegister.accountId) {
+          const settings = await tx.accountingSettings.findUnique({
+            where: { companyId },
+            select: { lastEntryNumber: true },
+          });
+
+          if (settings) {
+            const nextNumber = settings.lastEntryNumber + 1;
+            await tx.journalEntry.create({
+              data: {
+                companyId,
+                number: nextNumber,
+                date: validated.date,
+                description: `Transferencia banco→caja - ${validated.description}`,
+                createdBy: 'system',
+                lines: {
+                  create: [
+                    {
+                      accountId: cashRegister.accountId,
+                      debit: amount,
+                      credit: new Prisma.Decimal(0),
+                      description: `Transferencia desde ${sourceAccount.bankName} ${sourceAccount.accountNumber}`,
+                    },
+                    {
+                      accountId: sourceAccount.accountId,
+                      debit: new Prisma.Decimal(0),
+                      credit: amount,
+                      description: `Transferencia a caja ${cashRegister.code}`,
+                    },
+                  ],
+                },
+              },
+            });
+
+            await tx.accountingSettings.update({
+              where: { companyId },
+              data: { lastEntryNumber: nextNumber },
+            });
+          }
+        }
+      });
+
+      logger.info('Transferencia banco→caja realizada', {
+        data: {
+          from: `${sourceAccount.bankName} ${sourceAccount.accountNumber}`,
+          to: `Caja ${cashRegister.code} - ${cashRegister.name}`,
+          amount: validated.amount,
+          reference: transferRef,
+        },
+      });
+    }
+
+    revalidatePath('/dashboard/commercial/treasury/bank-accounts');
+    revalidatePath('/dashboard/commercial/treasury/cash-registers');
+
+    return { success: true };
+  } catch (error) {
+    logger.error('Error al realizar transferencia', { data: { error } });
+    if (error instanceof Error) throw error;
+    throw new Error('Error al realizar la transferencia');
+  }
+}
+
+/**
+ * Obtiene TODOS los movimientos de una cuenta bancaria según filtros (sin paginación, para exportar)
+ */
+export async function getAllBankMovementsForExport(
+  bankAccountId: string,
+  searchParams: DataTableSearchParams
+) {
+  await checkPermission('commercial.treasury.bank-accounts', 'view', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  try {
+    const parsed = parseSearchParams(searchParams);
+    const { search } = parsed;
+
+    const filtersWhere = buildFiltersWhere(parsed.filters, {
+      type: 'type',
+      reconciled: 'reconciled',
+    }, { exclude: ['date'] });
+
+    const dateFiltersWhere = buildDateRangeFiltersWhere(parsed.filters, ['date']);
+
+    if (filtersWhere.reconciled !== undefined) {
+      filtersWhere.reconciled = filtersWhere.reconciled === 'true';
+    }
+
+    const where: Prisma.BankMovementWhereInput = {
+      bankAccountId,
+      companyId,
+      ...filtersWhere,
+      ...dateFiltersWhere,
+      ...(search && {
+        OR: [
+          { description: { contains: search, mode: 'insensitive' } },
+          { reference: { contains: search, mode: 'insensitive' } },
+          { statementNumber: { contains: search, mode: 'insensitive' } },
+        ],
+      }),
+    };
+
+    const data = await prisma.bankMovement.findMany({
+      where,
+      select: {
+        id: true,
+        type: true,
+        amount: true,
+        date: true,
+        description: true,
+        reference: true,
+        statementNumber: true,
+        reconciled: true,
+        reconciledAt: true,
+        createdAt: true,
+        receipt: {
+          select: { id: true, fullNumber: true },
+        },
+        paymentOrder: {
+          select: { id: true, fullNumber: true },
+        },
+      },
+      orderBy: { date: 'desc' },
+    });
+
+    return data.map((m) => ({
+      ...m,
+      amount: Number(m.amount),
+    }));
+  } catch (error) {
+    logger.error('Error al obtener movimientos para exportar', { data: { error, bankAccountId } });
+    throw new Error('Error al obtener movimientos para exportar');
   }
 }
 

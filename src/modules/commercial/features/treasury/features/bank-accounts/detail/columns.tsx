@@ -2,7 +2,7 @@
 
 import type { ColumnDef } from '@tanstack/react-table';
 import moment from 'moment';
-import { ArrowDown, ArrowUp, CheckCircle2, Circle, Link2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, CheckCircle2, Circle, Link2, Trash2 } from 'lucide-react';
 
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
@@ -27,11 +27,13 @@ interface BankMovement extends Record<string, unknown> {
 
 interface MovementColumnsProps {
   onToggleReconcile: (movement: BankMovement) => void;
+  onDelete?: (movement: BankMovement) => void;
   isLoading: boolean;
   canReconcile?: boolean;
+  canDelete?: boolean;
 }
 
-export function getMovementColumns({ onToggleReconcile, isLoading, canReconcile = true }: MovementColumnsProps): ColumnDef<BankMovement>[] {
+export function getMovementColumns({ onToggleReconcile, onDelete, isLoading, canReconcile = true, canDelete = false }: MovementColumnsProps): ColumnDef<BankMovement>[] {
   return [
     {
       id: 'select',
@@ -192,6 +194,37 @@ export function getMovementColumns({ onToggleReconcile, isLoading, canReconcile 
         );
       },
     },
+    ...(canDelete && onDelete
+      ? [
+          {
+            id: 'actions',
+            meta: { title: 'Acciones' },
+            cell: ({ row }: { row: { original: BankMovement } }) => {
+              const movement = row.original;
+              const isDeletable =
+                !movement.reconciled &&
+                !movement.receipt &&
+                !movement.paymentOrder;
+
+              if (!isDeletable) return null;
+
+              return (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => onDelete(movement)}
+                  disabled={isLoading}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              );
+            },
+            enableSorting: false,
+            enableHiding: false,
+          } as ColumnDef<BankMovement>,
+        ]
+      : []),
   ];
 }
 

@@ -3,10 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Plus, Download, Upload, Loader2 } from 'lucide-react';
+import { Plus, Download, Upload, Loader2, ArrowRightLeft } from 'lucide-react';
 
 import { Button } from '@/shared/components/ui/button';
+import { usePermissions } from '@/shared/hooks/usePermissions';
 import { _CreateBankMovementDialog } from './_CreateBankMovementDialog';
+import { _BankTransferDialog } from './_BankTransferDialog';
 import { _BankMovementImportDialog } from '@/modules/commercial/features/treasury/features/bank-movements/components/_BankMovementImportDialog';
 import { downloadBankMovementsTemplate } from '@/modules/commercial/features/treasury/features/bank-movements/lib/import-export.server';
 
@@ -16,9 +18,12 @@ interface Props {
 
 export function _BankAccountDetailActions({ bankAccountId }: Props) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const router = useRouter();
+  const { hasPermission } = usePermissions();
+  const canCreate = hasPermission('commercial.treasury.bank-accounts', 'create');
 
   const handleDownloadTemplate = async () => {
     setIsDownloading(true);
@@ -64,6 +69,13 @@ export function _BankAccountDetailActions({ bankAccountId }: Props) {
           Importar Excel
         </Button>
 
+        {canCreate && (
+          <Button variant="outline" onClick={() => setIsTransferOpen(true)}>
+            <ArrowRightLeft className="h-4 w-4 mr-2" />
+            Transferir
+          </Button>
+        )}
+
         <Button onClick={() => setIsDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Nuevo Movimiento
@@ -76,6 +88,16 @@ export function _BankAccountDetailActions({ bankAccountId }: Props) {
         bankAccountId={bankAccountId}
         onSuccess={() => {
           setIsDialogOpen(false);
+          router.refresh();
+        }}
+      />
+
+      <_BankTransferDialog
+        open={isTransferOpen}
+        onOpenChange={setIsTransferOpen}
+        bankAccountId={bankAccountId}
+        onSuccess={() => {
+          setIsTransferOpen(false);
           router.refresh();
         }}
       />

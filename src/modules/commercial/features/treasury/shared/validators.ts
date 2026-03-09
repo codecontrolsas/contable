@@ -179,6 +179,42 @@ export const reconcileBankMovementSchema = z.object({
   reconcile: z.boolean(),
 });
 
+// Schema para transferencia entre cuentas propias
+export const bankTransferSchema = z.object({
+  sourceBankAccountId: z.string().uuid('Cuenta origen inválida'),
+  destinationType: z.enum(['BANK', 'CASH'], {
+    message: 'Debe seleccionar un tipo de destino',
+  }),
+  destinationBankAccountId: z.string().uuid('Cuenta destino inválida').optional().nullable(),
+  destinationCashRegisterId: z.string().uuid('Caja destino inválida').optional().nullable(),
+  amount: z
+    .string()
+    .min(1, 'El monto es requerido')
+    .regex(/^\d+(\.\d{1,2})?$/, 'Monto inválido (máximo 2 decimales)')
+    .refine((val) => parseFloat(val) > 0, 'El monto debe ser mayor a 0'),
+  date: z.date({ message: 'La fecha es requerida' }),
+  description: z
+    .string()
+    .min(1, 'La descripción es requerida')
+    .max(500, 'La descripción no puede exceder 500 caracteres'),
+  reference: z.string().max(100, 'La referencia no puede exceder 100 caracteres').optional().nullable(),
+}).refine(
+  (data) => {
+    if (data.destinationType === 'BANK') return !!data.destinationBankAccountId;
+    if (data.destinationType === 'CASH') return !!data.destinationCashRegisterId;
+    return false;
+  },
+  { message: 'Debe seleccionar una cuenta destino', path: ['destinationBankAccountId'] }
+).refine(
+  (data) => {
+    if (data.destinationType === 'BANK') {
+      return data.sourceBankAccountId !== data.destinationBankAccountId;
+    }
+    return true;
+  },
+  { message: 'La cuenta destino debe ser diferente a la origen', path: ['destinationBankAccountId'] }
+);
+
 // ====================================
 // TYPE INFERENCE - BANK
 // ====================================
@@ -186,6 +222,7 @@ export const reconcileBankMovementSchema = z.object({
 export type BankAccountFormData = z.infer<typeof bankAccountSchema>;
 export type BankMovementFormData = z.infer<typeof bankMovementSchema>;
 export type ReconcileBankMovementFormData = z.infer<typeof reconcileBankMovementSchema>;
+export type BankTransferFormData = z.infer<typeof bankTransferSchema>;
 
 // ====================================
 // LABELS Y MAPPERS - BANK

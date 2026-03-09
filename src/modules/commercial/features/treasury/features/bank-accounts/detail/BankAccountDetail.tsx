@@ -93,6 +93,8 @@ export async function BankAccountDetail({ bankAccountId, searchParams }: Props) 
                 data={movementsResult.data}
                 totalRows={movementsResult.total}
                 searchParams={searchParams}
+                bankAccountId={bankAccountId}
+                bankAccountName={`${bankAccount.bankName} ${bankAccount.accountNumber}`}
               />
             </CardContent>
           </Card>

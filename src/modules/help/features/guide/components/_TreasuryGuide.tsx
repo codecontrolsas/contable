@@ -2,14 +2,17 @@
 
 import {
   ArrowDownUp,
+  ArrowRightLeft,
   BadgeDollarSign,
   CheckSquare,
   Clock,
+  Download,
   FileCheck,
   Info,
   Landmark,
   LineChart,
   Receipt,
+  Trash2,
   TrendingUp,
   Vault,
 } from 'lucide-react';
@@ -128,6 +131,119 @@ export function _TreasuryGuide() {
               <strong>Comisión / Interés</strong>: cargos o créditos bancarios
             </li>
           </ul>
+        </CardContent>
+      </Card>
+
+      {/* Exportar Movimientos a Excel */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Download className="h-5 w-5" />
+            Exportar Movimientos a Excel
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p>
+            Puedes exportar los movimientos bancarios filtrados a un archivo
+            Excel para análisis externo o respaldo:
+          </p>
+          <ol className="list-decimal pl-6 space-y-1 text-muted-foreground">
+            <li>
+              Ve al <strong>detalle de la cuenta bancaria</strong>
+            </li>
+            <li>
+              Aplica los filtros que necesites (tipo, fecha, conciliación)
+            </li>
+            <li>
+              Haz clic en <strong>Exportar Excel</strong>
+            </li>
+          </ol>
+          <p className="text-sm text-muted-foreground">
+            Se exportan todos los registros que coincidan con los filtros
+            aplicados, sin importar la paginación de la tabla. El archivo
+            incluye fecha, tipo, descripción, referencia, monto, estado de
+            conciliación y documento vinculado.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Transferencias entre Cuentas */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ArrowRightLeft className="h-5 w-5" />
+            Transferencias entre Cuentas Propias
+          </CardTitle>
+          <CardDescription>
+            Mover fondos entre tus cuentas bancarias y cajas
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p>
+            Las transferencias permiten mover fondos entre cuentas propias de
+            forma atómica, asegurando que ambos lados se actualicen
+            correctamente:
+          </p>
+          <p>
+            <strong>Realizar una transferencia:</strong>
+          </p>
+          <ol className="list-decimal pl-6 space-y-1 text-muted-foreground">
+            <li>
+              Ve al <strong>detalle de la cuenta bancaria</strong> origen
+            </li>
+            <li>
+              Haz clic en <strong>Transferir</strong>
+            </li>
+            <li>
+              Selecciona el tipo de destino:
+              <ul className="list-disc pl-6 mt-1 space-y-1">
+                <li>
+                  <strong>Cuenta Bancaria</strong>: otra cuenta de tu empresa
+                </li>
+                <li>
+                  <strong>Caja</strong>: una caja registradora con sesión
+                  abierta
+                </li>
+              </ul>
+            </li>
+            <li>Indica el monto, fecha y descripción</li>
+            <li>
+              Haz clic en <strong>Transferir</strong> para confirmar
+            </li>
+          </ol>
+          <p className="text-sm text-muted-foreground">
+            La transferencia actualiza los saldos de ambas cuentas y genera
+            el asiento contable correspondiente si ambas cuentas tienen
+            cuenta contable asociada.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Eliminar Movimientos */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Trash2 className="h-5 w-5" />
+            Eliminar Movimientos Bancarios
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p>
+            Puedes eliminar movimientos bancarios que fueron registrados por
+            error, siempre que cumplan estas condiciones:
+          </p>
+          <ul className="list-disc pl-6 space-y-1 text-muted-foreground">
+            <li>El movimiento <strong>no esté conciliado</strong></li>
+            <li>
+              El movimiento <strong>no esté vinculado</strong> a un recibo u
+              orden de pago
+            </li>
+          </ul>
+          <p className="text-sm text-muted-foreground">
+            Al eliminar un movimiento, el saldo de la cuenta se actualiza
+            automáticamente revirtiendo el efecto del movimiento. Esta acción
+            no se puede deshacer.
+          </p>
         </CardContent>
       </Card>
 
