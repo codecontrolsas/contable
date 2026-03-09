@@ -56,25 +56,19 @@ jobs:
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.VPS_SSH_KEY }}" | base64 -d > ~/.ssh/deploy_key
+          printf '%s\n' "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Deploy to VPS
+        env:
+          GHCR_PAT: ${{ secrets.GHCR_PAT }}
+          GHCR_USER: ${{ secrets.GHCR_USER }}
         run: |
-          ssh -i ~/.ssh/deploy_key root@${{ secrets.VPS_HOST }} << 'DEPLOY'
-            # Login to GHCR
-            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u "${{ secrets.GHCR_USER }}" --password-stdin
-
-            # Pull the new image
-            docker pull ghcr.io/codecontrolsas/baxer-n:latest
-
-            # Tag it for the Dokploy service
-            docker tag ghcr.io/codecontrolsas/baxer-n:latest baxer-next-r5wztq:latest
-
-            # Update the service
-            docker service update --image baxer-next-r5wztq:latest --force baxer-next-r5wztq
-
-            # Cleanup old images
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new root@${{ secrets.VPS_HOST }} "
+            echo '${GHCR_PAT}' | docker login ghcr.io -u '${GHCR_USER}' --password-stdin &&
+            docker pull ghcr.io/codecontrolsas/baxer-n:latest &&
+            docker tag ghcr.io/codecontrolsas/baxer-n:latest baxer-next-r5wztq:latest &&
+            docker service update --image baxer-next-r5wztq:latest --force baxer-next-r5wztq &&
             docker image prune -f
-          DEPLOY
+          "
