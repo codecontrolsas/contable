@@ -275,6 +275,137 @@ export async function getPurchasesTrend(period?: string) {
 }
 
 // ============================================
+// RENTABILIDAD MENSUAL (6 meses)
+// ============================================
+
+export async function getProfitabilityTrend(period?: string, excludeCategoryIds?: string[]) {
+  const { userId } = await auth();
+  if (!userId) throw new Error('No autenticado');
+  await checkPermission('dashboard', 'view', { redirect: true });
+
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  try {
+    const ref = parsePeriod(period);
+    const sixMonthsAgo = ref.clone().subtract(5, 'months').startOf('month').toDate();
+    const endOfRef = ref.clone().endOf('month').toDate();
+
+    const [salesInvoices, purchaseInvoices, expenses] = await Promise.all([
+      prisma.salesInvoice.findMany({
+        where: {
+          companyId,
+          issueDate: { gte: sixMonthsAgo, lte: endOfRef },
+          status: { in: ['CONFIRMED', 'PAID', 'PARTIAL_PAID'] },
+          voucherType: { notIn: ['NOTA_CREDITO_A', 'NOTA_CREDITO_B', 'NOTA_CREDITO_C'] },
+        },
+        select: { issueDate: true, total: true },
+      }),
+      prisma.purchaseInvoice.findMany({
+        where: {
+          companyId,
+          issueDate: { gte: sixMonthsAgo, lte: endOfRef },
+          status: { in: ['CONFIRMED', 'PAID', 'PARTIAL_PAID'] },
+          voucherType: { notIn: ['NOTA_CREDITO_A', 'NOTA_CREDITO_B', 'NOTA_CREDITO_C'] },
+        },
+        select: { issueDate: true, total: true },
+      }),
+      prisma.expense.findMany({
+        where: {
+          companyId,
+          date: { gte: sixMonthsAgo, lte: endOfRef },
+          status: { in: ['CONFIRMED', 'PAID', 'PARTIAL_PAID'] },
+          ...(excludeCategoryIds && excludeCategoryIds.length > 0
+            ? { categoryId: { notIn: excludeCategoryIds } }
+            : {}),
+        },
+        select: { date: true, amount: true },
+      }),
+    ]);
+
+    // Generar los 6 meses
+    const months: Array<{
+      month: string;
+      monthKey: string;
+      sales: number;
+      purchases: number;
+      expenses: number;
+      profit: number;
+    }> = [];
+    for (let i = 5; i >= 0; i--) {
+      const m = ref.clone().subtract(i, 'months');
+      months.push({
+        month: m.format('MMM YY'),
+        monthKey: m.format('YYYY-MM'),
+        sales: 0,
+        purchases: 0,
+        expenses: 0,
+        profit: 0,
+      });
+    }
+
+    for (const inv of salesInvoices) {
+      const key = moment(inv.issueDate).format('YYYY-MM');
+      const entry = months.find((m) => m.monthKey === key);
+      if (entry) entry.sales += Number(inv.total);
+    }
+
+    for (const inv of purchaseInvoices) {
+      const key = moment(inv.issueDate).format('YYYY-MM');
+      const entry = months.find((m) => m.monthKey === key);
+      if (entry) entry.purchases += Number(inv.total);
+    }
+
+    for (const exp of expenses) {
+      const key = moment(exp.date).format('YYYY-MM');
+      const entry = months.find((m) => m.monthKey === key);
+      if (entry) entry.expenses += Number(exp.amount);
+    }
+
+    // Calcular rentabilidad
+    for (const m of months) {
+      m.profit = m.sales - m.purchases - m.expenses;
+    }
+
+    return months.map(({ month, sales, purchases, expenses, profit }) => ({
+      month,
+      sales,
+      purchases,
+      expenses,
+      profit,
+    }));
+  } catch (error) {
+    logger.error('Error al obtener tendencia de rentabilidad', { data: { error, companyId } });
+    throw new Error('Error al obtener tendencia de rentabilidad');
+  }
+}
+
+// ============================================
+// CATEGORÍAS DE GASTOS (para filtro)
+// ============================================
+
+export async function getExpenseCategories() {
+  const { userId } = await auth();
+  if (!userId) throw new Error('No autenticado');
+  await checkPermission('dashboard', 'view', { redirect: true });
+
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  try {
+    const categories = await prisma.expenseCategory.findMany({
+      where: { companyId, isActive: true },
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    });
+    return categories;
+  } catch (error) {
+    logger.error('Error al obtener categorías de gastos', { data: { error, companyId } });
+    throw new Error('Error al obtener categorías de gastos');
+  }
+}
+
+// ============================================
 // PRODUCTOS CON STOCK CRÍTICO
 // ============================================
 

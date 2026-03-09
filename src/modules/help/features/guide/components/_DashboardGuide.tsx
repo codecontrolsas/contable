@@ -6,7 +6,6 @@ import {
   Calendar,
   DollarSign,
   Info,
-  Package,
   TrendingUp,
 } from 'lucide-react';
 
@@ -90,21 +89,61 @@ export function _DashboardGuide() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5" />
+            Rentabilidad Mensual
+          </CardTitle>
+          <CardDescription>
+            Analiza la rentabilidad de tu negocio mes a mes
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p>
+            El grafico de rentabilidad muestra la evolucion de los ultimos 6
+            meses con barras para Ventas, Compras y Gastos, y una linea para la
+            Rentabilidad neta (Ventas - Compras - Gastos).
+          </p>
+          <p>
+            <strong>Filtro por tipos de gasto:</strong>
+          </p>
+          <ul className="list-disc pl-6 space-y-1 text-muted-foreground">
+            <li>
+              Haz clic en el boton <strong>Tipos de gasto</strong> para abrir el
+              filtro
+            </li>
+            <li>
+              Desmarca las categorias de gastos que no quieras incluir en el
+              calculo
+            </li>
+            <li>
+              El grafico se actualiza automaticamente al cambiar la seleccion
+            </li>
+          </ul>
+          <p className="text-sm text-muted-foreground">
+            Esto te permite ver la rentabilidad excluyendo ciertos tipos de
+            gastos (por ejemplo, gastos extraordinarios) para tener una vision
+            mas precisa.
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
-            Gráficos de Tendencia
+            Graficos de Tendencia
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <p>
-            Debajo de los KPIs se muestran gráficos de barras con la evolución
-            de los últimos 6 meses:
+            Debajo del grafico de rentabilidad se muestran graficos individuales
+            con la evolucion de los ultimos 6 meses:
           </p>
           <ul className="list-disc pl-6 space-y-1 text-muted-foreground">
             <li>
-              <strong>Ventas vs Compras</strong>: comparativa mensual
+              <strong>Tendencia de Ventas</strong>: evolucion mensual de facturacion
             </li>
             <li>
-              <strong>Cobros vs Pagos</strong>: flujo de caja mensual
+              <strong>Tendencia de Compras</strong>: evolucion mensual de compras
             </li>
           </ul>
           <p className="text-sm text-muted-foreground">

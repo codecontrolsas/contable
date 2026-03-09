@@ -14,6 +14,8 @@ import {
   getDashboardKPIs,
   getSalesTrend,
   getPurchasesTrend,
+  getProfitabilityTrend,
+  getExpenseCategories,
   getCriticalStockProducts,
   getRecentAlerts,
 } from './actions.server';
@@ -21,6 +23,7 @@ import { _SalesTrendChart } from './components/_SalesTrendChart';
 import { _PurchasesTrendChart } from './components/_PurchasesTrendChart';
 import { _CriticalStockList } from './components/_CriticalStockList';
 import { _AlertsList } from './components/_AlertsList';
+import { _ProfitabilityChart } from './components/_ProfitabilityChart';
 import { _PeriodSelector } from './components/_PeriodSelector';
 import moment from 'moment';
 
@@ -34,10 +37,12 @@ export async function DashboardContent({ period }: DashboardContentProps) {
     const displayPeriod = validPeriod || moment().format('YYYY-MM');
     const isCurrentMonth = !validPeriod || moment(validPeriod, 'YYYY-MM').isSame(moment(), 'month');
 
-    const [kpis, salesTrend, purchasesTrend, criticalStock, alerts] = await Promise.all([
+    const [kpis, salesTrend, purchasesTrend, profitabilityTrend, expenseCategories, criticalStock, alerts] = await Promise.all([
       getDashboardKPIs(validPeriod),
       getSalesTrend(validPeriod),
       getPurchasesTrend(validPeriod),
+      getProfitabilityTrend(validPeriod),
+      getExpenseCategories(),
       getCriticalStockProducts(),
       getRecentAlerts(validPeriod),
     ]);
@@ -167,6 +172,9 @@ export async function DashboardContent({ period }: DashboardContentProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Profitability Chart */}
+      <_ProfitabilityChart data={profitabilityTrend} categories={expenseCategories} period={validPeriod} />
 
       {/* Charts Row */}
       <div className="grid gap-4 md:grid-cols-2">
