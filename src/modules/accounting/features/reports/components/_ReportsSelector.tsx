@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/shared/components/ui/button';
-import { FileText, Book, BookOpen, Scale, TrendingUp, AlertTriangle, RotateCcw, ArrowLeftRight, Calculator, CalendarRange, Target } from 'lucide-react';
+import { FileText, Book, BookOpen, Scale, TrendingUp, AlertTriangle, RotateCcw, ArrowLeftRight, Calculator, CalendarRange, Target, Receipt } from 'lucide-react';
 
 export type ReportType =
   | 'trial-balance'
@@ -9,6 +9,7 @@ export type ReportType =
   | 'general-ledger'
   | 'balance-sheet'
   | 'income-statement'
+  | 'monthly-vat'
   | 'entries-without-documents'
   | 'reversal-log'
   | 'document-traceability'
@@ -69,6 +70,15 @@ const fixedAssetReports = [
   },
 ];
 
+const taxReports = [
+  {
+    id: 'monthly-vat' as const,
+    name: 'Posicion Mensual de IVA',
+    description: 'Debito fiscal vs credito fiscal del periodo',
+    icon: Receipt,
+  },
+];
+
 const budgetReports = [
   {
     id: 'budget-variance' as const,
@@ -100,7 +110,7 @@ const auditReports = [
 ];
 
 export function _ReportsSelector({ selectedReport, onSelect }: ReportsSelectorProps) {
-  const renderReportButton = (report: (typeof financialReports)[number] | (typeof budgetReports)[number] | (typeof fixedAssetReports)[number] | (typeof auditReports)[number]) => {
+  const renderReportButton = (report: (typeof financialReports)[number] | (typeof taxReports)[number] | (typeof budgetReports)[number] | (typeof fixedAssetReports)[number] | (typeof auditReports)[number]) => {
     const Icon = report.icon;
     return (
       <Button
@@ -124,6 +134,13 @@ export function _ReportsSelector({ selectedReport, onSelect }: ReportsSelectorPr
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-3">
         {financialReports.map(renderReportButton)}
+      </div>
+
+      <div>
+        <h3 className="text-sm font-medium text-muted-foreground mb-3">Impositivos</h3>
+        <div className="grid gap-4 md:grid-cols-3">
+          {taxReports.map(renderReportButton)}
+        </div>
       </div>
 
       <div>

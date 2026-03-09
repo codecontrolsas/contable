@@ -1315,3 +1315,181 @@ function buildEmptySection(): BudgetVarianceSection {
     totalVariancePercent: 0,
   };
 }
+
+// ============================================
+// REPORTE: IVA Mensual (Débito Fiscal - Crédito Fiscal)
+// ============================================
+
+interface VATRateSummary {
+  rate: number;
+  salesBase: number;
+  salesVAT: number;
+  purchasesBase: number;
+  purchasesVAT: number;
+  balance: number;
+}
+
+interface MonthlyVATResult {
+  month: number;
+  year: number;
+  salesSummary: {
+    subtotal: number;
+    vatAmount: number;
+    total: number;
+    invoiceCount: number;
+  };
+  purchasesSummary: {
+    subtotal: number;
+    vatAmount: number;
+    total: number;
+    invoiceCount: number;
+  };
+  vatByRate: VATRateSummary[];
+  totalSalesVAT: number;
+  totalPurchasesVAT: number;
+  vatBalance: number;
+}
+
+/**
+ * Genera el reporte de IVA mensual.
+ * Calcula IVA Débito Fiscal (Ventas) - IVA Crédito Fiscal (Compras)
+ * para determinar la posición de IVA del mes.
+ */
+export async function getMonthlyVATReport(
+  companyId: string,
+  year: number,
+  month: number
+): Promise<MonthlyVATResult> {
+  const { userId } = await auth();
+  if (!userId) throw new Error('No autenticado');
+  await checkPermission('accounting.reports', 'view', { redirect: true });
+
+  try {
+    logger.info('Generando reporte de IVA mensual', { data: { companyId, year, month } });
+
+    const startDate = moment({ year, month }).startOf('month').toDate();
+    const endDate = moment({ year, month }).endOf('month').toDate();
+
+    // Obtener facturas de venta confirmadas del mes
+    const salesInvoices = await prisma.salesInvoice.findMany({
+      where: {
+        companyId,
+        issueDate: { gte: startDate, lte: endDate },
+        status: { in: ['CONFIRMED', 'PAID', 'PARTIAL_PAID'] },
+      },
+      select: {
+        subtotal: true,
+        vatAmount: true,
+        total: true,
+        lines: {
+          select: {
+            vatRate: true,
+            subtotal: true,
+            vatAmount: true,
+          },
+        },
+      },
+    });
+
+    // Obtener facturas de compra confirmadas del mes
+    const purchaseInvoices = await prisma.purchaseInvoice.findMany({
+      where: {
+        companyId,
+        issueDate: { gte: startDate, lte: endDate },
+        status: { in: ['CONFIRMED', 'PAID', 'PARTIAL_PAID'] },
+      },
+      select: {
+        subtotal: true,
+        vatAmount: true,
+        total: true,
+        lines: {
+          select: {
+            vatRate: true,
+            subtotal: true,
+            vatAmount: true,
+          },
+        },
+      },
+    });
+
+    // Calcular totales de ventas
+    const salesSummary = {
+      subtotal: salesInvoices.reduce((sum, inv) => sum + Number(inv.subtotal), 0),
+      vatAmount: salesInvoices.reduce((sum, inv) => sum + Number(inv.vatAmount), 0),
+      total: salesInvoices.reduce((sum, inv) => sum + Number(inv.total), 0),
+      invoiceCount: salesInvoices.length,
+    };
+
+    // Calcular totales de compras
+    const purchasesSummary = {
+      subtotal: purchaseInvoices.reduce((sum, inv) => sum + Number(inv.subtotal), 0),
+      vatAmount: purchaseInvoices.reduce((sum, inv) => sum + Number(inv.vatAmount), 0),
+      total: purchaseInvoices.reduce((sum, inv) => sum + Number(inv.total), 0),
+      invoiceCount: purchaseInvoices.length,
+    };
+
+    // Agrupar IVA por alícuota
+    const rateMap = new Map<number, { salesBase: number; salesVAT: number; purchasesBase: number; purchasesVAT: number }>();
+
+    for (const inv of salesInvoices) {
+      for (const line of inv.lines) {
+        const rate = Number(line.vatRate);
+        const existing = rateMap.get(rate) || { salesBase: 0, salesVAT: 0, purchasesBase: 0, purchasesVAT: 0 };
+        existing.salesBase += Number(line.subtotal);
+        existing.salesVAT += Number(line.vatAmount);
+        rateMap.set(rate, existing);
+      }
+    }
+
+    for (const inv of purchaseInvoices) {
+      for (const line of inv.lines) {
+        const rate = Number(line.vatRate);
+        const existing = rateMap.get(rate) || { salesBase: 0, salesVAT: 0, purchasesBase: 0, purchasesVAT: 0 };
+        existing.purchasesBase += Number(line.subtotal);
+        existing.purchasesVAT += Number(line.vatAmount);
+        rateMap.set(rate, existing);
+      }
+    }
+
+    const vatByRate: VATRateSummary[] = Array.from(rateMap.entries())
+      .map(([rate, data]) => ({
+        rate,
+        salesBase: data.salesBase,
+        salesVAT: data.salesVAT,
+        purchasesBase: data.purchasesBase,
+        purchasesVAT: data.purchasesVAT,
+        balance: data.salesVAT - data.purchasesVAT,
+      }))
+      .sort((a, b) => b.rate - a.rate);
+
+    const totalSalesVAT = salesSummary.vatAmount;
+    const totalPurchasesVAT = purchasesSummary.vatAmount;
+    const vatBalance = totalSalesVAT - totalPurchasesVAT;
+
+    logger.info('Reporte de IVA mensual generado', {
+      data: {
+        year,
+        month,
+        salesInvoiceCount: salesSummary.invoiceCount,
+        purchaseInvoiceCount: purchasesSummary.invoiceCount,
+        totalSalesVAT,
+        totalPurchasesVAT,
+        vatBalance,
+      },
+    });
+
+    return {
+      month,
+      year,
+      salesSummary,
+      purchasesSummary,
+      vatByRate,
+      totalSalesVAT,
+      totalPurchasesVAT,
+      vatBalance,
+    };
+  } catch (error) {
+    logger.error('Error al generar reporte de IVA mensual', { data: { error, companyId, year, month, userId } });
+    throw error;
+  }
+}

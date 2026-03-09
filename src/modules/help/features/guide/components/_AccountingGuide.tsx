@@ -10,6 +10,7 @@ import {
   Link2,
   Lock,
   PiggyBank,
+  Receipt,
   RefreshCcw,
   Settings,
   TrendingDown,
@@ -281,6 +282,17 @@ export function _AccountingGuide() {
             <li>
               <strong>Trazabilidad</strong>: vínculo entre documentos
               comerciales y asientos
+            </li>
+          </ul>
+
+          <p className="mt-3">
+            <strong>Reportes impositivos:</strong>
+          </p>
+          <ul className="list-disc pl-6 space-y-1 text-muted-foreground">
+            <li>
+              <strong>Posicion Mensual de IVA</strong>: calcula el IVA Debito
+              Fiscal (ventas) menos el IVA Credito Fiscal (compras) para estimar
+              el IVA a pagar o a favor del periodo, con detalle por alicuota
             </li>
           </ul>
 

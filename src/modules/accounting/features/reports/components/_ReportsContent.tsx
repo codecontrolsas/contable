@@ -13,6 +13,7 @@ import { _DocumentTraceabilityReport } from './_DocumentTraceabilityReport';
 import { _FixedAssetsReport } from './_FixedAssetsReport';
 import { _PeriodDepreciationsReport } from './_PeriodDepreciationsReport';
 import { _BudgetVarianceReport } from './_BudgetVarianceReport';
+import { _MonthlyVATReport } from './_MonthlyVATReport';
 import { useState } from 'react';
 
 interface ReportsContentProps {
@@ -64,6 +65,10 @@ export function _ReportsContent({ companyId }: ReportsContentProps) {
 
       {selectedReport === 'general-ledger' && (
         <_GeneralLedgerReport companyId={companyId} />
+      )}
+
+      {selectedReport === 'monthly-vat' && (
+        <_MonthlyVATReport companyId={companyId} />
       )}
 
       {selectedReport === 'entries-without-documents' && (
