@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
-import { Calendar, X } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import moment from 'moment';
 import 'moment/locale/es';
 
@@ -39,6 +39,8 @@ export function _QuickMonthFilter({ filterKey = 'date' }: QuickMonthFilterProps)
     if (from.date() !== 1) return null;
     return from.format('YYYY-MM');
   }, [currentDateFilter]);
+
+  const isCurrentMonth = activeMonth === moment().format('YYYY-MM');
 
   const setMonthFilter = useCallback(
     (yearMonth: string | null) => {
@@ -89,33 +91,50 @@ export function _QuickMonthFilter({ filterKey = 'date' }: QuickMonthFilterProps)
     [activeMonthIdx, setMonthFilter],
   );
 
-  const handleQuickMonth = useCallback(
-    (offset: number) => {
-      const target = moment().subtract(offset, 'months');
-      setMonthFilter(target.format('YYYY-MM'));
-    },
-    [setMonthFilter],
-  );
+  const handlePrev = useCallback(() => {
+    const base = activeMonth ? moment(activeMonth, 'YYYY-MM') : moment();
+    const target = base.subtract(1, 'month');
+    setMonthFilter(target.format('YYYY-MM'));
+  }, [activeMonth, setMonthFilter]);
+
+  const handleNext = useCallback(() => {
+    const base = activeMonth ? moment(activeMonth, 'YYYY-MM') : moment();
+    const target = base.add(1, 'month');
+    setMonthFilter(target.format('YYYY-MM'));
+  }, [activeMonth, setMonthFilter]);
 
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Calendar className="h-4 w-4 text-muted-foreground" />
       <span className="text-sm text-muted-foreground">Mes:</span>
+
       <Button
-        variant={activeMonth === moment().format('YYYY-MM') ? 'default' : 'outline'}
+        variant="outline"
+        size="sm"
+        className="h-7 w-7 p-0"
+        onClick={handlePrev}
+        title="Mes anterior"
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </Button>
+
+      <Button
+        variant={isCurrentMonth ? 'default' : 'secondary'}
         size="sm"
         className="h-7 text-xs"
-        onClick={() => handleQuickMonth(0)}
+        onClick={() => setMonthFilter(moment().format('YYYY-MM'))}
       >
         Actual
       </Button>
+
       <Button
-        variant={activeMonth === moment().subtract(1, 'month').format('YYYY-MM') ? 'default' : 'outline'}
+        variant="outline"
         size="sm"
-        className="h-7 text-xs"
-        onClick={() => handleQuickMonth(1)}
+        className="h-7 w-7 p-0"
+        onClick={handleNext}
+        title="Mes siguiente"
       >
-        Anterior
+        <ChevronRight className="h-4 w-4" />
       </Button>
 
       <div className="flex items-center gap-1">
