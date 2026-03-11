@@ -123,6 +123,12 @@ export function _PurchaseOrdersTable({ data, totalRows, searchParams, facetCount
   const facetedFilters: DataTableFacetedFilterConfig[] = useMemo(
     () => [
       {
+        columnId: 'supplier',
+        title: 'Proveedor',
+        type: 'text' as const,
+        placeholder: 'Buscar por proveedor...',
+      },
+      {
         columnId: 'status',
         title: 'Recepción',
         options: Object.entries(PURCHASE_ORDER_STATUS_LABELS).map(([value, label]) => ({
@@ -172,7 +178,7 @@ export function _PurchaseOrdersTable({ data, totalRows, searchParams, facetCount
         data={data}
         totalRows={totalRows}
         searchParams={searchParams}
-        searchPlaceholder="Buscar órdenes de compra..."
+        showSearch={false}
         facetedFilters={facetedFilters}
         tableId="commercial-purchase-orders"
         showFilterToggle

@@ -8,7 +8,6 @@ import { revalidatePath } from 'next/cache';
 import { Prisma } from '@/generated/prisma/client';
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
 import {
-  buildSearchWhere,
   buildFiltersWhere,
   buildDateRangeFiltersWhere,
   parseSearchParams,
@@ -483,23 +482,25 @@ export async function getReceiptsPaginated(searchParams: DataTableSearchParams) 
 
     const filtersWhere = buildFiltersWhere(parsed.filters, {
       status: 'status',
-    }, { exclude: ['date'] });
+    }, { exclude: ['date', 'customer'] });
 
     const dateFiltersWhere = buildDateRangeFiltersWhere(parsed.filters, ['date']);
 
-    // Buscar en fullNumber y nombre de cliente
+    // Filtro de texto para cliente
+    const customerFilter = parsed.filters['customer'];
+    const customerWhere = customerFilter?.[0]
+      ? {
+          customer: {
+            name: { contains: customerFilter[0], mode: 'insensitive' as const },
+          },
+        }
+      : {};
+
     const where = {
       companyId,
       ...filtersWhere,
       ...dateFiltersWhere,
-      ...(parsed.search
-        ? {
-            OR: [
-              { fullNumber: { contains: parsed.search, mode: 'insensitive' as const } },
-              { customer: { name: { contains: parsed.search, mode: 'insensitive' as const } } },
-            ],
-          }
-        : {}),
+      ...customerWhere,
     };
 
     const [receipts, total] = await Promise.all([

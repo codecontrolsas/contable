@@ -8,7 +8,6 @@ import { getActiveCompanyId } from '@/shared/lib/company';
 import { revalidatePath } from 'next/cache';
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
 import {
-  buildSearchWhere,
   buildFiltersWhere,
   buildDateRangeFiltersWhere,
   parseSearchParams,
@@ -62,23 +61,31 @@ export async function getPurchaseOrdersPaginated(searchParams: DataTableSearchPa
     const parsed = parseSearchParams(searchParams);
     const { skip, take, orderBy } = stateToPrismaParams(parsed);
 
-    const searchWhere = buildSearchWhere(parsed.search, [
-      'fullNumber',
-      'notes',
-    ]);
-
     const filtersWhere = buildFiltersWhere(parsed.filters, {
       status: 'status',
       invoicingStatus: 'invoicingStatus',
-    }, { exclude: ['issueDate'] });
+    }, { exclude: ['issueDate', 'supplier'] });
 
     const dateFiltersWhere = buildDateRangeFiltersWhere(parsed.filters, ['issueDate']);
 
+    // Filtro de texto para proveedor (busca en businessName y tradeName)
+    const supplierFilter = parsed.filters['supplier'];
+    const supplierWhere = supplierFilter?.[0]
+      ? {
+          supplier: {
+            OR: [
+              { businessName: { contains: supplierFilter[0], mode: 'insensitive' as const } },
+              { tradeName: { contains: supplierFilter[0], mode: 'insensitive' as const } },
+            ],
+          },
+        }
+      : {};
+
     const where = {
       companyId,
-      ...searchWhere,
       ...filtersWhere,
       ...dateFiltersWhere,
+      ...supplierWhere,
     };
 
     const [orders, total] = await Promise.all([

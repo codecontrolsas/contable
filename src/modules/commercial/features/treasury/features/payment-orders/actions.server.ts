@@ -521,21 +521,28 @@ export async function getPaymentOrdersPaginated(searchParams: DataTableSearchPar
 
     const filtersWhere = buildFiltersWhere(parsed.filters, {
       status: 'status',
-    }, { exclude: ['date'] });
+    }, { exclude: ['date', 'supplier'] });
 
     const dateFiltersWhere = buildDateRangeFiltersWhere(parsed.filters, ['date']);
+
+    // Filtro de texto para proveedor
+    const supplierFilter = parsed.filters['supplier'];
+    const supplierWhere = supplierFilter?.[0]
+      ? {
+          supplier: {
+            OR: [
+              { businessName: { contains: supplierFilter[0], mode: 'insensitive' as const } },
+              { tradeName: { contains: supplierFilter[0], mode: 'insensitive' as const } },
+            ],
+          },
+        }
+      : {};
 
     const where: Prisma.PaymentOrderWhereInput = {
       companyId,
       ...filtersWhere,
       ...dateFiltersWhere,
-      ...(search && {
-        OR: [
-          { fullNumber: { contains: search, mode: 'insensitive' } },
-          { supplier: { businessName: { contains: search, mode: 'insensitive' } } },
-          { supplier: { tradeName: { contains: search, mode: 'insensitive' } } },
-        ],
-      }),
+      ...supplierWhere,
     };
 
     const orderBy = prismaOrderBy && Object.keys(prismaOrderBy).length > 0 ? prismaOrderBy : { number: 'desc' as const };

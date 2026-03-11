@@ -5,6 +5,7 @@ import { getPurchaseOrdersPaginated, getPurchaseOrderFacetCounts } from './actio
 import { _PurchaseOrdersTable } from './components/_PurchaseOrdersTable';
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
 import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
+import { _QuickMonthFilter } from '@/shared/components/common/_QuickMonthFilter';
 
 interface Props {
   searchParams: DataTableSearchParams;
@@ -33,6 +34,8 @@ export async function PurchaseOrdersList({ searchParams }: Props) {
             </Link>
           </Button>
         </div>
+
+        <_QuickMonthFilter filterKey="issueDate" />
 
         <_PurchaseOrdersTable data={initialData.data} totalRows={initialData.total} searchParams={searchParams} facetCounts={facetCounts} />
       </div>

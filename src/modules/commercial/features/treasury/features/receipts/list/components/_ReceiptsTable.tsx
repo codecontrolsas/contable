@@ -83,6 +83,12 @@ export function _ReceiptsTable({ data, totalRows, searchParams }: Props) {
   const facetedFilters: DataTableFacetedFilterConfig[] = useMemo(
     () => [
       {
+        columnId: 'customer',
+        title: 'Cliente',
+        type: 'text' as const,
+        placeholder: 'Buscar por cliente...',
+      },
+      {
         columnId: 'status',
         title: 'Estado',
         options: Object.entries(RECEIPT_STATUS_LABELS).map(([value, label]) => ({

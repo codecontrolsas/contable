@@ -88,6 +88,12 @@ export function _PaymentOrdersTable({ data, totalRows, searchParams, facetCounts
   const facetedFilters: DataTableFacetedFilterConfig[] = useMemo(
     () => [
       {
+        columnId: 'supplier',
+        title: 'Proveedor',
+        type: 'text' as const,
+        placeholder: 'Buscar por proveedor...',
+      },
+      {
         columnId: 'status',
         title: 'Estado',
         options: Object.entries(PAYMENT_ORDER_STATUS_LABELS).map(([value, label]) => ({
