@@ -132,7 +132,7 @@ export function _ReceiptsTable({ data, totalRows, searchParams }: Props) {
         data={data}
         totalRows={totalRows}
         searchParams={searchParams}
-        searchPlaceholder="Buscar recibos..."
+        showSearch={false}
         facetedFilters={facetedFilters}
         tableId="commercial-receipts"
         showFilterToggle

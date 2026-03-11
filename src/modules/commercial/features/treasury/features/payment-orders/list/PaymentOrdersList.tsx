@@ -1,5 +1,6 @@
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
 import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
+import { _QuickMonthFilter } from '@/shared/components/common/_QuickMonthFilter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { DollarSign, FileText, CheckCircle2 } from 'lucide-react';
 import { getPaymentOrders, getPaymentOrdersPaginated, getPaymentOrderFacetCounts } from '../actions.server';
@@ -66,6 +67,8 @@ export async function PaymentOrdersList({ searchParams = {} }: Props) {
           </CardContent>
         </Card>
       </div>
+
+      <_QuickMonthFilter />
 
       {/* Table */}
       <_PaymentOrdersTable

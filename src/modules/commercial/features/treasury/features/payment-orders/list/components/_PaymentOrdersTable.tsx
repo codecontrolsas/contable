@@ -138,7 +138,7 @@ export function _PaymentOrdersTable({ data, totalRows, searchParams, facetCounts
         data={data}
         totalRows={totalRows}
         searchParams={searchParams}
-        searchPlaceholder="Buscar órdenes de pago..."
+        showSearch={false}
         facetedFilters={facetedFilters}
         tableId="commercial-payment-orders"
         showFilterToggle
