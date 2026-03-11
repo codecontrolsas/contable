@@ -5,6 +5,7 @@ import { getPurchaseInvoicesPaginated, getPurchaseInvoiceFacetCounts } from './a
 import { _PurchaseInvoicesTable } from './components/_PurchaseInvoicesTable';
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
 import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
+import { _QuickMonthFilter } from '@/shared/components/common/_QuickMonthFilter';
 
 interface Props {
   searchParams: DataTableSearchParams;
@@ -33,6 +34,8 @@ export async function PurchaseInvoicesList({ searchParams }: Props) {
             </Link>
           </Button>
         </div>
+
+        <_QuickMonthFilter filterKey="issueDate" />
 
         <_PurchaseInvoicesTable data={initialData.data} totalRows={initialData.total} searchParams={searchParams} facetCounts={facetCounts} />
       </div>

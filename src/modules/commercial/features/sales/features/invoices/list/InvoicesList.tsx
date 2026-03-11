@@ -1,5 +1,6 @@
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
 import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
+import { _QuickMonthFilter } from '@/shared/components/common/_QuickMonthFilter';
 import { Button } from '@/shared/components/ui/button';
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
@@ -33,6 +34,8 @@ export async function InvoicesList({ searchParams = {} }: Props) {
             </Link>
           </Button>
         </div>
+
+        <_QuickMonthFilter filterKey="issueDate" />
 
         <_InvoicesTable
           data={paginatedResult.data}
