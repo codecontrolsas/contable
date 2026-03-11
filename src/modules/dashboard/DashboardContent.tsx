@@ -25,13 +25,15 @@ import { _CriticalStockList } from './components/_CriticalStockList';
 import { _AlertsList } from './components/_AlertsList';
 import { _ProfitabilityChart } from './components/_ProfitabilityChart';
 import { _PeriodSelector } from './components/_PeriodSelector';
+import { _MonthsRangeSelector } from './components/_MonthsRangeSelector';
 import moment from 'moment';
 
 interface DashboardContentProps {
   period?: string; // "YYYY-MM" o undefined = mes actual
+  monthsRange?: number; // 3, 6 o 12 - default 6
 }
 
-export async function DashboardContent({ period }: DashboardContentProps) {
+export async function DashboardContent({ period, monthsRange = 6 }: DashboardContentProps) {
   async function Content() {
     const validPeriod = period && moment(period, 'YYYY-MM', true).isValid() ? period : undefined;
     const displayPeriod = validPeriod || moment().format('YYYY-MM');
@@ -39,9 +41,9 @@ export async function DashboardContent({ period }: DashboardContentProps) {
 
     const [kpis, salesTrend, purchasesTrend, profitabilityTrend, expenseCategories, criticalStock, alerts] = await Promise.all([
       getDashboardKPIs(validPeriod),
-      getSalesTrend(validPeriod),
-      getPurchasesTrend(validPeriod),
-      getProfitabilityTrend(validPeriod),
+      getSalesTrend(validPeriod, monthsRange),
+      getPurchasesTrend(validPeriod, monthsRange),
+      getProfitabilityTrend(validPeriod, undefined, monthsRange),
       getExpenseCategories(),
       getCriticalStockProducts(),
       getRecentAlerts(validPeriod),
@@ -59,7 +61,10 @@ export async function DashboardContent({ period }: DashboardContentProps) {
             {isCurrentMonth ? 'Resumen general de tu empresa' : `Datos de ${periodLabel}`}
           </p>
         </div>
-        <_PeriodSelector currentPeriod={displayPeriod} />
+        <div className="flex items-center gap-2">
+          <_MonthsRangeSelector currentRange={monthsRange} />
+          <_PeriodSelector currentPeriod={displayPeriod} />
+        </div>
       </div>
 
       {/* KPI Cards */}
@@ -174,7 +179,7 @@ export async function DashboardContent({ period }: DashboardContentProps) {
       </div>
 
       {/* Profitability Chart */}
-      <_ProfitabilityChart data={profitabilityTrend} categories={expenseCategories} period={validPeriod} />
+      <_ProfitabilityChart data={profitabilityTrend} categories={expenseCategories} period={validPeriod} monthsRange={monthsRange} />
 
       {/* Charts Row */}
       <div className="grid gap-4 md:grid-cols-2">

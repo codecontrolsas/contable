@@ -6,6 +6,9 @@ import { logger } from '@/shared/lib/logger';
 import { checkPermission } from '@/shared/lib/permissions';
 import { prisma } from '@/shared/lib/prisma';
 import moment from 'moment';
+import 'moment/locale/es';
+
+moment.locale('es');
 
 // Parsear período "YYYY-MM" o usar mes actual
 function parsePeriod(period?: string) {
@@ -169,10 +172,10 @@ export async function getDashboardKPIs(period?: string) {
 }
 
 // ============================================
-// TENDENCIA DE VENTAS (6 meses)
+// TENDENCIA DE VENTAS
 // ============================================
 
-export async function getSalesTrend(period?: string) {
+export async function getSalesTrend(period?: string, months: number = 6) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('dashboard', 'view', { redirect: true });
@@ -182,24 +185,24 @@ export async function getSalesTrend(period?: string) {
 
   try {
     const ref = parsePeriod(period);
-    const sixMonthsAgo = ref.clone().subtract(5, 'months').startOf('month').toDate();
+    const rangeStart = ref.clone().subtract(months - 1, 'months').startOf('month').toDate();
     const endOfRef = ref.clone().endOf('month').toDate();
 
     const invoices = await prisma.salesInvoice.findMany({
       where: {
         companyId,
-        issueDate: { gte: sixMonthsAgo, lte: endOfRef },
+        issueDate: { gte: rangeStart, lte: endOfRef },
         status: { in: ['CONFIRMED', 'PAID', 'PARTIAL_PAID'] },
         voucherType: { notIn: ['NOTA_CREDITO_A', 'NOTA_CREDITO_B', 'NOTA_CREDITO_C'] },
       },
       select: { issueDate: true, total: true },
     });
 
-    // Generar los 6 meses terminando en el mes de referencia
-    const months: Array<{ month: string; monthKey: string; total: number }> = [];
-    for (let i = 5; i >= 0; i--) {
+    // Generar los meses terminando en el mes de referencia
+    const monthsData: Array<{ month: string; monthKey: string; total: number }> = [];
+    for (let i = months - 1; i >= 0; i--) {
       const m = ref.clone().subtract(i, 'months');
-      months.push({
+      monthsData.push({
         month: m.format('MMM YY'),
         monthKey: m.format('YYYY-MM'),
         total: 0,
@@ -209,13 +212,13 @@ export async function getSalesTrend(period?: string) {
     // Agrupar facturas por mes
     for (const inv of invoices) {
       const key = moment(inv.issueDate).format('YYYY-MM');
-      const monthEntry = months.find((m) => m.monthKey === key);
+      const monthEntry = monthsData.find((m) => m.monthKey === key);
       if (monthEntry) {
         monthEntry.total += Number(inv.total);
       }
     }
 
-    return months.map(({ month, total }) => ({ month, total }));
+    return monthsData.map(({ month, total }) => ({ month, total }));
   } catch (error) {
     logger.error('Error al obtener tendencia de ventas', { data: { error, companyId } });
     throw new Error('Error al obtener tendencia de ventas');
@@ -223,10 +226,10 @@ export async function getSalesTrend(period?: string) {
 }
 
 // ============================================
-// TENDENCIA DE COMPRAS (6 meses)
+// TENDENCIA DE COMPRAS
 // ============================================
 
-export async function getPurchasesTrend(period?: string) {
+export async function getPurchasesTrend(period?: string, months: number = 6) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('dashboard', 'view', { redirect: true });
@@ -236,23 +239,23 @@ export async function getPurchasesTrend(period?: string) {
 
   try {
     const ref = parsePeriod(period);
-    const sixMonthsAgo = ref.clone().subtract(5, 'months').startOf('month').toDate();
+    const rangeStart = ref.clone().subtract(months - 1, 'months').startOf('month').toDate();
     const endOfRef = ref.clone().endOf('month').toDate();
 
     const invoices = await prisma.purchaseInvoice.findMany({
       where: {
         companyId,
-        issueDate: { gte: sixMonthsAgo, lte: endOfRef },
+        issueDate: { gte: rangeStart, lte: endOfRef },
         status: { in: ['CONFIRMED', 'PAID', 'PARTIAL_PAID'] },
         voucherType: { notIn: ['NOTA_CREDITO_A', 'NOTA_CREDITO_B', 'NOTA_CREDITO_C'] },
       },
       select: { issueDate: true, total: true },
     });
 
-    const months: Array<{ month: string; monthKey: string; total: number }> = [];
-    for (let i = 5; i >= 0; i--) {
+    const monthsData: Array<{ month: string; monthKey: string; total: number }> = [];
+    for (let i = months - 1; i >= 0; i--) {
       const m = ref.clone().subtract(i, 'months');
-      months.push({
+      monthsData.push({
         month: m.format('MMM YY'),
         monthKey: m.format('YYYY-MM'),
         total: 0,
@@ -261,13 +264,13 @@ export async function getPurchasesTrend(period?: string) {
 
     for (const inv of invoices) {
       const key = moment(inv.issueDate).format('YYYY-MM');
-      const monthEntry = months.find((m) => m.monthKey === key);
+      const monthEntry = monthsData.find((m) => m.monthKey === key);
       if (monthEntry) {
         monthEntry.total += Number(inv.total);
       }
     }
 
-    return months.map(({ month, total }) => ({ month, total }));
+    return monthsData.map(({ month, total }) => ({ month, total }));
   } catch (error) {
     logger.error('Error al obtener tendencia de compras', { data: { error, companyId } });
     throw new Error('Error al obtener tendencia de compras');
@@ -275,10 +278,10 @@ export async function getPurchasesTrend(period?: string) {
 }
 
 // ============================================
-// RENTABILIDAD MENSUAL (6 meses)
+// RENTABILIDAD MENSUAL
 // ============================================
 
-export async function getProfitabilityTrend(period?: string, excludeCategoryIds?: string[]) {
+export async function getProfitabilityTrend(period?: string, excludeCategoryIds?: string[], months: number = 6) {
   const { userId } = await auth();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('dashboard', 'view', { redirect: true });
@@ -288,14 +291,14 @@ export async function getProfitabilityTrend(period?: string, excludeCategoryIds?
 
   try {
     const ref = parsePeriod(period);
-    const sixMonthsAgo = ref.clone().subtract(5, 'months').startOf('month').toDate();
+    const rangeStart = ref.clone().subtract(months - 1, 'months').startOf('month').toDate();
     const endOfRef = ref.clone().endOf('month').toDate();
 
     const [salesInvoices, purchaseInvoices, expenses] = await Promise.all([
       prisma.salesInvoice.findMany({
         where: {
           companyId,
-          issueDate: { gte: sixMonthsAgo, lte: endOfRef },
+          issueDate: { gte: rangeStart, lte: endOfRef },
           status: { in: ['CONFIRMED', 'PAID', 'PARTIAL_PAID'] },
           voucherType: { notIn: ['NOTA_CREDITO_A', 'NOTA_CREDITO_B', 'NOTA_CREDITO_C'] },
         },
@@ -304,7 +307,7 @@ export async function getProfitabilityTrend(period?: string, excludeCategoryIds?
       prisma.purchaseInvoice.findMany({
         where: {
           companyId,
-          issueDate: { gte: sixMonthsAgo, lte: endOfRef },
+          issueDate: { gte: rangeStart, lte: endOfRef },
           status: { in: ['CONFIRMED', 'PAID', 'PARTIAL_PAID'] },
           voucherType: { notIn: ['NOTA_CREDITO_A', 'NOTA_CREDITO_B', 'NOTA_CREDITO_C'] },
         },
@@ -313,7 +316,7 @@ export async function getProfitabilityTrend(period?: string, excludeCategoryIds?
       prisma.expense.findMany({
         where: {
           companyId,
-          date: { gte: sixMonthsAgo, lte: endOfRef },
+          date: { gte: rangeStart, lte: endOfRef },
           status: { in: ['CONFIRMED', 'PAID', 'PARTIAL_PAID'] },
           ...(excludeCategoryIds && excludeCategoryIds.length > 0
             ? { categoryId: { notIn: excludeCategoryIds } }
@@ -323,8 +326,8 @@ export async function getProfitabilityTrend(period?: string, excludeCategoryIds?
       }),
     ]);
 
-    // Generar los 6 meses
-    const months: Array<{
+    // Generar los meses del rango
+    const monthsData: Array<{
       month: string;
       monthKey: string;
       sales: number;
@@ -332,9 +335,9 @@ export async function getProfitabilityTrend(period?: string, excludeCategoryIds?
       expenses: number;
       profit: number;
     }> = [];
-    for (let i = 5; i >= 0; i--) {
+    for (let i = months - 1; i >= 0; i--) {
       const m = ref.clone().subtract(i, 'months');
-      months.push({
+      monthsData.push({
         month: m.format('MMM YY'),
         monthKey: m.format('YYYY-MM'),
         sales: 0,
@@ -346,28 +349,28 @@ export async function getProfitabilityTrend(period?: string, excludeCategoryIds?
 
     for (const inv of salesInvoices) {
       const key = moment(inv.issueDate).format('YYYY-MM');
-      const entry = months.find((m) => m.monthKey === key);
+      const entry = monthsData.find((m) => m.monthKey === key);
       if (entry) entry.sales += Number(inv.total);
     }
 
     for (const inv of purchaseInvoices) {
       const key = moment(inv.issueDate).format('YYYY-MM');
-      const entry = months.find((m) => m.monthKey === key);
+      const entry = monthsData.find((m) => m.monthKey === key);
       if (entry) entry.purchases += Number(inv.total);
     }
 
     for (const exp of expenses) {
       const key = moment(exp.date).format('YYYY-MM');
-      const entry = months.find((m) => m.monthKey === key);
+      const entry = monthsData.find((m) => m.monthKey === key);
       if (entry) entry.expenses += Number(exp.amount);
     }
 
     // Calcular rentabilidad
-    for (const m of months) {
+    for (const m of monthsData) {
       m.profit = m.sales - m.purchases - m.expenses;
     }
 
-    return months.map(({ month, sales, purchases, expenses, profit }) => ({
+    return monthsData.map(({ month, sales, purchases, expenses, profit }) => ({
       month,
       sales,
       purchases,

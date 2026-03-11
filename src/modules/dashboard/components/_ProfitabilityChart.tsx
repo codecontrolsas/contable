@@ -42,6 +42,7 @@ interface ProfitabilityChartProps {
   data: ProfitabilityData[];
   categories: ExpenseCategory[];
   period?: string;
+  monthsRange?: number;
 }
 
 const chartConfig = {
@@ -63,7 +64,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-export function _ProfitabilityChart({ data: initialData, categories, period }: ProfitabilityChartProps) {
+export function _ProfitabilityChart({ data: initialData, categories, period, monthsRange = 6 }: ProfitabilityChartProps) {
   const [data, setData] = useState<ProfitabilityData[]>(initialData);
   const [excludedCategories, setExcludedCategories] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
@@ -87,7 +88,8 @@ export function _ProfitabilityChart({ data: initialData, categories, period }: P
       setIsLoading(true);
       const result = await getProfitabilityTrend(
         period,
-        newExcluded.size > 0 ? Array.from(newExcluded) : undefined
+        newExcluded.size > 0 ? Array.from(newExcluded) : undefined,
+        monthsRange
       );
       setData(result);
     } catch (error) {
@@ -158,7 +160,7 @@ export function _ProfitabilityChart({ data: initialData, categories, period }: P
       <CardContent>
         {!hasData ? (
           <div className="flex h-[300px] items-center justify-center text-sm text-muted-foreground">
-            Sin datos en los ultimos 6 meses
+            Sin datos en los ultimos {monthsRange} meses
           </div>
         ) : (
           <ChartContainer config={chartConfig} className="h-[300px] w-full">

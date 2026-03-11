@@ -30,7 +30,7 @@ export function _PurchasesTrendChart({ data }: PurchasesTrendChartProps) {
       <CardContent>
         {data.every((d) => d.total === 0) ? (
           <div className="flex h-[200px] items-center justify-center text-sm text-muted-foreground">
-            Sin datos de compras en los últimos 6 meses
+            Sin datos de compras en el período seleccionado
           </div>
         ) : (
           <ChartContainer config={chartConfig} className="h-[200px] w-full">
