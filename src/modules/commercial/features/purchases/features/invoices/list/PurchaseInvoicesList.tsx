@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react';
 import Link from 'next/link';
 import { getPurchaseInvoicesPaginated, getPurchaseInvoiceFacetCounts } from './actions.server';
 import { _PurchaseInvoicesTable } from './components/_PurchaseInvoicesTable';
+import { _ImportAFIPDialog } from './components/_ImportAFIPDialog';
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
 import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 import { _QuickMonthFilter } from '@/shared/components/common/_QuickMonthFilter';
@@ -27,12 +28,17 @@ export async function PurchaseInvoicesList({ searchParams }: Props) {
               Registra y gestiona las facturas de tus proveedores
             </p>
           </div>
-          <Button asChild>
-            <Link href="/dashboard/commercial/purchases/new">
-              <Plus className="mr-2 h-4 w-4" />
-              Nueva Factura
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <PermissionGuard module="commercial.purchases" action="create">
+              <_ImportAFIPDialog />
+            </PermissionGuard>
+            <Button asChild>
+              <Link href="/dashboard/commercial/purchases/new">
+                <Plus className="mr-2 h-4 w-4" />
+                Nueva Factura
+              </Link>
+            </Button>
+          </div>
         </div>
 
         <_QuickMonthFilter filterKey="issueDate" />
