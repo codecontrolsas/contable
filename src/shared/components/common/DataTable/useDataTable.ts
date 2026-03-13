@@ -2,7 +2,7 @@
 
 import type { ColumnFiltersState, PaginationState, SortingState } from '@tanstack/react-table';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import { DEFAULT_PAGE_SIZE, parseSearchParams, stateToSearchParams } from './helpers';
 import type { DataTableSearchParams, DataTableState } from './types';
@@ -19,6 +19,45 @@ export {
 } from './helpers';
 
 // ============================================================================
+// PERSISTENCIA EN LOCALSTORAGE
+// ============================================================================
+
+const STORAGE_PREFIX = 'dt-state:';
+
+interface PersistedTableState {
+  pageSize?: number;
+  sortBy?: string | null;
+  sortOrder?: 'asc' | 'desc';
+  filters?: Record<string, string[]>;
+}
+
+function getPersistedState(tableId: string): PersistedTableState | null {
+  try {
+    const raw = localStorage.getItem(`${STORAGE_PREFIX}${tableId}`);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function persistState(tableId: string, state: PersistedTableState): void {
+  try {
+    localStorage.setItem(`${STORAGE_PREFIX}${tableId}`, JSON.stringify(state));
+  } catch {
+    // localStorage lleno o no disponible, ignorar silenciosamente
+  }
+}
+
+function clearPersistedState(tableId: string): void {
+  try {
+    localStorage.removeItem(`${STORAGE_PREFIX}${tableId}`);
+  } catch {
+    // ignorar
+  }
+}
+
+// ============================================================================
 // HOOK: useDataTable
 // ============================================================================
 
@@ -27,6 +66,8 @@ interface UseDataTableOptions {
   defaultPageSize?: number;
   /** Columnas que se pueden filtrar via URL */
   filterableColumns?: string[];
+  /** ID de tabla para persistencia de estado (filtros, sort, pageSize) */
+  tableId?: string;
 }
 
 interface UseDataTableReturn {
@@ -85,11 +126,44 @@ interface UseDataTableReturn {
  * ```
  */
 export function useDataTable(options: UseDataTableOptions = {}): UseDataTableReturn {
-  const { defaultPageSize = DEFAULT_PAGE_SIZE, filterableColumns = [] } = options;
+  const { defaultPageSize = DEFAULT_PAGE_SIZE, filterableColumns = [], tableId } = options;
 
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const restoredRef = useRef(false);
+
+  // Restaurar estado guardado si la URL no tiene params relevantes
+  useEffect(() => {
+    if (!tableId || restoredRef.current) return;
+    restoredRef.current = true;
+
+    // Verificar si la URL tiene params de tabla (excluyendo params no-tabla como "tab")
+    const tableParamKeys = ['page', 'pageSize', 'sortBy', 'sortOrder', 'search'];
+    const hasTableParams = tableParamKeys.some((k) => searchParams.has(k)) ||
+      filterableColumns.some((k) => searchParams.has(k));
+
+    if (hasTableParams) return;
+
+    const saved = getPersistedState(tableId);
+    if (!saved) return;
+
+    // Reconstruir estado desde localStorage
+    const restoredState: Partial<DataTableState> = {
+      page: 0,
+      pageSize: saved.pageSize ?? defaultPageSize,
+      sortBy: saved.sortBy ?? null,
+      sortOrder: saved.sortOrder ?? 'asc',
+      filters: saved.filters ?? {},
+      search: '',
+    };
+
+    const params = stateToSearchParams(restoredState);
+    const queryString = params.toString();
+    if (queryString) {
+      router.replace(`${pathname}?${queryString}`, { scroll: false });
+    }
+  }, [tableId, searchParams, filterableColumns, defaultPageSize, pathname, router]);
 
   // Parsear estado actual de la URL
   const state = useMemo(() => {
@@ -137,7 +211,7 @@ export function useDataTable(options: UseDataTableOptions = {}): UseDataTableRet
     return filters;
   }, [state.search, state.filters, filterableColumns]);
 
-  // Función helper para actualizar URL
+  // Función helper para actualizar URL y persistir estado
   const updateURL = useCallback(
     (newState: Partial<DataTableState>) => {
       const merged = { ...state, ...newState };
@@ -146,8 +220,18 @@ export function useDataTable(options: UseDataTableOptions = {}): UseDataTableRet
       router.push(queryString ? `${pathname}?${queryString}` : pathname, {
         scroll: false,
       });
+
+      // Persistir estado (sin página ni search, que son efímeros)
+      if (tableId) {
+        persistState(tableId, {
+          pageSize: merged.pageSize,
+          sortBy: merged.sortBy,
+          sortOrder: merged.sortOrder,
+          filters: merged.filters,
+        });
+      }
     },
-    [state, pathname, router]
+    [state, pathname, router, tableId]
   );
 
   // Handlers
@@ -219,8 +303,9 @@ export function useDataTable(options: UseDataTableOptions = {}): UseDataTableRet
   );
 
   const resetFilters = useCallback(() => {
+    if (tableId) clearPersistedState(tableId);
     router.push(pathname, { scroll: false });
-  }, [pathname, router]);
+  }, [pathname, router, tableId]);
 
   return {
     state,

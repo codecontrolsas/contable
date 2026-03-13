@@ -124,7 +124,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue = unknow
     };
   }, []);
 
-  // Hook para manejar estado sincronizado con URL
+  // Hook para manejar estado sincronizado con URL (y persistencia si tableId)
   const filterableColumns = facetedFilters.map((f) => f.columnId);
   const {
     pagination,
@@ -135,6 +135,7 @@ export function DataTable<TData extends Record<string, unknown>, TValue = unknow
     onColumnFiltersChange,
   } = useDataTable({
     filterableColumns,
+    tableId,
   });
 
   // Calcular pageCount basado en totalRows
