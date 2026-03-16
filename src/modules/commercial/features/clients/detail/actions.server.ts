@@ -559,3 +559,40 @@ export type AvailableEmployee = Awaited<ReturnType<typeof getAvailableEmployeesF
 export type ClientAccountStatement = Awaited<ReturnType<typeof getClientAccountStatement>>;
 export type ClientInvoiceWithBalance = ClientAccountStatement['invoices'][number];
 export type ClientReceipt = ClientAccountStatement['receipts'][number];
+
+// ============================================
+// REMITOS DE ENTREGA DEL CLIENTE
+// ============================================
+
+export async function getClientDeliveryNotes(clientId: string) {
+  await checkPermission('commercial.delivery-notes', 'view', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  try {
+    const notes = await prisma.deliveryNote.findMany({
+      where: { companyId, customerId: clientId },
+      select: {
+        id: true,
+        fullNumber: true,
+        deliveryDate: true,
+        status: true,
+        warehouse: { select: { name: true } },
+        salesInvoice: { select: { id: true, fullNumber: true } },
+        lines: { select: { quantity: true } },
+      },
+      orderBy: { deliveryDate: 'desc' },
+    });
+
+    return notes.map((n) => ({
+      ...n,
+      lineCount: n.lines.length,
+      totalQty: n.lines.reduce((sum, l) => sum + Number(l.quantity), 0),
+    }));
+  } catch (error) {
+    logger.error('Error al obtener remitos del cliente', { data: { error, clientId } });
+    return [];
+  }
+}
+
+export type ClientDeliveryNote = Awaited<ReturnType<typeof getClientDeliveryNotes>>[number];
