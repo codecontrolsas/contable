@@ -639,7 +639,7 @@ export async function invoiceDeliveryNotes(deliveryNoteIds: string[]) {
     // Obtener punto de venta por defecto
     const pointOfSale = await prisma.salesPointOfSale.findFirst({
       where: { companyId, isActive: true },
-      select: { id: true },
+      select: { id: true, number: true },
       orderBy: { number: 'asc' },
     });
 
@@ -687,7 +687,6 @@ export async function invoiceDeliveryNotes(deliveryNoteIds: string[]) {
             vatRate: new Prisma.Decimal(vatRate),
             subtotal: new Prisma.Decimal(subtotal),
             vatAmount: new Prisma.Decimal(vatAmount),
-            otherTaxes: new Prisma.Decimal(0),
             total: new Prisma.Decimal(total),
           };
         })
@@ -710,7 +709,7 @@ export async function invoiceDeliveryNotes(deliveryNoteIds: string[]) {
           pointOfSaleId: pointOfSale.id,
           voucherType,
           number: nextNumber,
-          fullNumber: `${String(1).padStart(4, '0')}-${String(nextNumber).padStart(8, '0')}`,
+          fullNumber: `${pointOfSale.number.toString().padStart(4, '0')}-${nextNumber.toString().padStart(8, '0')}`,
           issueDate: new Date(),
           subtotal: new Prisma.Decimal(totals.subtotal),
           vatAmount: new Prisma.Decimal(totals.vatAmount),
