@@ -240,6 +240,11 @@ const navMain: NavItemWithSub[] = [
             href: '/dashboard/commercial/treasury/projections',
             module: 'commercial.treasury.projections',
           },
+          {
+            title: 'Saldos Pendientes',
+            href: '/dashboard/commercial/account-balances',
+            module: 'commercial',
+          },
         ],
       },
     ],
