@@ -755,6 +755,67 @@ export async function invoiceDeliveryNotes(deliveryNoteIds: string[]) {
 }
 
 // ============================================
+// ACCEPTED DELIVERY NOTES GROUPED BY CUSTOMER
+// ============================================
+
+export async function getAcceptedDeliveryNotesByCustomer() {
+  await checkPermission('commercial.delivery-notes', 'view', { redirect: true });
+  const { userId } = await auth();
+  if (!userId) throw new Error('No autenticado');
+
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  try {
+    const notes = await prisma.deliveryNote.findMany({
+      where: { companyId, status: 'ACCEPTED' },
+      select: {
+        id: true,
+        fullNumber: true,
+        deliveryDate: true,
+        customer: { select: { id: true, name: true, taxId: true } },
+        lines: { select: { description: true, quantity: true } },
+      },
+      orderBy: { deliveryDate: 'asc' },
+    });
+
+    const byCustomer = new Map<
+      string,
+      {
+        customer: { id: string; name: string; taxId: string | null };
+        notes: typeof notes;
+      }
+    >();
+
+    for (const note of notes) {
+      const existing = byCustomer.get(note.customer.id);
+      if (existing) {
+        existing.notes.push(note);
+      } else {
+        byCustomer.set(note.customer.id, { customer: note.customer, notes: [note] });
+      }
+    }
+
+    return Array.from(byCustomer.values()).map((g) => ({
+      ...g,
+      notes: g.notes.map((n) => ({
+        ...n,
+        lines: n.lines.map((l) => ({ ...l, quantity: Number(l.quantity) })),
+      })),
+    }));
+  } catch (error) {
+    logger.error('Error al obtener remitos aceptados por cliente', {
+      data: { error: error instanceof Error ? error.message : String(error) },
+    });
+    throw new Error('Error al obtener remitos aceptados');
+  }
+}
+
+export type AcceptedDeliveryNotesByCustomer = Awaited<
+  ReturnType<typeof getAcceptedDeliveryNotesByCustomer>
+>;
+
+// ============================================
 // FACET COUNTS
 // ============================================
 

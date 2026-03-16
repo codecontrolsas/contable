@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react';
 import Link from 'next/link';
 import { getDeliveryNotesPaginated, getDeliveryNoteFacetCounts } from './actions.server';
 import { _DeliveryNotesTable } from './components/_DeliveryNotesTable';
+import { _InvoiceDeliveryNotesDialog } from './components/_InvoiceDeliveryNotesDialog';
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
 import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 
@@ -26,14 +27,17 @@ export async function DeliveryNotesList({ searchParams }: Props) {
               Gestiona la entrega de materiales y productos a clientes
             </p>
           </div>
-          <PermissionGuard module="commercial.delivery-notes" action="create">
-            <Button asChild>
-              <Link href="/dashboard/commercial/delivery-notes/new">
-                <Plus className="mr-2 h-4 w-4" />
-                Nuevo Remito
-              </Link>
-            </Button>
-          </PermissionGuard>
+          <div className="flex items-center gap-2">
+            <_InvoiceDeliveryNotesDialog />
+            <PermissionGuard module="commercial.delivery-notes" action="create">
+              <Button asChild>
+                <Link href="/dashboard/commercial/delivery-notes/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nuevo Remito
+                </Link>
+              </Button>
+            </PermissionGuard>
+          </div>
         </div>
 
         <_DeliveryNotesTable data={initialData.data} totalRows={initialData.total} searchParams={searchParams} facetCounts={facetCounts} />
