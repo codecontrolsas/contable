@@ -10,7 +10,6 @@ import { revalidatePath } from 'next/cache';
 interface GetClientsParams {
   page?: number;
   pageSize?: number;
-  search?: string;
   isActive?: boolean;
   filters?: Record<string, string[]>;
 }
@@ -20,15 +19,23 @@ interface GetClientsParams {
  */
 export async function getClients(params: GetClientsParams = {}) {
   await checkPermission('commercial.clients', 'view', { redirect: true });
-  const { page = 1, pageSize = 10, search, isActive, filters = {} } = params;
+  const { page = 1, pageSize = 10, isActive, filters = {} } = params;
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
   try {
-    // Build faceted filters, excluding isActive since it needs boolean conversion
-    const facetedWhere = buildFiltersWhere(filters, {}, { exclude: ['isActive'] });
+    // Filtros faceted (solo isActive necesita conversión especial)
+    const facetedWhere = buildFiltersWhere(filters, {}, { exclude: ['isActive', 'name', 'taxId', 'email', 'phone'] });
 
-    // Handle isActive boolean filter from faceted filter (values are 'true'/'false' strings)
+    // Filtros de texto
+    const textFields = ['name', 'taxId', 'email', 'phone'] as const;
+    const textWhere = textFields.reduce<Record<string, unknown>>((acc, field) => {
+      const val = filters[field]?.[0];
+      if (val) acc[field] = { contains: val, mode: 'insensitive' as const };
+      return acc;
+    }, {});
+
+    // isActive: boolean desde faceted filter (valores son strings 'true'/'false')
     let isActiveFilter: boolean | undefined = isActive;
     if (filters.isActive && filters.isActive.length > 0) {
       const val = filters.isActive[0];
@@ -39,14 +46,8 @@ export async function getClients(params: GetClientsParams = {}) {
     const where = {
       companyId,
       ...facetedWhere,
+      ...textWhere,
       ...(isActiveFilter !== undefined && { isActive: isActiveFilter }),
-      ...(search && {
-        OR: [
-          { name: { contains: search, mode: 'insensitive' as const } },
-          { taxId: { contains: search, mode: 'insensitive' as const } },
-          { email: { contains: search, mode: 'insensitive' as const } },
-        ],
-      }),
     };
 
     const [clients, total] = await Promise.all([
@@ -432,6 +433,28 @@ export async function getAvailableContacts(currentContactId?: string) {
     logger.error('Error getting available contacts', { data: { error } });
     return [];
   }
+}
+
+// ============================================
+// Facet Counts
+// ============================================
+
+export async function getClientFacetCounts() {
+  await checkPermission('commercial.clients', 'view', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  const isActiveCounts = await prisma.contractor.groupBy({
+    by: ['isActive'],
+    where: { companyId },
+    _count: { isActive: true },
+  });
+
+  return {
+    isActive: Object.fromEntries(
+      isActiveCounts.map((c) => [String(c.isActive), c._count.isActive])
+    ),
+  };
 }
 
 // Tipos inferidos

@@ -72,14 +72,15 @@ export function getColumns({ onViewDetail, onEdit, onConfirm, onCancel, onDelete
       ),
     },
     {
-      id: 'category_name',
+      id: 'categoryId',
       accessorFn: (row) => row.category.name,
       meta: { title: 'Categoría' },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Categoría" />,
       cell: ({ row }) => row.original.category.name,
     },
     {
-      accessorKey: 'supplier',
+      id: 'supplier_name',
+      accessorFn: (row) => row.supplier?.businessName ?? '',
       meta: { title: 'Proveedor' },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Proveedor" />,
       cell: ({ row }) => {

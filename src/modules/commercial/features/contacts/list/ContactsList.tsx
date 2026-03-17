@@ -10,13 +10,12 @@ interface Props {
 }
 
 export async function ContactsList({ searchParams = {} }: Props) {
-  const { page, pageSize, search, filters } = parseSearchParams(searchParams);
+  const { page, pageSize, filters } = parseSearchParams(searchParams);
 
   const [result, options, permissions] = await Promise.all([
     getContacts({
       page: page + 1,
       pageSize,
-      search,
       filters,
     }),
     getContactFormOptions(),

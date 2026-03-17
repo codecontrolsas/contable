@@ -123,6 +123,29 @@ export function _DeliveryNotesTable({ data, totalRows, searchParams, facetCounts
   const facetedFilters: DataTableFacetedFilterConfig[] = useMemo(
     () => [
       {
+        columnId: 'fullNumber',
+        title: 'Número',
+        type: 'text' as const,
+        placeholder: 'Buscar por número...',
+      },
+      {
+        columnId: 'customer',
+        title: 'Cliente',
+        type: 'text' as const,
+        placeholder: 'Buscar por cliente...',
+      },
+      {
+        columnId: 'warehouse',
+        title: 'Almacén',
+        type: 'text' as const,
+        placeholder: 'Buscar por almacén...',
+      },
+      {
+        columnId: 'deliveryDate',
+        title: 'Fecha Entrega',
+        type: 'dateRange' as const,
+      },
+      {
         columnId: 'status',
         title: 'Estado',
         options: Object.entries(DELIVERY_NOTE_STATUS_LABELS).map(([value, label]) => ({
@@ -130,11 +153,6 @@ export function _DeliveryNotesTable({ data, totalRows, searchParams, facetCounts
           value,
         })),
         externalCounts: facetCounts?.status ? new Map(Object.entries(facetCounts.status)) : undefined,
-      },
-      {
-        columnId: 'deliveryDate',
-        title: 'Fecha Entrega',
-        type: 'dateRange' as const,
       },
     ],
     [facetCounts]
@@ -147,7 +165,7 @@ export function _DeliveryNotesTable({ data, totalRows, searchParams, facetCounts
         data={data}
         totalRows={totalRows}
         searchParams={searchParams}
-        searchPlaceholder="Buscar remitos de entrega..."
+        showSearch={false}
         facetedFilters={facetedFilters}
         tableId="commercial-delivery-notes"
         showFilterToggle

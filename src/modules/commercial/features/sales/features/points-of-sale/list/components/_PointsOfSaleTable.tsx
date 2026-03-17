@@ -201,6 +201,18 @@ export function PointsOfSaleTable({ data }: PointsOfSaleTableProps) {
   const facetedFilters: DataTableFacetedFilterConfig[] = useMemo(
     () => [
       {
+        columnId: 'number',
+        title: 'Número',
+        type: 'text' as const,
+        placeholder: 'Buscar por número...',
+      },
+      {
+        columnId: 'name',
+        title: 'Nombre',
+        type: 'text' as const,
+        placeholder: 'Buscar por nombre...',
+      },
+      {
         columnId: 'isActive',
         title: 'Estado',
         options: [
@@ -226,6 +238,7 @@ export function PointsOfSaleTable({ data }: PointsOfSaleTableProps) {
         columns={columns}
         data={data}
         totalRows={data.length}
+        showSearch={false}
         facetedFilters={facetedFilters}
         tableId="commercial-points-of-sale"
         showFilterToggle

@@ -30,14 +30,19 @@ import {
   type ClientListItem,
 } from '../actions.server';
 
+interface FacetCounts {
+  isActive: Record<string, number>;
+}
+
 interface Props {
   data: ClientListItem[];
   totalRows: number;
   searchParams: DataTableSearchParams;
   permissions: ModulePermissions;
+  facetCounts?: FacetCounts;
 }
 
-export function _ClientsDataTable({ data, totalRows, searchParams, permissions }: Props) {
+export function _ClientsDataTable({ data, totalRows, searchParams, permissions, facetCounts }: Props) {
   const router = useRouter();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<ClientListItem | null>(null);
@@ -88,15 +93,40 @@ export function _ClientsDataTable({ data, totalRows, searchParams, permissions }
   const facetedFilters = useMemo<DataTableFacetedFilterConfig[]>(
     () => [
       {
+        columnId: 'name',
+        title: 'Nombre',
+        type: 'text' as const,
+        placeholder: 'Buscar por nombre...',
+      },
+      {
+        columnId: 'taxId',
+        title: 'CUIT',
+        type: 'text' as const,
+        placeholder: 'Buscar por CUIT...',
+      },
+      {
+        columnId: 'email',
+        title: 'Email',
+        type: 'text' as const,
+        placeholder: 'Buscar por email...',
+      },
+      {
+        columnId: 'phone',
+        title: 'Teléfono',
+        type: 'text' as const,
+        placeholder: 'Buscar por teléfono...',
+      },
+      {
         columnId: 'isActive',
         title: 'Estado',
         options: [
           { value: 'true', label: 'Activo' },
           { value: 'false', label: 'Inactivo' },
         ],
+        externalCounts: facetCounts?.isActive ? new Map(Object.entries(facetCounts.isActive)) : undefined,
       },
     ],
-    []
+    [facetCounts]
   );
 
   return (
@@ -106,7 +136,7 @@ export function _ClientsDataTable({ data, totalRows, searchParams, permissions }
         data={data}
         totalRows={totalRows}
         searchParams={searchParams}
-        searchPlaceholder="Buscar clientes..."
+        showSearch={false}
         tableId="commercial-clients"
         facetedFilters={facetedFilters}
         showFilterToggle

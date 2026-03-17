@@ -107,6 +107,11 @@ export function getColumns({ onEdit, onDelete, permissions }: ColumnsProps): Col
     },
     {
       id: 'linkedTo',
+      accessorFn: (row) => {
+        if (row.contractor) return 'client';
+        if (row.lead) return 'lead';
+        return 'none';
+      },
       meta: { title: 'Vinculado a' },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Vinculado a" />,
       filterFn: (row, _columnId, filterValues: string[]) => {

@@ -99,6 +99,24 @@ export function _LeadsDataTable({
   const facetedFilters = useMemo<DataTableFacetedFilterConfig[]>(
     () => [
       {
+        columnId: 'name',
+        title: 'Nombre',
+        type: 'text' as const,
+        placeholder: 'Buscar por nombre...',
+      },
+      {
+        columnId: 'email',
+        title: 'Email',
+        type: 'text' as const,
+        placeholder: 'Buscar por email...',
+      },
+      {
+        columnId: 'phone',
+        title: 'Teléfono',
+        type: 'text' as const,
+        placeholder: 'Buscar por teléfono...',
+      },
+      {
         columnId: 'status',
         title: 'Estado',
         options: Object.entries(leadStatusLabels).map(([value, label]) => ({
@@ -106,6 +124,11 @@ export function _LeadsDataTable({
           label,
         })),
         externalCounts: facetCounts?.status ? new Map(Object.entries(facetCounts.status)) : undefined,
+      },
+      {
+        columnId: 'createdAt',
+        title: 'Fecha de Creación',
+        type: 'dateRange' as const,
       },
     ],
     [facetCounts]
@@ -118,7 +141,7 @@ export function _LeadsDataTable({
         data={data}
         totalRows={totalRows}
         searchParams={searchParams}
-        searchPlaceholder="Buscar leads..."
+        showSearch={false}
         tableId="commercial-leads"
         facetedFilters={facetedFilters}
         showFilterToggle

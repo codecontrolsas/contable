@@ -8,7 +8,6 @@ import { getActiveCompanyId } from '@/shared/lib/company';
 import { revalidatePath } from 'next/cache';
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
 import {
-  buildSearchWhere,
   buildFiltersWhere,
   buildDateRangeFiltersWhere,
   parseSearchParams,
@@ -36,11 +35,37 @@ export async function getDeliveryNotesPaginated(searchParams: DataTableSearchPar
     const parsed = parseSearchParams(searchParams);
     const { skip, take, orderBy } = stateToPrismaParams(parsed);
 
-    const searchWhere = buildSearchWhere(parsed.search, ['fullNumber', 'notes']);
-    const filtersWhere = buildFiltersWhere(parsed.filters, {}, { exclude: ['deliveryDate'] });
+    const filtersWhere = buildFiltersWhere(parsed.filters, {
+      status: 'status',
+    }, { exclude: ['deliveryDate', 'fullNumber', 'customer', 'warehouse'] });
     const dateFiltersWhere = buildDateRangeFiltersWhere(parsed.filters, ['deliveryDate']);
 
-    const where = { companyId, ...searchWhere, ...filtersWhere, ...dateFiltersWhere };
+    // Filtro de texto para fullNumber
+    const fullNumberFilter = parsed.filters['fullNumber']?.[0];
+    const fullNumberWhere = fullNumberFilter
+      ? { fullNumber: { contains: fullNumberFilter, mode: 'insensitive' as const } }
+      : {};
+
+    // Filtro de texto para cliente (relación)
+    const customerFilter = parsed.filters['customer']?.[0];
+    const customerWhere = customerFilter
+      ? { customer: { name: { contains: customerFilter, mode: 'insensitive' as const } } }
+      : {};
+
+    // Filtro de texto para almacén (relación)
+    const warehouseFilter = parsed.filters['warehouse']?.[0];
+    const warehouseWhere = warehouseFilter
+      ? { warehouse: { name: { contains: warehouseFilter, mode: 'insensitive' as const } } }
+      : {};
+
+    const where = {
+      companyId,
+      ...filtersWhere,
+      ...dateFiltersWhere,
+      ...fullNumberWhere,
+      ...customerWhere,
+      ...warehouseWhere,
+    };
 
     const [notes, total] = await Promise.all([
       prisma.deliveryNote.findMany({

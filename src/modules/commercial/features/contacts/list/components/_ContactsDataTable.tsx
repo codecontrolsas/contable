@@ -38,18 +38,6 @@ interface Props {
   permissions: ModulePermissions;
 }
 
-const LINKED_TYPE_FILTERS: DataTableFacetedFilterConfig = {
-  columnId: 'linkedTo',
-  title: 'Vinculado a',
-  options: [
-    { value: 'client', label: 'Cliente', icon: Building2 },
-    { value: 'lead', label: 'Lead', icon: Users },
-    { value: 'none', label: 'Sin vincular', icon: Unlink },
-  ],
-};
-
-const FACETED_FILTERS: DataTableFacetedFilterConfig[] = [LINKED_TYPE_FILTERS];
-
 export function _ContactsDataTable({ data, totalRows, searchParams, options, permissions }: Props) {
   const router = useRouter();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -83,6 +71,39 @@ export function _ContactsDataTable({ data, totalRows, searchParams, options, per
     [permissions]
   );
 
+  const facetedFilters = useMemo<DataTableFacetedFilterConfig[]>(
+    () => [
+      {
+        columnId: 'name',
+        title: 'Nombre',
+        type: 'text' as const,
+        placeholder: 'Buscar por nombre...',
+      },
+      {
+        columnId: 'email',
+        title: 'Email',
+        type: 'text' as const,
+        placeholder: 'Buscar por email...',
+      },
+      {
+        columnId: 'phone',
+        title: 'Teléfono',
+        type: 'text' as const,
+        placeholder: 'Buscar por teléfono...',
+      },
+      {
+        columnId: 'linkedTo',
+        title: 'Vinculado a',
+        options: [
+          { value: 'client', label: 'Cliente', icon: Building2 },
+          { value: 'lead', label: 'Lead', icon: Users },
+          { value: 'none', label: 'Sin vincular', icon: Unlink },
+        ],
+      },
+    ],
+    []
+  );
+
   return (
     <>
       <DataTable
@@ -90,9 +111,10 @@ export function _ContactsDataTable({ data, totalRows, searchParams, options, per
         data={data}
         totalRows={totalRows}
         searchParams={searchParams}
-        searchPlaceholder="Buscar contactos..."
+        showSearch={false}
         tableId="commercial-contacts"
-        facetedFilters={FACETED_FILTERS}
+        facetedFilters={facetedFilters}
+        showFilterToggle
         toolbarActions={
           permissions.canCreate ? (
             <Button onClick={() => setIsCreateOpen(true)}>

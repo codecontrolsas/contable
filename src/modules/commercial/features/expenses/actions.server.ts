@@ -240,9 +240,9 @@ export async function getExpensesPaginated(searchParams: DataTableSearchParams) 
     const sortByField = parsed.sortBy;
     let orderBy: Prisma.ExpenseOrderByWithRelationInput | Prisma.ExpenseOrderByWithRelationInput[];
 
-    if (sortByField === 'category_name' || sortByField === 'category.name') {
+    if (sortByField === 'categoryId' || sortByField === 'category_name' || sortByField === 'category.name') {
       orderBy = { category: { name: parsed.sortOrder } };
-    } else if (sortByField === 'supplier') {
+    } else if (sortByField === 'supplier_name' || sortByField === 'supplier') {
       orderBy = { supplier: { businessName: parsed.sortOrder } };
     } else if (prismaOrderBy && Object.keys(prismaOrderBy).length > 0) {
       orderBy = prismaOrderBy;
@@ -647,14 +647,22 @@ export async function getExpenseFacetCounts() {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
-  const statusCounts = await prisma.expense.groupBy({
-    by: ['status'],
-    where: { companyId },
-    _count: { status: true },
-  });
+  const [statusCounts, categoryCounts] = await Promise.all([
+    prisma.expense.groupBy({
+      by: ['status'],
+      where: { companyId },
+      _count: { status: true },
+    }),
+    prisma.expense.groupBy({
+      by: ['categoryId'],
+      where: { companyId },
+      _count: { categoryId: true },
+    }),
+  ]);
 
   return {
     status: Object.fromEntries(statusCounts.map((s) => [s.status, s._count.status])),
+    categoryId: Object.fromEntries(categoryCounts.map((c) => [c.categoryId, c._count.categoryId])),
   };
 }
 

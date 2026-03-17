@@ -24,6 +24,7 @@ import { _ExpenseDetailModal } from './_ExpenseDetailModal';
 
 interface FacetCounts {
   status: Record<string, number>;
+  categoryId: Record<string, number>;
 }
 
 interface CategoryOption {
@@ -136,6 +137,7 @@ export function _ExpensesTable({ data, totalRows, searchParams, facetCounts, cat
           value: c.id,
           label: c.name,
         })),
+        externalCounts: facetCounts?.categoryId ? new Map(Object.entries(facetCounts.categoryId)) : undefined,
       },
       {
         columnId: 'date',

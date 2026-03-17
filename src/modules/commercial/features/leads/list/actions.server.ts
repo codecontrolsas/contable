@@ -5,7 +5,7 @@ import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
 import { checkPermission } from '@/shared/lib/permissions';
 import { prisma } from '@/shared/lib/prisma';
-import { buildFiltersWhere } from '@/shared/components/common/DataTable/helpers';
+import { buildFiltersWhere, buildDateRangeFiltersWhere } from '@/shared/components/common/DataTable/helpers';
 import { revalidatePath } from 'next/cache';
 
 interface GetLeadsParams {
@@ -26,20 +26,26 @@ export async function getLeads(params: GetLeadsParams = {}) {
   if (!companyId) throw new Error('No hay empresa activa');
 
   try {
-    const filtersWhere = buildFiltersWhere(filters, { status: 'status' });
+    const filtersWhere = buildFiltersWhere(filters, { status: 'status' }, { exclude: ['name', 'email', 'phone', 'createdAt'] });
+
+    // Filtros de texto
+    const textFields = ['name', 'email', 'phone'] as const;
+    const textWhere = textFields.reduce<Record<string, unknown>>((acc, field) => {
+      const val = filters[field]?.[0];
+      if (val) acc[field] = { contains: val, mode: 'insensitive' as const };
+      return acc;
+    }, {});
+
+    // Filtro de rango de fecha
+    const dateFiltersWhere = buildDateRangeFiltersWhere(filters, ['createdAt']);
 
     const where = {
       companyId,
       isActive: true,
       ...(status && { status }),
       ...filtersWhere,
-      ...(search && {
-        OR: [
-          { name: { contains: search, mode: 'insensitive' as const } },
-          { taxId: { contains: search, mode: 'insensitive' as const } },
-          { email: { contains: search, mode: 'insensitive' as const } },
-        ],
-      }),
+      ...textWhere,
+      ...dateFiltersWhere,
     };
 
     const [leads, total] = await Promise.all([

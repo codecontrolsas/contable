@@ -9,7 +9,6 @@ import { revalidatePath } from 'next/cache';
 interface GetContactsParams {
   page?: number;
   pageSize?: number;
-  search?: string;
   filters?: Record<string, string[]>;
 }
 
@@ -42,26 +41,41 @@ function buildLinkedTypeWhere(values: string[]) {
  */
 export async function getContacts(params: GetContactsParams = {}) {
   await checkPermission('commercial.contacts', 'view', { redirect: true });
-  const { page = 1, pageSize = 10, search, filters = {} } = params;
+  const { page = 1, pageSize = 10, filters = {} } = params;
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
   try {
-    const linkedTypeWhere = buildLinkedTypeWhere(filters['linkedType'] ?? []);
+    const linkedTypeWhere = buildLinkedTypeWhere(filters['linkedTo'] ?? []);
+
+    // Filtro de texto para nombre (busca en firstName y lastName)
+    const nameFilter = filters['name']?.[0];
+    const nameWhere = nameFilter
+      ? {
+          OR: [
+            { firstName: { contains: nameFilter, mode: 'insensitive' as const } },
+            { lastName: { contains: nameFilter, mode: 'insensitive' as const } },
+          ],
+        }
+      : {};
+
+    // Filtros de texto para email y phone
+    const emailFilter = filters['email']?.[0];
+    const emailWhere = emailFilter
+      ? { email: { contains: emailFilter, mode: 'insensitive' as const } }
+      : {};
+    const phoneFilter = filters['phone']?.[0];
+    const phoneWhere = phoneFilter
+      ? { phone: { contains: phoneFilter, mode: 'insensitive' as const } }
+      : {};
 
     const where = {
       companyId,
       isActive: true,
       ...linkedTypeWhere,
-      ...(search && {
-        OR: [
-          { firstName: { contains: search, mode: 'insensitive' as const } },
-          { lastName: { contains: search, mode: 'insensitive' as const } },
-          { email: { contains: search, mode: 'insensitive' as const } },
-          { contractor: { name: { contains: search, mode: 'insensitive' as const } } },
-          { lead: { name: { contains: search, mode: 'insensitive' as const } } },
-        ],
-      }),
+      ...nameWhere,
+      ...emailWhere,
+      ...phoneWhere,
     };
 
     const [contacts, total] = await Promise.all([
