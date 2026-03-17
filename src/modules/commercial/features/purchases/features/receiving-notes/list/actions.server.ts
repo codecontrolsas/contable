@@ -8,7 +8,6 @@ import { getActiveCompanyId } from '@/shared/lib/company';
 import { revalidatePath } from 'next/cache';
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
 import {
-  buildSearchWhere,
   buildFiltersWhere,
   buildDateRangeFiltersWhere,
   parseSearchParams,
@@ -37,19 +36,43 @@ export async function getReceivingNotesPaginated(searchParams: DataTableSearchPa
     const parsed = parseSearchParams(searchParams);
     const { skip, take, orderBy } = stateToPrismaParams(parsed);
 
-    const searchWhere = buildSearchWhere(parsed.search, [
-      'fullNumber',
-      'notes',
-    ]);
-
-    const filtersWhere = buildFiltersWhere(parsed.filters, {}, { exclude: ['receptionDate'] });
+    const filtersWhere = buildFiltersWhere(parsed.filters, {
+      status: 'status',
+    }, { exclude: ['receptionDate', 'fullNumber', 'supplier', 'warehouse'] });
     const dateFiltersWhere = buildDateRangeFiltersWhere(parsed.filters, ['receptionDate']);
+
+    // Filtro de texto para fullNumber
+    const fullNumberFilter = parsed.filters['fullNumber']?.[0];
+    const fullNumberWhere = fullNumberFilter
+      ? { fullNumber: { contains: fullNumberFilter, mode: 'insensitive' as const } }
+      : {};
+
+    // Filtro de texto para proveedor (relación)
+    const supplierFilter = parsed.filters['supplier']?.[0];
+    const supplierWhere = supplierFilter
+      ? {
+          supplier: {
+            OR: [
+              { businessName: { contains: supplierFilter, mode: 'insensitive' as const } },
+              { tradeName: { contains: supplierFilter, mode: 'insensitive' as const } },
+            ],
+          },
+        }
+      : {};
+
+    // Filtro de texto para almacén (relación)
+    const warehouseFilter = parsed.filters['warehouse']?.[0];
+    const warehouseWhere = warehouseFilter
+      ? { warehouse: { name: { contains: warehouseFilter, mode: 'insensitive' as const } } }
+      : {};
 
     const where = {
       companyId,
-      ...searchWhere,
       ...filtersWhere,
       ...dateFiltersWhere,
+      ...fullNumberWhere,
+      ...supplierWhere,
+      ...warehouseWhere,
     };
 
     const [notes, total] = await Promise.all([

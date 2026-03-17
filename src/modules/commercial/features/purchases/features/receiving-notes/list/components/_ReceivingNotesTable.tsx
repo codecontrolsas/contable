@@ -123,6 +123,29 @@ export function _ReceivingNotesTable({ data, totalRows, searchParams, facetCount
   const facetedFilters: DataTableFacetedFilterConfig[] = useMemo(
     () => [
       {
+        columnId: 'fullNumber',
+        title: 'Número',
+        type: 'text' as const,
+        placeholder: 'Buscar por número...',
+      },
+      {
+        columnId: 'supplier',
+        title: 'Proveedor',
+        type: 'text' as const,
+        placeholder: 'Buscar por proveedor...',
+      },
+      {
+        columnId: 'warehouse',
+        title: 'Almacén',
+        type: 'text' as const,
+        placeholder: 'Buscar por almacén...',
+      },
+      {
+        columnId: 'receptionDate',
+        title: 'Fecha Recepción',
+        type: 'dateRange' as const,
+      },
+      {
         columnId: 'status',
         title: 'Estado',
         options: Object.entries(RECEIVING_NOTE_STATUS_LABELS).map(([value, label]) => ({
@@ -130,11 +153,6 @@ export function _ReceivingNotesTable({ data, totalRows, searchParams, facetCount
           value,
         })),
         externalCounts: facetCounts?.status ? new Map(Object.entries(facetCounts.status)) : undefined,
-      },
-      {
-        columnId: 'receptionDate',
-        title: 'Fecha Recepción',
-        type: 'dateRange' as const,
       },
     ],
     [facetCounts]
@@ -147,7 +165,7 @@ export function _ReceivingNotesTable({ data, totalRows, searchParams, facetCount
         data={data}
         totalRows={totalRows}
         searchParams={searchParams}
-        searchPlaceholder="Buscar remitos de recepción..."
+        showSearch={false}
         facetedFilters={facetedFilters}
         tableId="commercial-receiving-notes"
         showFilterToggle
