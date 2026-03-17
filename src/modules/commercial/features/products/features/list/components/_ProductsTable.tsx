@@ -79,6 +79,18 @@ export function _ProductsTable({ data, totalRows, searchParams, permissions, fac
   const facetedFilters = useMemo<DataTableFacetedFilterConfig[]>(
     () => [
       {
+        columnId: 'name',
+        title: 'Producto',
+        type: 'text' as const,
+        placeholder: 'Buscar por nombre...',
+      },
+      {
+        columnId: 'code',
+        title: 'Código',
+        type: 'text' as const,
+        placeholder: 'Buscar por código...',
+      },
+      {
         columnId: 'type',
         title: 'Tipo',
         options: Object.entries(PRODUCT_TYPE_LABELS).map(([value, label]) => ({
@@ -86,6 +98,12 @@ export function _ProductsTable({ data, totalRows, searchParams, permissions, fac
           label,
         })),
         externalCounts: facetCounts?.type ? new Map(Object.entries(facetCounts.type)) : undefined,
+      },
+      {
+        columnId: 'category',
+        title: 'Categoría',
+        type: 'text' as const,
+        placeholder: 'Buscar por categoría...',
       },
       {
         columnId: 'status',
@@ -107,7 +125,7 @@ export function _ProductsTable({ data, totalRows, searchParams, permissions, fac
         data={data}
         totalRows={totalRows}
         searchParams={searchParams}
-        searchPlaceholder="Buscar productos..."
+        showSearch={false}
         tableId="commercial-products"
         facetedFilters={facetedFilters}
         showFilterToggle

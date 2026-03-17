@@ -15,7 +15,7 @@ import { AdjustStockDialog } from './_AdjustStockDialog';
 import { TransferStockDialog } from './_TransferStockDialog';
 import { getWarehouseStocks } from '../../list/actions.server';
 import { useQuery } from '@tanstack/react-query';
-import { DataTable } from '@/shared/components/common/DataTable';
+import { DataTable, type DataTableFacetedFilterConfig } from '@/shared/components/common/DataTable';
 import { getColumns } from '../columns';
 import { usePermissions } from '@/shared/hooks/usePermissions';
 
@@ -67,6 +67,24 @@ export function StockByWarehouse({
     [canAdjustStock, canTransferStock]
   );
 
+  const facetedFilters: DataTableFacetedFilterConfig[] = useMemo(
+    () => [
+      {
+        columnId: 'product_name',
+        title: 'Producto',
+        type: 'text' as const,
+        placeholder: 'Buscar por producto...',
+      },
+      {
+        columnId: 'product_code',
+        title: 'Código',
+        type: 'text' as const,
+        placeholder: 'Buscar por código...',
+      },
+    ],
+    []
+  );
+
   return (
     <div className="space-y-4">
       {/* Warehouse Selector */}
@@ -108,8 +126,10 @@ export function StockByWarehouse({
             columns={columns}
             data={stocks}
             totalRows={stocks.length}
-            searchPlaceholder="Buscar productos..."
+            showSearch={false}
+            facetedFilters={facetedFilters}
             tableId="commercial-stock"
+            showFilterToggle
           />
         ) : (
           <div className="flex flex-col items-center justify-center py-12 text-center border rounded-md">

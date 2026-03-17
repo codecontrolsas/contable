@@ -18,7 +18,6 @@ import type { Product } from '../../shared/types';
 interface GetProductsParams {
   page?: number;
   pageSize?: number;
-  search?: string;
   filters?: Record<string, string[]>;
 }
 
@@ -27,7 +26,7 @@ interface GetProductsParams {
  */
 export async function getProducts(params: GetProductsParams = {}) {
   await checkPermission('commercial.products', 'view', { redirect: true });
-  const { page = 1, pageSize = 10, search, filters = {} } = params;
+  const { page = 1, pageSize = 10, filters = {} } = params;
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
@@ -38,19 +37,27 @@ export async function getProducts(params: GetProductsParams = {}) {
     const filtersWhere = buildFiltersWhere(filters, {
       type: 'type',
       status: 'status',
-    });
+    }, { exclude: ['name', 'code', 'category'] });
+
+    // Filtros de texto directos
+    const textFields = ['name', 'code'] as const;
+    const textWhere = textFields.reduce<Record<string, unknown>>((acc, field) => {
+      const val = filters[field]?.[0];
+      if (val) acc[field] = { contains: val, mode: 'insensitive' as const };
+      return acc;
+    }, {});
+
+    // Filtro de texto para categoría (relación)
+    const categoryFilter = filters['category']?.[0];
+    const categoryWhere = categoryFilter
+      ? { category: { name: { contains: categoryFilter, mode: 'insensitive' as const } } }
+      : {};
 
     const where = {
       companyId,
       ...filtersWhere,
-      ...(search && {
-        OR: [
-          { name: { contains: search, mode: 'insensitive' as const } },
-          { code: { contains: search, mode: 'insensitive' as const } },
-          { description: { contains: search, mode: 'insensitive' as const } },
-          { barcode: { contains: search, mode: 'insensitive' as const } },
-        ],
-      }),
+      ...textWhere,
+      ...categoryWhere,
     };
 
     const [products, total] = await Promise.all([

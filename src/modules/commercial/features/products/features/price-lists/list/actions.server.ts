@@ -25,12 +25,12 @@ import type { PriceList, PriceListItem } from '../../../shared/types';
 interface GetPriceListsParams {
   page?: number;
   pageSize?: number;
-  search?: string;
+  filters?: Record<string, string[]>;
 }
 
 export async function getPriceLists(params: GetPriceListsParams = {}) {
   await checkPermission('commercial.price-lists', 'view', { redirect: true });
-  const { page = 1, pageSize = 10, search } = params;
+  const { page = 1, pageSize = 10, filters = {} } = params;
   const { userId } = await auth();
   if (!userId) {
     throw new Error('No autenticado');
@@ -42,14 +42,25 @@ export async function getPriceLists(params: GetPriceListsParams = {}) {
   }
 
   try {
+    // Filtro de texto para nombre
+    const nameFilter = filters['name']?.[0];
+    const nameWhere = nameFilter
+      ? { name: { contains: nameFilter, mode: 'insensitive' as const } }
+      : {};
+
+    // Filtros boolean (isDefault, isActive)
+    const booleanFields = ['isDefault', 'isActive'] as const;
+    const booleanWhere = booleanFields.reduce<Record<string, boolean>>((acc, field) => {
+      const val = filters[field]?.[0];
+      if (val === 'true') acc[field] = true;
+      else if (val === 'false') acc[field] = false;
+      return acc;
+    }, {});
+
     const where = {
       companyId,
-      ...(search && {
-        OR: [
-          { name: { contains: search, mode: 'insensitive' as const } },
-          { description: { contains: search, mode: 'insensitive' as const } },
-        ],
-      }),
+      ...nameWhere,
+      ...booleanWhere,
     };
 
     const [priceLists, total] = await Promise.all([

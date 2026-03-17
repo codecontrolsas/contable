@@ -13,13 +13,11 @@ export async function WarehousesList({ searchParams = {} }: WarehousesListProps)
   const parsed = parseSearchParams(searchParams);
   const page = parsed.page + 1;
   const pageSize = parsed.pageSize;
-  const search = parsed.search || undefined;
 
   const [result, permissions, facetCounts] = await Promise.all([
     getWarehouses({
       page,
       pageSize,
-      search,
       filters: parsed.filters,
     }),
     getModulePermissions('commercial.warehouses'),

@@ -9,6 +9,7 @@ import { Button } from '@/shared/components/ui/button';
 import {
   DataTable,
   type DataTableSearchParams,
+  type DataTableFacetedFilterConfig,
 } from '@/shared/components/common/DataTable';
 import {
   AlertDialog,
@@ -77,6 +78,34 @@ export function _PriceListsTable({ data, totalRows, searchParams, permissions }:
     [permissions]
   );
 
+  const facetedFilters = useMemo<DataTableFacetedFilterConfig[]>(
+    () => [
+      {
+        columnId: 'name',
+        title: 'Nombre',
+        type: 'text' as const,
+        placeholder: 'Buscar por nombre...',
+      },
+      {
+        columnId: 'isDefault',
+        title: 'Predeterminada',
+        options: [
+          { value: 'true', label: 'Sí' },
+          { value: 'false', label: 'No' },
+        ],
+      },
+      {
+        columnId: 'isActive',
+        title: 'Estado',
+        options: [
+          { value: 'true', label: 'Activa' },
+          { value: 'false', label: 'Inactiva' },
+        ],
+      },
+    ],
+    []
+  );
+
   return (
     <>
       <DataTable
@@ -84,8 +113,10 @@ export function _PriceListsTable({ data, totalRows, searchParams, permissions }:
         data={data}
         totalRows={totalRows}
         searchParams={searchParams}
-        searchPlaceholder="Buscar listas de precios..."
+        showSearch={false}
+        facetedFilters={facetedFilters}
         tableId="commercial-price-lists"
+        showFilterToggle
         toolbarActions={
           permissions.canCreate ? (
             <Button onClick={() => router.push('/dashboard/commercial/price-lists/new')}>

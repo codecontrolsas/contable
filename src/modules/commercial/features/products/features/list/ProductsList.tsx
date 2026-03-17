@@ -12,13 +12,12 @@ interface Props {
 export async function ProductsList({ searchParams = {} }: Props) {
   const state = parseSearchParams(searchParams);
   const page = state.page + 1;
-  const { search, pageSize, filters } = state;
+  const { pageSize, filters } = state;
 
   const [result, permissions, facetCounts] = await Promise.all([
     getProducts({
       page,
       pageSize,
-      search,
       filters,
     }),
     getModulePermissions('commercial.products'),

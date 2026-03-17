@@ -88,6 +88,12 @@ export function _WarehousesTable({ data, totalRows, searchParams, permissions, f
   const facetedFilters = useMemo<DataTableFacetedFilterConfig[]>(
     () => [
       {
+        columnId: 'name',
+        title: 'Nombre',
+        type: 'text' as const,
+        placeholder: 'Buscar por nombre...',
+      },
+      {
         columnId: 'type',
         title: 'Tipo',
         options: Object.entries(WAREHOUSE_TYPE_LABELS).map(([value, label]) => ({
@@ -116,7 +122,7 @@ export function _WarehousesTable({ data, totalRows, searchParams, permissions, f
         data={data}
         totalRows={totalRows}
         searchParams={searchParams}
-        searchPlaceholder="Buscar almacenes..."
+        showSearch={false}
         tableId="commercial-warehouses"
         facetedFilters={facetedFilters}
         showFilterToggle

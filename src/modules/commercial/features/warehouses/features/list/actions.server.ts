@@ -8,7 +8,7 @@ import { logger } from '@/shared/lib/logger';
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { checkPermission } from '@/shared/lib/permissions';
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
-import { parseSearchParams, stateToPrismaParams, buildFiltersWhere } from '@/shared/components/common/DataTable/helpers';
+import { parseSearchParams, stateToPrismaParams, buildFiltersWhere, buildDateRangeFiltersWhere } from '@/shared/components/common/DataTable/helpers';
 import {
   createWarehouseSchema,
   updateWarehouseSchema,
@@ -30,14 +30,13 @@ import type { Warehouse, WarehouseStock, StockMovement } from '../../shared/type
 interface GetWarehousesParams {
   page?: number;
   pageSize?: number;
-  search?: string;
   isActive?: boolean;
   filters?: Record<string, string[]>;
 }
 
 export async function getWarehouses(params: GetWarehousesParams = {}) {
   await checkPermission('commercial.warehouses', 'view', { redirect: true });
-  const { page = 1, pageSize = 10, search, isActive, filters = {} } = params;
+  const { page = 1, pageSize = 10, isActive, filters = {} } = params;
   const { userId } = await auth();
   if (!userId) {
     throw new Error('No autenticado');
@@ -49,8 +48,14 @@ export async function getWarehouses(params: GetWarehousesParams = {}) {
   }
 
   try {
-    // Build faceted filters, excluding isActive since it needs boolean conversion
-    const facetedWhere = buildFiltersWhere(filters, {}, { exclude: ['isActive'] });
+    // Build faceted filters, excluding isActive and text filters
+    const facetedWhere = buildFiltersWhere(filters, {}, { exclude: ['isActive', 'name'] });
+
+    // Filtro de texto para nombre
+    const nameFilter = filters['name']?.[0];
+    const nameWhere = nameFilter
+      ? { name: { contains: nameFilter, mode: 'insensitive' as const } }
+      : {};
 
     // Handle isActive boolean filter from faceted filter (values are 'true'/'false' strings)
     let isActiveFilter: boolean | undefined = isActive;
@@ -63,14 +68,8 @@ export async function getWarehouses(params: GetWarehousesParams = {}) {
     const where = {
       companyId,
       ...facetedWhere,
+      ...nameWhere,
       ...(isActiveFilter !== undefined && { isActive: isActiveFilter }),
-      ...(search && {
-        OR: [
-          { code: { contains: search, mode: 'insensitive' as const } },
-          { name: { contains: search, mode: 'insensitive' as const } },
-          { city: { contains: search, mode: 'insensitive' as const } },
-        ],
-      }),
     };
 
     const [warehouses, total] = await Promise.all([
@@ -580,8 +579,25 @@ export async function getStockMovementsPaginated(
 
   try {
     const parsed = parseSearchParams(searchParams);
-    const { page, pageSize, search, sortBy, sortOrder } = parsed;
     const { skip, take, orderBy: prismaOrderBy } = stateToPrismaParams(parsed);
+
+    const filtersWhere = buildFiltersWhere(parsed.filters, {
+      type: 'type',
+    }, { exclude: ['date', 'product_name', 'warehouse_name'] });
+
+    const dateFiltersWhere = buildDateRangeFiltersWhere(parsed.filters, ['date']);
+
+    // Filtro de texto para producto (relación)
+    const productFilter = parsed.filters['product_name']?.[0];
+    const productWhere = productFilter
+      ? { product: { name: { contains: productFilter, mode: 'insensitive' as const } } }
+      : {};
+
+    // Filtro de texto para almacén (relación)
+    const warehouseFilter = parsed.filters['warehouse_name']?.[0];
+    const warehouseWhere = warehouseFilter
+      ? { warehouse: { name: { contains: warehouseFilter, mode: 'insensitive' as const } } }
+      : {};
 
     const where: Prisma.StockMovementWhereInput = {
       companyId,
@@ -596,14 +612,10 @@ export async function getStockMovementsPaginated(
             },
           }
         : {}),
-      ...(search && {
-        OR: [
-          { product: { name: { contains: search, mode: 'insensitive' } } },
-          { product: { code: { contains: search, mode: 'insensitive' } } },
-          { notes: { contains: search, mode: 'insensitive' } },
-          { referenceType: { contains: search, mode: 'insensitive' } },
-        ],
-      }),
+      ...filtersWhere,
+      ...dateFiltersWhere,
+      ...productWhere,
+      ...warehouseWhere,
     };
 
     const orderBy = prismaOrderBy && Object.keys(prismaOrderBy).length > 0 ? prismaOrderBy : { date: 'desc' as const };

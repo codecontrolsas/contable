@@ -1,4 +1,5 @@
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
+import { parseSearchParams } from '@/shared/components/common/DataTable/helpers';
 import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 import { getModulePermissions } from '@/shared/lib/permissions';
 import { getPriceLists } from './actions.server';
@@ -9,15 +10,13 @@ interface PriceListsListProps {
 }
 
 export async function PriceListsList({ searchParams = {} }: PriceListsListProps) {
-  const page = searchParams.page ? parseInt(searchParams.page) : 1;
-  const pageSize = searchParams.pageSize ? parseInt(searchParams.pageSize) : 10;
-  const search = searchParams.search;
+  const state = parseSearchParams(searchParams);
 
   const [result, permissions] = await Promise.all([
     getPriceLists({
-      page,
-      pageSize,
-      search,
+      page: state.page + 1,
+      pageSize: state.pageSize,
+      filters: state.filters,
     }),
     getModulePermissions('commercial.products'),
   ]);
