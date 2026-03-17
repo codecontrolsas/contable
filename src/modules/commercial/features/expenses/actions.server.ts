@@ -196,14 +196,36 @@ export async function getExpensesPaginated(searchParams: DataTableSearchParams) 
 
     const filtersWhere = buildFiltersWhere(parsed.filters, {
       status: 'status',
-    }, { exclude: ['date', 'dueDate'] });
+      categoryId: 'categoryId',
+    }, { exclude: ['date', 'dueDate', 'supplier_name', 'fullNumber'] });
 
     const dateFiltersWhere = buildDateRangeFiltersWhere(parsed.filters, ['date', 'dueDate']);
+
+    // Filtro de texto para proveedor (relación anidada)
+    const supplierNameFilter = parsed.filters['supplier_name'];
+    const supplierWhere = supplierNameFilter?.[0]
+      ? {
+          supplier: {
+            OR: [
+              { businessName: { contains: supplierNameFilter[0], mode: 'insensitive' as const } },
+              { tradeName: { contains: supplierNameFilter[0], mode: 'insensitive' as const } },
+            ],
+          },
+        }
+      : {};
+
+    // Filtro de texto para número
+    const fullNumberFilter = parsed.filters['fullNumber'];
+    const fullNumberWhere = fullNumberFilter?.[0]
+      ? { fullNumber: { contains: fullNumberFilter[0], mode: 'insensitive' as const } }
+      : {};
 
     const where: Prisma.ExpenseWhereInput = {
       companyId,
       ...filtersWhere,
       ...dateFiltersWhere,
+      ...supplierWhere,
+      ...fullNumberWhere,
       ...(search && {
         OR: [
           { fullNumber: { contains: search, mode: 'insensitive' } },
@@ -214,7 +236,19 @@ export async function getExpensesPaginated(searchParams: DataTableSearchParams) 
       }),
     };
 
-    const orderBy = prismaOrderBy && Object.keys(prismaOrderBy).length > 0 ? prismaOrderBy : { number: 'desc' as const };
+    // Manejar ordenamiento por relaciones
+    const sortByField = parsed.sortBy;
+    let orderBy: Prisma.ExpenseOrderByWithRelationInput | Prisma.ExpenseOrderByWithRelationInput[];
+
+    if (sortByField === 'category_name' || sortByField === 'category.name') {
+      orderBy = { category: { name: parsed.sortOrder } };
+    } else if (sortByField === 'supplier') {
+      orderBy = { supplier: { businessName: parsed.sortOrder } };
+    } else if (prismaOrderBy && Object.keys(prismaOrderBy).length > 0) {
+      orderBy = prismaOrderBy;
+    } else {
+      orderBy = { number: 'desc' as const };
+    }
 
     const [data, total] = await Promise.all([
       prisma.expense.findMany({

@@ -26,14 +26,20 @@ interface FacetCounts {
   status: Record<string, number>;
 }
 
+interface CategoryOption {
+  id: string;
+  name: string;
+}
+
 interface Props {
   data: ExpenseListItem[];
   totalRows: number;
   searchParams: DataTableSearchParams;
   facetCounts?: FacetCounts;
+  categories?: CategoryOption[];
 }
 
-export function _ExpensesTable({ data, totalRows, searchParams, facetCounts }: Props) {
+export function _ExpensesTable({ data, totalRows, searchParams, facetCounts, categories = [] }: Props) {
   const router = useRouter();
   const { hasPermission } = usePermissions();
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
@@ -103,6 +109,18 @@ export function _ExpensesTable({ data, totalRows, searchParams, facetCounts }: P
   const facetedFilters: DataTableFacetedFilterConfig[] = useMemo(
     () => [
       {
+        columnId: 'fullNumber',
+        title: 'Número',
+        type: 'text' as const,
+        placeholder: 'Buscar por número...',
+      },
+      {
+        columnId: 'supplier_name',
+        title: 'Proveedor',
+        type: 'text' as const,
+        placeholder: 'Buscar por proveedor...',
+      },
+      {
         columnId: 'status',
         title: 'Estado',
         options: Object.entries(EXPENSE_STATUS_LABELS).map(([value, label]) => ({
@@ -110,6 +128,14 @@ export function _ExpensesTable({ data, totalRows, searchParams, facetCounts }: P
           value,
         })),
         externalCounts: facetCounts?.status ? new Map(Object.entries(facetCounts.status)) : undefined,
+      },
+      {
+        columnId: 'categoryId',
+        title: 'Categoría',
+        options: categories.map((c) => ({
+          value: c.id,
+          label: c.name,
+        })),
       },
       {
         columnId: 'date',
@@ -122,7 +148,7 @@ export function _ExpensesTable({ data, totalRows, searchParams, facetCounts }: P
         type: 'dateRange' as const,
       },
     ],
-    [facetCounts]
+    [facetCounts, categories]
   );
 
   const columns = useMemo(
@@ -167,7 +193,7 @@ export function _ExpensesTable({ data, totalRows, searchParams, facetCounts }: P
         data={data}
         totalRows={totalRows}
         searchParams={searchParams}
-        searchPlaceholder="Buscar gastos..."
+        showSearch={false}
         facetedFilters={facetedFilters}
         tableId="commercial-expenses"
         showFilterToggle

@@ -72,7 +72,8 @@ export function getColumns({ onViewDetail, onEdit, onConfirm, onCancel, onDelete
       ),
     },
     {
-      accessorKey: 'category.name',
+      id: 'category_name',
+      accessorFn: (row) => row.category.name,
       meta: { title: 'Categoría' },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Categoría" />,
       cell: ({ row }) => row.original.category.name,
