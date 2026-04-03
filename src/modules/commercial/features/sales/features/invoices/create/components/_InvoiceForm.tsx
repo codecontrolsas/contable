@@ -90,9 +90,10 @@ function _InvoiceLineRow({
   return (
     <div className="py-3 px-2">
       {/* Desktop: fila tipo tabla */}
-      <div className="hidden lg:grid lg:grid-cols-[minmax(200px,2fr)_80px_100px_90px_80px_100px_100px_100px_36px] gap-2 items-center">
-        {/* Producto + Descripción */}
-        <div className="min-w-0">
+      <div className="hidden lg:block space-y-1.5">
+        {/* Fila principal: datos numéricos alineados con headers */}
+        <div className="grid grid-cols-[minmax(240px,2fr)_90px_110px_100px_90px_110px_110px_110px_36px] gap-3 items-center">
+          {/* Producto select */}
           <FormField
             control={form.control}
             name={`lines.${index}.productId`}
@@ -104,7 +105,7 @@ function _InvoiceLineRow({
                 }}
                 value={field.value}
               >
-                <SelectTrigger className="h-8 text-sm">
+                <SelectTrigger className="h-9 text-sm">
                   <SelectValue placeholder="Seleccionar producto" />
                 </SelectTrigger>
                 <SelectContent>
@@ -117,109 +118,118 @@ function _InvoiceLineRow({
               </Select>
             )}
           />
-          {selectedProduct && (
-            <p className="text-xs text-muted-foreground truncate mt-0.5 pl-1">
-              {selectedProduct.name}
-            </p>
-          )}
-        </div>
 
-        {/* Cantidad */}
-        <Input
-          {...form.register(`lines.${index}.quantity`)}
-          type="text"
-          placeholder="1"
-          className="h-8 text-sm text-right font-mono"
-        />
-
-        {/* Precio Unit. */}
-        <Input
-          {...form.register(`lines.${index}.unitPrice`)}
-          type="text"
-          placeholder="0.00"
-          className="h-8 text-sm text-right font-mono"
-        />
-
-        {/* Dto. (% o $) */}
-        <div className="flex items-center gap-0.5">
+          {/* Cantidad */}
           <Input
-            {...form.register(`lines.${index}.discountPercent`, {
-              onChange: (e) => {
-                if (e.target.value) {
-                  form.setValue(`lines.${index}.discountAmount`, '');
-                }
-              },
-            })}
-            value={form.watch(`lines.${index}.discountPercent`) ?? ''}
-            type="number"
-            step="0.01"
-            min="0"
-            max="100"
-            placeholder="%"
-            className="h-8 text-sm text-right font-mono w-[52px]"
+            {...form.register(`lines.${index}.quantity`)}
+            type="text"
+            placeholder="1"
+            className="h-9 text-sm text-right font-mono"
           />
-          {discountPresets.length > 0 && (
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button type="button" variant="ghost" size="icon" className="h-7 w-7 shrink-0">
-                  <BadgePercent className="h-3.5 w-3.5" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-44 p-1.5" align="start">
-                <p className="text-xs font-medium text-muted-foreground mb-1.5 px-1">Presets</p>
-                {discountPresets.map((preset) => (
-                  <Button
-                    key={preset.id}
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-between text-xs h-7"
-                    onClick={() => {
-                      form.setValue(`lines.${index}.discountPercent`, preset.percentage.toString());
-                      form.setValue(`lines.${index}.discountAmount`, '');
-                    }}
-                  >
-                    <span>{preset.name}</span>
-                    <span className="text-muted-foreground">{preset.percentage}%</span>
+
+          {/* Precio Unit. */}
+          <Input
+            {...form.register(`lines.${index}.unitPrice`)}
+            type="text"
+            placeholder="0.00"
+            className="h-9 text-sm text-right font-mono"
+          />
+
+          {/* Dto. (% o $) */}
+          <div className="flex items-center gap-0.5">
+            <Input
+              {...form.register(`lines.${index}.discountPercent`, {
+                onChange: (e) => {
+                  if (e.target.value) {
+                    form.setValue(`lines.${index}.discountAmount`, '');
+                  }
+                },
+              })}
+              value={form.watch(`lines.${index}.discountPercent`) ?? ''}
+              type="number"
+              step="0.01"
+              min="0"
+              max="100"
+              placeholder="%"
+              className="h-9 text-sm text-right font-mono flex-1 min-w-0"
+            />
+            {discountPresets.length > 0 && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                    <BadgePercent className="h-3.5 w-3.5" />
                   </Button>
-                ))}
-              </PopoverContent>
-            </Popover>
-          )}
+                </PopoverTrigger>
+                <PopoverContent className="w-44 p-1.5" align="start">
+                  <p className="text-xs font-medium text-muted-foreground mb-1.5 px-1">Presets</p>
+                  {discountPresets.map((preset) => (
+                    <Button
+                      key={preset.id}
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-between text-xs h-7"
+                      onClick={() => {
+                        form.setValue(`lines.${index}.discountPercent`, preset.percentage.toString());
+                        form.setValue(`lines.${index}.discountAmount`, '');
+                      }}
+                    >
+                      <span>{preset.name}</span>
+                      <span className="text-muted-foreground">{preset.percentage}%</span>
+                    </Button>
+                  ))}
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
+
+          {/* IVA % */}
+          <FormField
+            control={form.control}
+            name={`lines.${index}.vatRate`}
+            render={({ field }) => (
+              <Select onValueChange={field.onChange} value={field.value}>
+                <SelectTrigger className="h-9 text-sm font-mono">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">0%</SelectItem>
+                  <SelectItem value="10.5">10.5%</SelectItem>
+                  <SelectItem value="21">21%</SelectItem>
+                  <SelectItem value="27">27%</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
+
+          {/* Subtotal (calculado) */}
+          <span className="text-sm font-mono text-right tabular-nums">{formatCurrency(neto)}</span>
+
+          {/* IVA (calculado) */}
+          <span className="text-sm font-mono text-right tabular-nums">{formatCurrency(iva)}</span>
+
+          {/* Total (calculado) */}
+          <span className="text-sm font-mono text-right font-semibold tabular-nums">{formatCurrency(total)}</span>
+
+          {/* Eliminar */}
+          <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={onRemove}>
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
         </div>
 
-        {/* IVA % */}
-        <FormField
-          control={form.control}
-          name={`lines.${index}.vatRate`}
-          render={({ field }) => (
-            <Select onValueChange={field.onChange} value={field.value}>
-              <SelectTrigger className="h-8 text-sm font-mono">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">0%</SelectItem>
-                <SelectItem value="10.5">10.5%</SelectItem>
-                <SelectItem value="21">21%</SelectItem>
-                <SelectItem value="27">27%</SelectItem>
-              </SelectContent>
-            </Select>
+        {/* Segunda fila: descripción editable */}
+        <div className="grid grid-cols-[minmax(240px,2fr)_1fr] gap-3">
+          <Input
+            {...form.register(`lines.${index}.description`)}
+            placeholder="Descripción del producto o servicio"
+            className="h-7 text-xs text-muted-foreground border-dashed"
+          />
+          {discountValue > 0 && (
+            <span className="text-xs font-mono text-orange-600 self-center text-right">
+              Dto: -{formatCurrency(discountValue)}
+            </span>
           )}
-        />
-
-        {/* Subtotal (calculado) */}
-        <span className="text-sm font-mono text-right">{formatCurrency(neto)}</span>
-
-        {/* IVA (calculado) */}
-        <span className="text-sm font-mono text-right">{formatCurrency(iva)}</span>
-
-        {/* Total (calculado) */}
-        <span className="text-sm font-mono text-right font-semibold">{formatCurrency(total)}</span>
-
-        {/* Eliminar */}
-        <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={onRemove}>
-          <Trash2 className="h-3.5 w-3.5 text-destructive" />
-        </Button>
+        </div>
       </div>
 
       {/* Mobile: layout apilado */}
@@ -260,6 +270,14 @@ function _InvoiceLineRow({
             </FormItem>
           )}
         />
+
+        <FormItem>
+          <FormLabel className="text-xs">Descripción</FormLabel>
+          <Input
+            {...form.register(`lines.${index}.description`)}
+            placeholder="Descripción del producto o servicio"
+          />
+        </FormItem>
 
         <div className="grid grid-cols-2 gap-3">
           <FormItem>
@@ -763,7 +781,7 @@ export function InvoiceForm({ customers, pointsOfSale, products, mode = 'create'
           {fields.length > 0 && (
             <div className="overflow-x-auto">
               {/* Header de tabla */}
-              <div className="hidden lg:grid lg:grid-cols-[minmax(200px,2fr)_80px_100px_90px_80px_100px_100px_100px_36px] gap-2 px-2 pb-2 border-b text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              <div className="hidden lg:grid lg:grid-cols-[minmax(240px,2fr)_90px_110px_100px_90px_110px_110px_110px_36px] gap-3 px-2 pb-2 border-b text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 <span>Producto / Descripción</span>
                 <span className="text-right">Cant.</span>
                 <span className="text-right">P. Unit.</span>
