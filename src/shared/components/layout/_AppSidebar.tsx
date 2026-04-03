@@ -283,6 +283,11 @@ const navMain: NavItemWithSub[] = [
         href: '/dashboard/commercial/movements',
         module: 'commercial.movements',
       },
+      {
+        title: 'Equivalencias',
+        href: '/dashboard/commercial/equivalences',
+        module: 'commercial.equivalences',
+      },
     ],
   },
   {
