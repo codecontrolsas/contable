@@ -1,6 +1,7 @@
 'use server';
 
 import { auth } from '@clerk/nextjs/server';
+import { Prisma } from '@/generated/prisma/client';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { getActiveCompanyId } from '@/shared/lib/company';
@@ -365,4 +366,136 @@ export async function deleteProduct(id: string): Promise<void> {
     logger.error('Error al eliminar producto', { data: { error, id } });
     throw new Error('Error al eliminar producto');
   }
+}
+
+// ============================================================================
+// BULK PRICE ADJUSTMENT
+// ============================================================================
+
+export type BulkPriceAdjustmentType =
+  | 'increase_percent'
+  | 'decrease_percent'
+  | 'increase_fixed'
+  | 'decrease_fixed';
+
+interface BulkPriceAdjustmentInput {
+  productIds: string[];
+  adjustmentType: BulkPriceAdjustmentType;
+  value: number;
+  applyToSalePrice: boolean;
+  applyCostPrice: boolean;
+}
+
+function applyPriceAdjustment(current: number, adjustmentType: BulkPriceAdjustmentType, value: number): number {
+  switch (adjustmentType) {
+    case 'increase_percent':
+      return Math.round(current * (1 + value / 100) * 100) / 100;
+    case 'decrease_percent':
+      return Math.round(current * (1 - value / 100) * 100) / 100;
+    case 'increase_fixed':
+      return Math.round((current + value) * 100) / 100;
+    case 'decrease_fixed':
+      return Math.max(0, Math.round((current - value) * 100) / 100);
+  }
+}
+
+/**
+ * Vista previa del ajuste masivo de precios (hasta 5 productos)
+ */
+export async function previewBulkPriceUpdate(input: BulkPriceAdjustmentInput) {
+  await checkPermission('commercial.products', 'view', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  const products = await prisma.product.findMany({
+    where: { id: { in: input.productIds.slice(0, 5) }, companyId },
+    select: { id: true, name: true, code: true, salePrice: true, costPrice: true, vatRate: true },
+  });
+
+  return products.map((p) => {
+    const currentSale = Number(p.salePrice);
+    const currentCost = Number(p.costPrice);
+
+    return {
+      id: p.id,
+      name: p.name,
+      code: p.code,
+      currentSalePrice: currentSale,
+      newSalePrice: input.applyToSalePrice
+        ? applyPriceAdjustment(currentSale, input.adjustmentType, input.value)
+        : currentSale,
+      currentCostPrice: currentCost,
+      newCostPrice: input.applyCostPrice
+        ? applyPriceAdjustment(currentCost, input.adjustmentType, input.value)
+        : currentCost,
+    };
+  });
+}
+
+/**
+ * Aplica ajuste masivo de precios a los productos seleccionados
+ */
+export async function bulkUpdatePrices(input: BulkPriceAdjustmentInput) {
+  await checkPermission('commercial.products', 'update', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  // Validaciones
+  if (!input.productIds.length) throw new Error('Seleccione al menos un producto');
+  if (input.value <= 0) throw new Error('El valor debe ser mayor a 0');
+  if (!input.applyToSalePrice && !input.applyCostPrice) {
+    throw new Error('Seleccione al menos un precio a ajustar');
+  }
+
+  // Cargar productos
+  const products = await prisma.product.findMany({
+    where: { id: { in: input.productIds }, companyId },
+    select: { id: true, salePrice: true, costPrice: true, vatRate: true, salePriceWithTax: true },
+  });
+
+  if (products.length === 0) throw new Error('No se encontraron productos');
+
+  // Calcular nuevos precios
+  const updates = products.map((product) => {
+    const currentSalePrice = Number(product.salePrice);
+    const currentCostPrice = Number(product.costPrice);
+    const vatRate = Number(product.vatRate);
+
+    const newSalePrice = input.applyToSalePrice
+      ? applyPriceAdjustment(currentSalePrice, input.adjustmentType, input.value)
+      : currentSalePrice;
+    const newCostPrice = input.applyCostPrice
+      ? applyPriceAdjustment(currentCostPrice, input.adjustmentType, input.value)
+      : currentCostPrice;
+
+    const newSalePriceWithTax = Math.round(newSalePrice * (1 + vatRate / 100) * 100) / 100;
+
+    return {
+      id: product.id,
+      salePrice: new Prisma.Decimal(newSalePrice),
+      costPrice: new Prisma.Decimal(newCostPrice),
+      salePriceWithTax: new Prisma.Decimal(newSalePriceWithTax),
+    };
+  });
+
+  // Actualizar en transacción
+  await prisma.$transaction(
+    updates.map((u) =>
+      prisma.product.update({
+        where: { id: u.id },
+        data: {
+          salePrice: u.salePrice,
+          costPrice: u.costPrice,
+          salePriceWithTax: u.salePriceWithTax,
+        },
+      })
+    )
+  );
+
+  logger.info('Ajuste masivo de precios aplicado', {
+    data: { count: updates.length, adjustmentType: input.adjustmentType, value: input.value },
+  });
+
+  revalidatePath('/dashboard/commercial/products');
+  return { success: true, count: updates.length };
 }
