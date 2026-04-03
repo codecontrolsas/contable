@@ -916,3 +916,468 @@ export async function duplicateQuote(id: string) {
     throw error;
   }
 }
+
+// ============================================
+// CONVERSION HELPERS (Quote → Invoice / Delivery)
+// ============================================
+
+// Obtener líneas de presupuesto para conversión
+export async function getQuoteLinesForConversion(quoteId: string) {
+  await checkPermission('commercial.quotes', 'view', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  try {
+    const quote = await prisma.quote.findFirst({
+      where: { id: quoteId, companyId },
+      select: {
+        id: true,
+        status: true,
+        lines: {
+          select: {
+            id: true,
+            productId: true,
+            description: true,
+            quantity: true,
+            unitPrice: true,
+            vatRate: true,
+            discountPercent: true,
+            discountAmount: true,
+            deliveredQty: true,
+            invoicedQty: true,
+            product: {
+              select: {
+                id: true,
+                code: true,
+                name: true,
+                unitOfMeasure: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!quote) throw new Error('Presupuesto no encontrado');
+
+    return {
+      quoteId: quote.id,
+      status: quote.status,
+      lines: quote.lines.map((line) => {
+        const quantity = Number(line.quantity);
+        const deliveredQty = Number(line.deliveredQty);
+        const invoicedQty = Number(line.invoicedQty);
+
+        return {
+          id: line.id,
+          productId: line.productId,
+          description: line.description,
+          quantity,
+          unitPrice: Number(line.unitPrice),
+          vatRate: Number(line.vatRate),
+          discountPercent: line.discountPercent ? Number(line.discountPercent) : null,
+          discountAmount: line.discountAmount ? Number(line.discountAmount) : null,
+          deliveredQty,
+          invoicedQty,
+          remainingToDeliver: Math.max(0, quantity - deliveredQty),
+          remainingToInvoice: Math.max(0, quantity - invoicedQty),
+          product: line.product,
+        };
+      }),
+    };
+  } catch (error) {
+    logger.error('Error al obtener líneas para conversión', {
+      data: { quoteId, companyId, error },
+    });
+    throw error;
+  }
+}
+
+// Convertir presupuesto a datos de factura
+export async function convertQuoteToInvoiceData(
+  quoteId: string,
+  selectedLines: Array<{ lineId: string; quantity: number }>,
+) {
+  await checkPermission('commercial.quotes', 'view', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  try {
+    const quote = await prisma.quote.findFirst({
+      where: { id: quoteId, companyId },
+      include: {
+        contractor: {
+          select: {
+            id: true,
+            name: true,
+            taxId: true,
+            email: true,
+          },
+        },
+        lead: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
+        lines: {
+          select: {
+            id: true,
+            productId: true,
+            description: true,
+            quantity: true,
+            unitPrice: true,
+            vatRate: true,
+            discountPercent: true,
+            discountAmount: true,
+            invoicedQty: true,
+            product: {
+              select: {
+                id: true,
+                code: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!quote) throw new Error('Presupuesto no encontrado');
+    if (quote.status !== 'ACCEPTED') {
+      throw new Error('Solo se pueden convertir presupuestos en estado Aceptado');
+    }
+
+    // Validar cantidades
+    for (const sel of selectedLines) {
+      const line = quote.lines.find((l) => l.id === sel.lineId);
+      if (!line) throw new Error(`Línea ${sel.lineId} no encontrada`);
+
+      const remaining = Number(line.quantity) - Number(line.invoicedQty);
+      if (sel.quantity > remaining) {
+        throw new Error(
+          `La cantidad para "${line.product.name}" excede el pendiente de facturar (${remaining})`,
+        );
+      }
+    }
+
+    // Si tiene lead pero no contractor, necesita crear cliente
+    if (quote.leadId && !quote.contractorId) {
+      return {
+        needsCustomerCreation: true as const,
+        leadData: quote.lead,
+        quoteId: quote.id,
+        invoiceLines: selectedLines.map((sel) => {
+          const line = quote.lines.find((l) => l.id === sel.lineId)!;
+          return {
+            productId: line.productId,
+            description: line.description,
+            quantity: String(sel.quantity),
+            unitPrice: String(Number(line.unitPrice)),
+            vatRate: String(Number(line.vatRate)),
+            discountPercent: line.discountPercent ? String(Number(line.discountPercent)) : '',
+            discountAmount: line.discountAmount ? String(Number(line.discountAmount)) : '',
+          };
+        }),
+        quoteLineQuantities: selectedLines,
+      };
+    }
+
+    return {
+      needsCustomerCreation: false as const,
+      customerId: quote.contractorId,
+      quoteId: quote.id,
+      invoiceLines: selectedLines.map((sel) => {
+        const line = quote.lines.find((l) => l.id === sel.lineId)!;
+        return {
+          productId: line.productId,
+          description: line.description,
+          quantity: String(sel.quantity),
+          unitPrice: String(Number(line.unitPrice)),
+          vatRate: String(Number(line.vatRate)),
+          discountPercent: line.discountPercent ? String(Number(line.discountPercent)) : '',
+          discountAmount: line.discountAmount ? String(Number(line.discountAmount)) : '',
+        };
+      }),
+      quoteLineQuantities: selectedLines,
+    };
+  } catch (error) {
+    logger.error('Error al convertir presupuesto a factura', {
+      data: { quoteId, companyId, error },
+    });
+    throw error;
+  }
+}
+
+// Actualizar presupuesto después de crear factura
+export async function updateQuoteAfterInvoice(
+  quoteId: string,
+  lineUpdates: Array<{ lineId: string; invoicedQty: number }>,
+) {
+  await checkPermission('commercial.quotes', 'update', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      // Verificar que el presupuesto pertenece a la empresa
+      const quote = await tx.quote.findFirst({
+        where: { id: quoteId, companyId },
+        select: {
+          id: true,
+          lines: { select: { id: true, quantity: true, invoicedQty: true } },
+        },
+      });
+
+      if (!quote) throw new Error('Presupuesto no encontrado');
+
+      // Actualizar invoicedQty en cada línea
+      for (const update of lineUpdates) {
+        const line = quote.lines.find((l) => l.id === update.lineId);
+        if (!line) continue;
+
+        const newInvoicedQty = Number(line.invoicedQty) + update.invoicedQty;
+
+        await tx.quoteLine.update({
+          where: { id: update.lineId },
+          data: { invoicedQty: new Prisma.Decimal(newInvoicedQty) },
+        });
+      }
+
+      // Recargar líneas para verificar si todo está facturado
+      const updatedLines = await tx.quoteLine.findMany({
+        where: { quoteId },
+        select: { quantity: true, invoicedQty: true },
+      });
+
+      const allFullyInvoiced = updatedLines.every(
+        (l) => Number(l.invoicedQty) >= Number(l.quantity),
+      );
+
+      if (allFullyInvoiced) {
+        await tx.quote.update({
+          where: { id: quoteId },
+          data: { status: 'COMPLETED' },
+        });
+
+        logger.info('Presupuesto completado automáticamente', {
+          data: { quoteId, companyId },
+        });
+      }
+    });
+
+    revalidatePath('/dashboard/commercial/quotes');
+    revalidatePath(`/dashboard/commercial/quotes/${quoteId}`);
+
+    return { success: true };
+  } catch (error) {
+    logger.error('Error al actualizar presupuesto después de facturar', {
+      data: { quoteId, companyId, error },
+    });
+    throw error;
+  }
+}
+
+// Convertir presupuesto a datos de remito
+export async function convertQuoteToDeliveryData(
+  quoteId: string,
+  selectedLines: Array<{ lineId: string; quantity: number }>,
+) {
+  await checkPermission('commercial.quotes', 'view', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  try {
+    const quote = await prisma.quote.findFirst({
+      where: { id: quoteId, companyId },
+      include: {
+        contractor: {
+          select: { id: true, name: true },
+        },
+        lead: {
+          select: { id: true, name: true, email: true, phone: true },
+        },
+        lines: {
+          select: {
+            id: true,
+            productId: true,
+            description: true,
+            quantity: true,
+            unitPrice: true,
+            deliveredQty: true,
+            product: {
+              select: {
+                id: true,
+                code: true,
+                name: true,
+                unitOfMeasure: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!quote) throw new Error('Presupuesto no encontrado');
+    if (quote.status !== 'ACCEPTED') {
+      throw new Error('Solo se pueden convertir presupuestos en estado Aceptado');
+    }
+
+    // Validar cantidades
+    for (const sel of selectedLines) {
+      const line = quote.lines.find((l) => l.id === sel.lineId);
+      if (!line) throw new Error(`Línea ${sel.lineId} no encontrada`);
+
+      const remaining = Number(line.quantity) - Number(line.deliveredQty);
+      if (sel.quantity > remaining) {
+        throw new Error(
+          `La cantidad para "${line.product.name}" excede el pendiente de entregar (${remaining})`,
+        );
+      }
+    }
+
+    return {
+      needsCustomerCreation: !!(quote.leadId && !quote.contractorId),
+      leadData: quote.lead,
+      customerId: quote.contractorId,
+      customerName: quote.contractor?.name ?? quote.lead?.name ?? '',
+      quoteId: quote.id,
+      deliveryLines: selectedLines.map((sel) => {
+        const line = quote.lines.find((l) => l.id === sel.lineId)!;
+        return {
+          productId: line.productId,
+          description: line.description,
+          quantity: sel.quantity,
+          product: line.product,
+        };
+      }),
+      quoteLineQuantities: selectedLines,
+    };
+  } catch (error) {
+    logger.error('Error al convertir presupuesto a remito', {
+      data: { quoteId, companyId, error },
+    });
+    throw error;
+  }
+}
+
+// Actualizar presupuesto después de crear remito
+export async function updateQuoteAfterDelivery(
+  quoteId: string,
+  lineUpdates: Array<{ lineId: string; deliveredQty: number }>,
+) {
+  await checkPermission('commercial.quotes', 'update', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const quote = await tx.quote.findFirst({
+        where: { id: quoteId, companyId },
+        select: {
+          id: true,
+          lines: { select: { id: true, deliveredQty: true } },
+        },
+      });
+
+      if (!quote) throw new Error('Presupuesto no encontrado');
+
+      for (const update of lineUpdates) {
+        const line = quote.lines.find((l) => l.id === update.lineId);
+        if (!line) continue;
+
+        const newDeliveredQty = Number(line.deliveredQty) + update.deliveredQty;
+
+        await tx.quoteLine.update({
+          where: { id: update.lineId },
+          data: { deliveredQty: new Prisma.Decimal(newDeliveredQty) },
+        });
+      }
+    });
+
+    revalidatePath('/dashboard/commercial/quotes');
+    revalidatePath(`/dashboard/commercial/quotes/${quoteId}`);
+
+    return { success: true };
+  } catch (error) {
+    logger.error('Error al actualizar presupuesto después de remito', {
+      data: { quoteId, companyId, error },
+    });
+    throw error;
+  }
+}
+
+// Crear cliente desde lead
+export async function createCustomerFromLead(
+  leadId: string,
+  quoteId: string,
+  customerData: {
+    name: string;
+    taxId: string;
+    taxCondition: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+  },
+) {
+  await checkPermission('commercial.clients', 'create', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      // Verificar que el lead existe
+      const lead = await tx.lead.findFirst({
+        where: { id: leadId, companyId },
+      });
+      if (!lead) throw new Error('Lead no encontrado');
+
+      // Crear contractor
+      const contractor = await tx.contractor.create({
+        data: {
+          companyId,
+          name: customerData.name,
+          taxId: customerData.taxId,
+          taxCondition: customerData.taxCondition as 'RESPONSABLE_INSCRIPTO' | 'MONOTRIBUTISTA' | 'EXENTO' | 'CONSUMIDOR_FINAL',
+          email: customerData.email || null,
+          phone: customerData.phone || null,
+          address: customerData.address || null,
+        },
+      });
+
+      // Actualizar lead
+      await tx.lead.update({
+        where: { id: leadId },
+        data: {
+          convertedAt: new Date(),
+          convertedToClientId: contractor.id,
+          status: 'CONVERTED',
+        },
+      });
+
+      // Actualizar presupuesto con el nuevo cliente
+      await tx.quote.update({
+        where: { id: quoteId },
+        data: { contractorId: contractor.id },
+      });
+
+      return contractor;
+    });
+
+    logger.info('Cliente creado desde lead', {
+      data: { leadId, contractorId: result.id, quoteId, companyId },
+    });
+
+    revalidatePath('/dashboard/commercial/quotes');
+    revalidatePath(`/dashboard/commercial/quotes/${quoteId}`);
+
+    return { success: true, customerId: result.id };
+  } catch (error) {
+    logger.error('Error al crear cliente desde lead', {
+      data: { leadId, quoteId, companyId, error },
+    });
+    throw error;
+  }
+}
