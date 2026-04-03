@@ -38,7 +38,7 @@ export async function getProducts(params: GetProductsParams = {}) {
     const filtersWhere = buildFiltersWhere(filters, {
       type: 'type',
       status: 'status',
-    }, { exclude: ['name', 'code', 'category'] });
+    }, { exclude: ['name', 'code', 'category', 'stockLevel'] });
 
     // Filtros de texto directos
     const textFields = ['name', 'code'] as const;
@@ -61,36 +61,68 @@ export async function getProducts(params: GetProductsParams = {}) {
       ...categoryWhere,
     };
 
+    // Filtro especial: solo productos bajo stock mínimo
+    const lowStockFilter = filters['stockLevel']?.[0];
+
     const [products, total] = await Promise.all([
       prisma.product.findMany({
         where,
         include: {
           category: { select: { id: true, name: true } },
+          warehouseStocks: { select: { quantity: true } },
         },
         orderBy: [{ status: 'asc' }, { name: 'asc' }],
-        skip: (page - 1) * pageSize,
-        take: pageSize,
+        skip: lowStockFilter ? undefined : (page - 1) * pageSize,
+        take: lowStockFilter ? undefined : pageSize,
       }),
-      prisma.product.count({ where }),
+      lowStockFilter ? Promise.resolve(0) : prisma.product.count({ where }),
     ]);
 
-    const data = products.map((product) => ({
-      ...product,
-      costPrice: Number(product.costPrice),
-      salePrice: Number(product.salePrice),
-      salePriceWithTax: Number(product.salePriceWithTax),
-      vatRate: Number(product.vatRate),
-      minStock: product.minStock ? Number(product.minStock) : null,
-      maxStock: product.maxStock ? Number(product.maxStock) : null,
-    })) as unknown as Product[];
+    let data = products.map((product) => {
+      const currentStock = product.warehouseStocks.reduce(
+        (sum, ws) => sum + Number(ws.quantity),
+        0
+      );
+      return {
+        ...product,
+        warehouseStocks: undefined,
+        costPrice: Number(product.costPrice),
+        salePrice: Number(product.salePrice),
+        salePriceWithTax: Number(product.salePriceWithTax),
+        vatRate: Number(product.vatRate),
+        minStock: product.minStock ? Number(product.minStock) : null,
+        maxStock: product.maxStock ? Number(product.maxStock) : null,
+        currentStock,
+      };
+    }) as unknown as Product[];
+
+    // Filtrado en JS para stockLevel (depende de cálculo de warehouseStocks)
+    let filteredTotal = total;
+    if (lowStockFilter) {
+      data = data.filter((p) => {
+        if (!p.trackStock) return false;
+        const minStock = p.minStock || 0;
+        if (minStock <= 0) return false;
+        const current = p.currentStock ?? 0;
+        if (lowStockFilter === 'out') return current <= 0;
+        if (lowStockFilter === 'critical') return current > 0 && current < minStock;
+        if (lowStockFilter === 'warning') return current >= minStock && current <= minStock * 1.5;
+        if (lowStockFilter === 'low') return current < minStock; // critical + out combined
+        return true;
+      });
+      filteredTotal = data.length;
+      // Paginar manualmente
+      const start = (page - 1) * pageSize;
+      data = data.slice(start, start + pageSize);
+    }
 
     return {
       data,
       pagination: {
         page,
         pageSize,
-        total,
-        totalPages: Math.ceil(total / pageSize),
+        total: filteredTotal,
+        totalPages: Math.ceil(filteredTotal / pageSize),
       },
     };
   } catch (error) {
@@ -142,19 +174,27 @@ export async function getProductById(id: string): Promise<Product | null> {
       where: { id, companyId },
       include: {
         category: { select: { id: true, name: true } },
+        warehouseStocks: { select: { quantity: true } },
       },
     });
 
     if (!product) return null;
 
+    const currentStock = product.warehouseStocks.reduce(
+      (sum, ws) => sum + Number(ws.quantity),
+      0
+    );
+
     return {
       ...product,
+      warehouseStocks: undefined,
       costPrice: Number(product.costPrice),
       salePrice: Number(product.salePrice),
       salePriceWithTax: Number(product.salePriceWithTax),
       vatRate: Number(product.vatRate),
       minStock: product.minStock ? Number(product.minStock) : null,
       maxStock: product.maxStock ? Number(product.maxStock) : null,
+      currentStock,
     } as unknown as Product;
   } catch (error) {
     logger.error('Error al obtener producto', { data: { error, id } });
@@ -365,6 +405,87 @@ export async function deleteProduct(id: string): Promise<void> {
   } catch (error) {
     logger.error('Error al eliminar producto', { data: { error, id } });
     throw new Error('Error al eliminar producto');
+  }
+}
+
+// ============================================================================
+// LOW STOCK REPORT
+// ============================================================================
+
+export interface LowStockProduct {
+  id: string;
+  code: string;
+  name: string;
+  currentStock: number;
+  minStock: number;
+  maxStock: number | null;
+  deficit: number;
+  unitOfMeasure: string;
+  category: string | null;
+  stockPercentage: number;
+}
+
+/**
+ * Obtiene productos cuyo stock actual está por debajo del mínimo configurado.
+ * Ordenado por déficit descendente (más críticos primero).
+ */
+export async function getProductsBelowMinStock(): Promise<LowStockProduct[]> {
+  await checkPermission('commercial.stock', 'view', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  try {
+    const products = await prisma.product.findMany({
+      where: {
+        companyId,
+        trackStock: true,
+        minStock: { gt: 0 },
+        status: 'ACTIVE',
+      },
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        unitOfMeasure: true,
+        minStock: true,
+        maxStock: true,
+        category: { select: { name: true } },
+        warehouseStocks: { select: { quantity: true } },
+      },
+    });
+
+    const lowStockProducts: LowStockProduct[] = [];
+
+    for (const product of products) {
+      const currentStock = product.warehouseStocks.reduce(
+        (sum, ws) => sum + Number(ws.quantity),
+        0
+      );
+      const minStock = Number(product.minStock);
+
+      if (currentStock < minStock) {
+        lowStockProducts.push({
+          id: product.id,
+          code: product.code,
+          name: product.name,
+          currentStock,
+          minStock,
+          maxStock: product.maxStock ? Number(product.maxStock) : null,
+          deficit: minStock - currentStock,
+          unitOfMeasure: product.unitOfMeasure,
+          category: product.category?.name ?? null,
+          stockPercentage: minStock > 0 ? Math.round((currentStock / minStock) * 100) : 0,
+        });
+      }
+    }
+
+    // Ordenar por déficit descendente (más críticos primero)
+    lowStockProducts.sort((a, b) => b.deficit - a.deficit);
+
+    return lowStockProducts;
+  } catch (error) {
+    logger.error('Error al obtener productos bajo stock mínimo', { data: { error } });
+    throw new Error('Error al obtener productos bajo stock mínimo');
   }
 }
 
@@ -675,7 +796,7 @@ export async function processProductImport(
 /**
  * Retorna la definición de columnas para la plantilla de importación de productos
  */
-export function getProductImportColumns() {
+export async function getProductImportColumns() {
   return [
     { key: 'code', label: 'Código', required: true, example: 'FIL-001', width: 15 },
     { key: 'name', label: 'Nombre', required: true, example: 'Filtro de aceite W719/5', width: 35 },

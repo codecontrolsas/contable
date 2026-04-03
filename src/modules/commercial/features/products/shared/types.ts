@@ -55,7 +55,44 @@ export interface Product extends Record<string, unknown> {
   updatedAt: Date;
   // Relaciones
   category?: { id: string; name: string } | null;
+  // Calculado desde warehouseStocks
+  currentStock?: number;
 }
+
+/**
+ * Estado del nivel de stock de un producto
+ */
+export type StockLevel = 'ok' | 'warning' | 'critical' | 'out';
+
+/**
+ * Determina el nivel de stock de un producto
+ * - out: stock = 0 y trackStock activo
+ * - critical: stock < minStock
+ * - warning: stock entre minStock y minStock * 1.5
+ * - ok: stock normal
+ */
+export function getStockLevel(product: {
+  trackStock: boolean;
+  currentStock?: number;
+  minStock: number | null;
+}): StockLevel {
+  if (!product.trackStock || product.currentStock == null) return 'ok';
+
+  const minStock = product.minStock || 0;
+  if (minStock <= 0) return 'ok';
+
+  if (product.currentStock <= 0) return 'out';
+  if (product.currentStock < minStock) return 'critical';
+  if (product.currentStock <= minStock * 1.5) return 'warning';
+  return 'ok';
+}
+
+export const STOCK_LEVEL_LABELS: Record<StockLevel, string> = {
+  ok: 'Normal',
+  warning: 'Bajo',
+  critical: 'Crítico',
+  out: 'Sin stock',
+};
 
 export interface CreateProductInput {
   name: string;

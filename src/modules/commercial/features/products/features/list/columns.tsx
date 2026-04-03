@@ -1,7 +1,7 @@
 'use client';
 
 import { ColumnDef } from '@tanstack/react-table';
-import { MoreHorizontal, Package, Eye, Edit, Trash2, DollarSign } from 'lucide-react';
+import { MoreHorizontal, Package, Eye, Edit, Trash2, DollarSign, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 
 import { Badge } from '@/shared/components/ui/badge';
@@ -21,6 +21,7 @@ import type { Product } from '../../shared/types';
 import {
   PRODUCT_TYPE_LABELS,
   PRODUCT_STATUS_LABELS,
+  getStockLevel,
 } from '../../shared/types';
 
 interface ColumnsProps {
@@ -165,13 +166,35 @@ export function getColumns({ onEdit, onDelete, permissions }: ColumnsProps): Col
           return <span className="text-sm text-muted-foreground">No controlado</span>;
         }
 
+        const currentStock = product.currentStock ?? 0;
         const minStock = product.minStock || 0;
-        const maxStock = product.maxStock;
+        const level = getStockLevel(product);
 
         return (
-          <div className="flex flex-col text-xs">
-            <span>Mín: {minStock}</span>
-            {maxStock && <span>Máx: {maxStock}</span>}
+          <div className="flex items-center gap-2">
+            <div className="flex flex-col text-xs">
+              <span className="font-medium">{currentStock}</span>
+              {minStock > 0 && (
+                <span className="text-muted-foreground">Mín: {minStock}</span>
+              )}
+            </div>
+            {level === 'out' && (
+              <Badge variant="destructive" className="text-xs whitespace-nowrap">
+                <AlertTriangle className="mr-1 h-3 w-3" />
+                Sin stock
+              </Badge>
+            )}
+            {level === 'critical' && (
+              <Badge variant="destructive" className="text-xs whitespace-nowrap">
+                <AlertTriangle className="mr-1 h-3 w-3" />
+                Crítico
+              </Badge>
+            )}
+            {level === 'warning' && (
+              <Badge variant="outline" className="border-yellow-500 text-yellow-600 text-xs whitespace-nowrap">
+                Bajo
+              </Badge>
+            )}
           </div>
         );
       },

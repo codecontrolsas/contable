@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { DollarSign, FileSpreadsheet, Plus } from 'lucide-react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { AlertTriangle, DollarSign, FileSpreadsheet, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/shared/components/ui/button';
@@ -47,11 +47,27 @@ interface ProductsTableProps {
 
 export function _ProductsTable({ data, totalRows, searchParams, permissions, facetCounts }: ProductsTableProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const urlSearchParams = useSearchParams();
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   const [selectedRows, setSelectedRows] = useState<Product[]>([]);
   const [bulkPriceOpen, setBulkPriceOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+
+  const isLowStockActive = urlSearchParams.get('stockLevel') === 'low';
+
+  const handleToggleLowStock = useCallback(() => {
+    const params = new URLSearchParams(urlSearchParams.toString());
+    if (isLowStockActive) {
+      params.delete('stockLevel');
+    } else {
+      params.set('stockLevel', 'low');
+      params.delete('page'); // Reset page when toggling filter
+    }
+    const qs = params.toString();
+    router.push(qs ? `${pathname}?${qs}` : pathname);
+  }, [isLowStockActive, urlSearchParams, pathname, router]);
 
   const selectedIds = useMemo(() => selectedRows.map((r) => r.id), [selectedRows]);
 
@@ -134,6 +150,16 @@ export function _ProductsTable({ data, totalRows, searchParams, permissions, fac
         })),
         externalCounts: facetCounts?.status ? new Map(Object.entries(facetCounts.status)) : undefined,
       },
+      {
+        columnId: 'stockLevel',
+        title: 'Nivel de Stock',
+        options: [
+          { value: 'low', label: 'Bajo mínimo (todos)' },
+          { value: 'out', label: 'Sin stock' },
+          { value: 'critical', label: 'Stock crítico' },
+          { value: 'warning', label: 'Stock bajo' },
+        ],
+      },
     ],
     [facetCounts]
   );
@@ -154,6 +180,14 @@ export function _ProductsTable({ data, totalRows, searchParams, permissions, fac
         onRowSelectionChange={handleSelectionChange}
         toolbarActions={
           <>
+            <Button
+              variant={isLowStockActive ? 'destructive' : 'outline'}
+              size="sm"
+              onClick={handleToggleLowStock}
+            >
+              <AlertTriangle className="h-4 w-4 mr-2" />
+              {isLowStockActive ? 'Bajo stock ✕' : 'Bajo stock'}
+            </Button>
             {selectedIds.length > 0 && permissions.canUpdate && (
               <Button
                 variant="outline"
