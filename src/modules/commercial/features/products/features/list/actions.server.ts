@@ -499,3 +499,194 @@ export async function bulkUpdatePrices(input: BulkPriceAdjustmentInput) {
   revalidatePath('/dashboard/commercial/products');
   return { success: true, count: updates.length };
 }
+
+// ============================================================================
+// BULK PRODUCT IMPORT
+// ============================================================================
+
+export interface ProductImportRow {
+  code: string;
+  name: string;
+  description?: string;
+  categoryName?: string;
+  costPrice?: number;
+  salePrice?: number;
+  vatRate?: number;
+  unitOfMeasure?: string;
+  barcode?: string;
+  brand?: string;
+  model?: string;
+  trackStock?: boolean;
+  minStock?: number;
+  maxStock?: number;
+}
+
+export interface ProductImportError {
+  row: number;
+  field: string;
+  message: string;
+}
+
+export interface ProductImportResult {
+  success: boolean;
+  errors: ProductImportError[];
+  imported: number;
+  updated: number;
+}
+
+/**
+ * Procesa la importación masiva de productos desde un Excel
+ * - Valida cada fila (código y nombre requeridos)
+ * - Resuelve categorías por nombre (crea si no existe)
+ * - Upsert por código: actualiza si existe, crea si no
+ */
+export async function processProductImport(
+  rows: ProductImportRow[]
+): Promise<ProductImportResult> {
+  await checkPermission('commercial.products', 'create', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  const { userId } = await auth();
+  if (!userId) throw new Error('No autenticado');
+
+  // Validate rows
+  const errors: ProductImportError[] = [];
+  const validRows: ProductImportRow[] = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowNum = i + 1;
+
+    if (!row.code?.trim()) {
+      errors.push({ row: rowNum, field: 'code', message: 'Código requerido' });
+      continue;
+    }
+    if (!row.name?.trim()) {
+      errors.push({ row: rowNum, field: 'name', message: 'Nombre requerido' });
+      continue;
+    }
+    if (row.costPrice != null && (isNaN(row.costPrice) || row.costPrice < 0)) {
+      errors.push({ row: rowNum, field: 'costPrice', message: 'Precio costo inválido' });
+      continue;
+    }
+    if (row.salePrice != null && (isNaN(row.salePrice) || row.salePrice < 0)) {
+      errors.push({ row: rowNum, field: 'salePrice', message: 'Precio venta inválido' });
+      continue;
+    }
+    if (row.vatRate != null && (isNaN(row.vatRate) || row.vatRate < 0 || row.vatRate > 100)) {
+      errors.push({ row: rowNum, field: 'vatRate', message: 'IVA % inválido (0-100)' });
+      continue;
+    }
+
+    validRows.push(row);
+  }
+
+  if (errors.length > 0 && validRows.length === 0) {
+    return { success: false, errors, imported: 0, updated: 0 };
+  }
+
+  // Resolve categories by name (create if not exists)
+  const categoryNames = [
+    ...new Set(validRows.filter((r) => r.categoryName?.trim()).map((r) => r.categoryName!.trim())),
+  ];
+
+  const existingCategories = categoryNames.length > 0
+    ? await prisma.productCategory.findMany({
+        where: { companyId, name: { in: categoryNames, mode: 'insensitive' } },
+        select: { id: true, name: true },
+      })
+    : [];
+
+  const categoryMap = new Map(
+    existingCategories.map((c) => [c.name.toLowerCase(), c.id])
+  );
+
+  // Create missing categories
+  for (const name of categoryNames) {
+    if (!categoryMap.has(name.toLowerCase())) {
+      const cat = await prisma.productCategory.create({
+        data: { companyId, name },
+      });
+      categoryMap.set(name.toLowerCase(), cat.id);
+    }
+  }
+
+  // Check existing products by code
+  const codes = validRows.map((r) => r.code.trim());
+  const existingProducts = await prisma.product.findMany({
+    where: { companyId, code: { in: codes } },
+    select: { id: true, code: true },
+  });
+  const existingCodeMap = new Map(existingProducts.map((p) => [p.code, p.id]));
+
+  // Upsert in transaction
+  let imported = 0;
+  let updated = 0;
+
+  await prisma.$transaction(async (tx) => {
+    for (const row of validRows) {
+      const code = row.code.trim();
+      const salePrice = row.salePrice ?? 0;
+      const vatRate = row.vatRate ?? 21;
+      const salePriceWithTax = Math.round(salePrice * (1 + vatRate / 100) * 100) / 100;
+      const categoryId = row.categoryName?.trim()
+        ? categoryMap.get(row.categoryName.trim().toLowerCase())
+        : undefined;
+
+      const data = {
+        name: row.name.trim(),
+        description: row.description?.trim() || null,
+        costPrice: new Prisma.Decimal(row.costPrice ?? 0),
+        salePrice: new Prisma.Decimal(salePrice),
+        salePriceWithTax: new Prisma.Decimal(salePriceWithTax),
+        vatRate: new Prisma.Decimal(vatRate),
+        unitOfMeasure: row.unitOfMeasure?.trim() || 'UN',
+        trackStock: row.trackStock ?? true,
+        minStock: row.minStock != null ? new Prisma.Decimal(row.minStock) : null,
+        maxStock: row.maxStock != null ? new Prisma.Decimal(row.maxStock) : null,
+        barcode: row.barcode?.trim() || null,
+        brand: row.brand?.trim() || null,
+        model: row.model?.trim() || null,
+        ...(categoryId && { categoryId }),
+      };
+
+      const existingId = existingCodeMap.get(code);
+      if (existingId) {
+        await tx.product.update({ where: { id: existingId }, data });
+        updated++;
+      } else {
+        await tx.product.create({
+          data: { ...data, code, companyId, status: 'ACTIVE', type: 'PRODUCT', createdBy: userId },
+        });
+        imported++;
+      }
+    }
+  });
+
+  logger.info('Importación masiva de productos', {
+    data: { imported, updated, errorsCount: errors.length, companyId },
+  });
+
+  revalidatePath('/dashboard/commercial/products');
+  return { success: true, errors, imported, updated };
+}
+
+/**
+ * Retorna la definición de columnas para la plantilla de importación de productos
+ */
+export function getProductImportColumns() {
+  return [
+    { key: 'code', label: 'Código', required: true, example: 'FIL-001', width: 15 },
+    { key: 'name', label: 'Nombre', required: true, example: 'Filtro de aceite W719/5', width: 35 },
+    { key: 'description', label: 'Descripción', required: false, example: 'Filtro de aceite para motor 1.6 16v', width: 40 },
+    { key: 'categoryName', label: 'Categoría', required: false, example: 'Filtros', width: 20 },
+    { key: 'costPrice', label: 'Precio Costo', required: false, example: '1500', width: 15 },
+    { key: 'salePrice', label: 'Precio Venta (sin IVA)', required: false, example: '2500', width: 20 },
+    { key: 'vatRate', label: 'IVA %', required: false, example: '21', width: 10 },
+    { key: 'unitOfMeasure', label: 'Unidad Medida', required: false, example: 'UN', width: 15 },
+    { key: 'barcode', label: 'Código de Barras', required: false, example: '7790001234567', width: 20 },
+    { key: 'brand', label: 'Marca', required: false, example: 'Mann Filter', width: 20 },
+    { key: 'model', label: 'Modelo', required: false, example: 'W719/5', width: 15 },
+  ] as const;
+}
