@@ -40,7 +40,11 @@ export async function EditInvoice({ id }: EditInvoiceProps) {
       quantity: Number(line.quantity).toString(),
       unitPrice: Number(line.unitPrice).toString(),
       vatRate: Number(line.vatRate).toString(),
+      discountPercent: line.discountPercent?.toString() ?? '',
+      discountAmount: line.discountAmount?.toString() ?? '',
     })),
+    globalDiscountPercent: invoice.globalDiscountPercent?.toString() ?? '',
+    globalDiscountAmount: invoice.globalDiscountAmount?.toString() ?? '',
   };
 
   return (
