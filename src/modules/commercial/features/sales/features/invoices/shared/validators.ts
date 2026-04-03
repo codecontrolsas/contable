@@ -15,6 +15,8 @@ export const invoiceLineSchema = z.object({
   vatRate: z
     .string()
     .regex(/^\d+(\.\d{1,2})?$/, 'Alícuota de IVA inválida'),
+  discountPercent: z.string().optional(),
+  discountAmount: z.string().optional(),
 });
 
 // Schema para formulario de factura
@@ -38,6 +40,8 @@ export const invoiceFormSchema = z.object({
   dueDate: z.date().optional(),
   notes: z.string().optional(),
   internalNotes: z.string().optional(),
+  globalDiscountPercent: z.string().optional(),
+  globalDiscountAmount: z.string().optional(),
   lines: z.array(invoiceLineSchema).min(1, 'Debe agregar al menos una línea'),
 });
 
@@ -79,9 +83,21 @@ export const createInvoiceSchema = z.object({
           .string()
           .transform((val) => parseFloat(val))
           .pipe(z.number().min(0).max(100)),
+        discountPercent: z.string().optional()
+          .transform((val) => (val ? parseFloat(val) : null))
+          .pipe(z.number().min(0).max(100).nullable()),
+        discountAmount: z.string().optional()
+          .transform((val) => (val ? parseFloat(val) : null))
+          .pipe(z.number().nonnegative().nullable()),
       })
     )
     .min(1),
+  globalDiscountPercent: z.string().optional()
+    .transform((val) => (val ? parseFloat(val) : null))
+    .pipe(z.number().min(0).max(100).nullable()),
+  globalDiscountAmount: z.string().optional()
+    .transform((val) => (val ? parseFloat(val) : null))
+    .pipe(z.number().nonnegative().nullable()),
 });
 
 // Tipos de voucher labels
