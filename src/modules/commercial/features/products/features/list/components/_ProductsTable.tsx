@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { DollarSign, Plus } from 'lucide-react';
+import { DollarSign, FileSpreadsheet, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/shared/components/ui/button';
@@ -30,6 +30,7 @@ import {
 } from '../../../shared/types';
 import { deleteProduct } from '../actions.server';
 import { _BulkPriceAdjustModal } from './_BulkPriceAdjustModal';
+import { _ProductImportModal } from './_ProductImportModal';
 
 interface FacetCounts {
   type: Record<string, number>;
@@ -50,6 +51,7 @@ export function _ProductsTable({ data, totalRows, searchParams, permissions, fac
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   const [selectedRows, setSelectedRows] = useState<Product[]>([]);
   const [bulkPriceOpen, setBulkPriceOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   const selectedIds = useMemo(() => selectedRows.map((r) => r.id), [selectedRows]);
 
@@ -59,6 +61,10 @@ export function _ProductsTable({ data, totalRows, searchParams, permissions, fac
 
   const handleBulkPriceSuccess = useCallback(() => {
     setSelectedRows([]);
+    router.refresh();
+  }, [router]);
+
+  const handleImportSuccess = useCallback(() => {
     router.refresh();
   }, [router]);
 
@@ -157,6 +163,15 @@ export function _ProductsTable({ data, totalRows, searchParams, permissions, fac
                 Ajustar Precios ({selectedIds.length})
               </Button>
             )}
+            {selectedIds.length === 0 && permissions.canCreate && (
+              <Button
+                variant="outline"
+                onClick={() => setImportOpen(true)}
+              >
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Importar Excel
+              </Button>
+            )}
             {permissions.canCreate && (
               <Button onClick={() => router.push('/dashboard/commercial/products/new')}>
                 <Plus className="h-4 w-4 mr-2" />
@@ -165,6 +180,13 @@ export function _ProductsTable({ data, totalRows, searchParams, permissions, fac
             )}
           </>
         }
+      />
+
+      {/* Modal de importación desde Excel */}
+      <_ProductImportModal
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onSuccess={handleImportSuccess}
       />
 
       {/* Modal de ajuste masivo de precios */}
