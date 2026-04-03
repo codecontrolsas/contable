@@ -17,6 +17,9 @@ interface InvoiceTemplateProps {
 export function InvoiceTemplate({ data }: InvoiceTemplateProps) {
   const { company, invoice, customer, lines, totals, notes, linkedDocuments } = data;
   const isTypeA = invoice.type === 'A';
+  const hasAnyDiscount = lines.some(
+    (l) => (l.discountPercent && l.discountPercent > 0) || (l.discountAmount && l.discountAmount > 0)
+  );
 
   return (
     <Document>
@@ -106,6 +109,7 @@ export function InvoiceTemplate({ data }: InvoiceTemplateProps) {
             <Text style={styles.col3}>Cant.</Text>
             <Text style={styles.col4}>UM</Text>
             <Text style={styles.col5}>P. Unit.</Text>
+            {hasAnyDiscount && <Text style={styles.colDto}>Dto.</Text>}
             {isTypeA && <Text style={styles.col6}>IVA %</Text>}
             <Text style={styles.col7}>Subtotal</Text>
             <Text style={styles.col8}>Total</Text>
@@ -118,6 +122,15 @@ export function InvoiceTemplate({ data }: InvoiceTemplateProps) {
               <Text style={styles.col3}>{line.quantity.toFixed(3)}</Text>
               <Text style={styles.col4}>{line.unitOfMeasure}</Text>
               <Text style={styles.col5}>${line.unitPrice.toFixed(2)}</Text>
+              {hasAnyDiscount && (
+                <Text style={styles.colDto}>
+                  {line.discountPercent && line.discountPercent > 0
+                    ? `${line.discountPercent}%`
+                    : line.discountAmount && line.discountAmount > 0
+                      ? `$${line.discountAmount.toFixed(2)}`
+                      : ''}
+                </Text>
+              )}
               {isTypeA && <Text style={styles.col6}>{line.vatRate.toFixed(2)}%</Text>}
               <Text style={styles.col7}>${line.subtotal.toFixed(2)}</Text>
               <Text style={styles.col8}>${line.total.toFixed(2)}</Text>
@@ -127,6 +140,23 @@ export function InvoiceTemplate({ data }: InvoiceTemplateProps) {
 
         {/* TOTALES */}
         <View style={styles.totalsSection}>
+          {totals.discountTotal != null && totals.discountTotal > 0 && (
+            <>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Subtotal (antes dto):</Text>
+                <Text style={styles.totalValue}>
+                  ${(totals.totalBeforeDiscount ?? totals.subtotal).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                </Text>
+              </View>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Descuento:</Text>
+                <Text style={styles.totalValue}>
+                  -${totals.discountTotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                </Text>
+              </View>
+            </>
+          )}
+
           {isTypeA && (
             <>
               <View style={styles.totalRow}>

@@ -33,6 +33,10 @@ type InvoiceData = {
     phone: string | null;
     address: string | null;
   };
+  discountTotal?: any;
+  totalBeforeDiscount?: any;
+  globalDiscountPercent?: any;
+  globalDiscountAmount?: any;
   lines: Array<{
     quantity: any;
     unitPrice: any;
@@ -41,6 +45,8 @@ type InvoiceData = {
     vatAmount: any;
     total: any;
     description: string;
+    discountPercent?: any;
+    discountAmount?: any;
     product: {
       code: string;
       name: string;
@@ -168,6 +174,8 @@ export function mapInvoiceDataForPDF(
       subtotal: Number(line.subtotal),
       vatAmount: Number(line.vatAmount),
       total: Number(line.total),
+      discountPercent: line.discountPercent ? Number(line.discountPercent) : null,
+      discountAmount: line.discountAmount ? Number(line.discountAmount) : null,
     })),
 
     totals: {
@@ -176,6 +184,8 @@ export function mapInvoiceDataForPDF(
       otherTaxes: Number(invoice.otherTaxes),
       total: Number(invoice.total),
       vatByRate: invoiceType === 'A' ? groupVATByRate(invoice.lines) : undefined,
+      totalBeforeDiscount: invoice.totalBeforeDiscount ? Number(invoice.totalBeforeDiscount) : undefined,
+      discountTotal: invoice.discountTotal ? Number(invoice.discountTotal) : undefined,
     },
 
     notes: invoice.notes || undefined,

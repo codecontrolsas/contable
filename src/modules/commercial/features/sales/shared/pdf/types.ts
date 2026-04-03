@@ -47,6 +47,8 @@ export interface InvoicePDFData {
     subtotal: number;
     vatAmount: number;
     total: number;
+    discountPercent?: number | null;
+    discountAmount?: number | null;
   }>;
 
   // Totales
@@ -55,6 +57,8 @@ export interface InvoicePDFData {
     vatAmount: number;
     otherTaxes: number;
     total: number;
+    totalBeforeDiscount?: number;
+    discountTotal?: number;
     vatByRate?: Array<{
       rate: number;
       base: number;

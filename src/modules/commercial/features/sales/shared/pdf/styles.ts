@@ -119,6 +119,7 @@ export const styles = StyleSheet.create({
   col3: { width: '8%', textAlign: 'right' },   // Cantidad
   col4: { width: '7%', textAlign: 'center' },  // UM
   col5: { width: '10%', textAlign: 'right' },  // P. Unit
+  colDto: { width: '7%', textAlign: 'right' }, // Dto.
   col6: { width: '8%', textAlign: 'right' },   // IVA %
   col7: { width: '12%', textAlign: 'right' },  // Subtotal
   col8: { width: '12%', textAlign: 'right' },  // Total
