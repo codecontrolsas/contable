@@ -340,6 +340,10 @@ export async function getInvoiceById(id: string) {
       vatAmount: Number(invoice.vatAmount),
       otherTaxes: Number(invoice.otherTaxes),
       total: Number(invoice.total),
+      globalDiscountPercent: invoice.globalDiscountPercent ? Number(invoice.globalDiscountPercent) : null,
+      globalDiscountAmount: invoice.globalDiscountAmount ? Number(invoice.globalDiscountAmount) : null,
+      totalBeforeDiscount: Number(invoice.totalBeforeDiscount),
+      discountTotal: Number(invoice.discountTotal),
       lines: invoice.lines.map((line) => ({
         ...line,
         quantity: Number(line.quantity),
@@ -348,6 +352,8 @@ export async function getInvoiceById(id: string) {
         vatAmount: Number(line.vatAmount),
         subtotal: Number(line.subtotal),
         total: Number(line.total),
+        discountPercent: line.discountPercent ? Number(line.discountPercent) : null,
+        discountAmount: line.discountAmount ? Number(line.discountAmount) : null,
       })),
       creditDebitNotes: invoice.creditDebitNotes.map((cn) => ({
         ...cn,
@@ -426,20 +432,79 @@ export async function getNextInvoiceNumber(
 function calculateLineAmounts(
   quantity: number,
   unitPrice: number,
-  vatRate: number
+  vatRate: number,
+  discountPercent: number | null,
+  discountAmount: number | null,
 ): {
+  baseAmount: number;
+  discountValue: number;
   subtotal: number;
   vatAmount: number;
   total: number;
 } {
-  const subtotal = quantity * unitPrice;
+  const baseAmount = quantity * unitPrice;
+
+  let discountValue = 0;
+  if (discountPercent != null && discountPercent > 0) {
+    discountValue = baseAmount * (discountPercent / 100);
+  } else if (discountAmount != null && discountAmount > 0) {
+    discountValue = Math.min(discountAmount, baseAmount);
+  }
+
+  const subtotal = baseAmount - discountValue;
   const vatAmount = subtotal * (vatRate / 100);
   const total = subtotal + vatAmount;
 
   return {
+    baseAmount: Math.round(baseAmount * 100) / 100,
+    discountValue: Math.round(discountValue * 100) / 100,
     subtotal: Math.round(subtotal * 100) / 100,
     vatAmount: Math.round(vatAmount * 100) / 100,
     total: Math.round(total * 100) / 100,
+  };
+}
+
+function calculateGlobalDiscount(
+  sumLineSubtotals: number,
+  globalDiscountPercent: number | null,
+  globalDiscountAmount: number | null,
+): number {
+  if (globalDiscountPercent != null && globalDiscountPercent > 0) {
+    return Math.round(sumLineSubtotals * (globalDiscountPercent / 100) * 100) / 100;
+  }
+  if (globalDiscountAmount != null && globalDiscountAmount > 0) {
+    return Math.round(Math.min(globalDiscountAmount, sumLineSubtotals) * 100) / 100;
+  }
+  return 0;
+}
+
+function calculateInvoiceTotalsWithGlobalDiscount(
+  linesData: Array<{ subtotal: number; vatRate: number }>,
+  globalDiscount: number,
+): { invoiceSubtotal: number; invoiceVatAmount: number } {
+  const sumLineSubtotals = linesData.reduce((acc, l) => acc + l.subtotal, 0);
+
+  if (globalDiscount <= 0 || sumLineSubtotals <= 0) {
+    return {
+      invoiceSubtotal: sumLineSubtotals,
+      invoiceVatAmount: linesData.reduce(
+        (acc, l) => acc + l.subtotal * (l.vatRate / 100),
+        0,
+      ),
+    };
+  }
+
+  let invoiceVatAmount = 0;
+  for (const line of linesData) {
+    const weight = line.subtotal / sumLineSubtotals;
+    const lineGlobalDiscount = globalDiscount * weight;
+    const discountedBase = line.subtotal - lineGlobalDiscount;
+    invoiceVatAmount += discountedBase * (line.vatRate / 100);
+  }
+
+  return {
+    invoiceSubtotal: Math.round((sumLineSubtotals - globalDiscount) * 100) / 100,
+    invoiceVatAmount: Math.round(invoiceVatAmount * 100) / 100,
   };
 }
 
@@ -559,14 +624,18 @@ export async function createInvoice(data: unknown) {
     const fullNumber = `${pointOfSale.number.toString().padStart(4, '0')}-${nextNumber.toString().padStart(8, '0')}`;
 
     // Calcular totales
-    let invoiceSubtotal = 0;
-    let invoiceVatAmount = 0;
+    let totalLineDiscounts = 0;
 
     const linesData = validatedData.lines.map((line) => {
-      const amounts = calculateLineAmounts(line.quantity, line.unitPrice, line.vatRate);
+      const amounts = calculateLineAmounts(
+        line.quantity,
+        line.unitPrice,
+        line.vatRate,
+        line.discountPercent,
+        line.discountAmount,
+      );
 
-      invoiceSubtotal += amounts.subtotal;
-      invoiceVatAmount += amounts.vatAmount;
+      totalLineDiscounts += amounts.discountValue;
 
       return {
         productId: line.productId,
@@ -577,10 +646,30 @@ export async function createInvoice(data: unknown) {
         vatAmount: new Prisma.Decimal(amounts.vatAmount),
         subtotal: new Prisma.Decimal(amounts.subtotal),
         total: new Prisma.Decimal(amounts.total),
+        discountPercent: line.discountPercent != null ? new Prisma.Decimal(line.discountPercent) : null,
+        discountAmount: line.discountAmount != null ? new Prisma.Decimal(line.discountAmount) : null,
       };
     });
 
+    const sumLineSubtotals = linesData.reduce((acc, l) => acc + Number(l.subtotal), 0);
+
+    const globalDiscount = calculateGlobalDiscount(
+      sumLineSubtotals,
+      validatedData.globalDiscountPercent,
+      validatedData.globalDiscountAmount,
+    );
+
+    const { invoiceSubtotal, invoiceVatAmount } = calculateInvoiceTotalsWithGlobalDiscount(
+      validatedData.lines.map((line, i) => ({
+        subtotal: Number(linesData[i].subtotal),
+        vatRate: line.vatRate,
+      })),
+      globalDiscount,
+    );
+
     const invoiceTotal = invoiceSubtotal + invoiceVatAmount;
+    const totalBeforeDiscount = sumLineSubtotals;
+    const discountTotal = totalLineDiscounts + globalDiscount;
 
     // Crear factura en transacción
     const invoice = await prisma.$transaction(async (tx) => {
@@ -599,6 +688,10 @@ export async function createInvoice(data: unknown) {
           vatAmount: new Prisma.Decimal(invoiceVatAmount),
           otherTaxes: new Prisma.Decimal(0),
           total: new Prisma.Decimal(invoiceTotal),
+          globalDiscountPercent: validatedData.globalDiscountPercent != null ? new Prisma.Decimal(validatedData.globalDiscountPercent) : null,
+          globalDiscountAmount: validatedData.globalDiscountAmount != null ? new Prisma.Decimal(validatedData.globalDiscountAmount) : null,
+          totalBeforeDiscount: new Prisma.Decimal(totalBeforeDiscount),
+          discountTotal: new Prisma.Decimal(discountTotal),
           notes: validatedData.notes,
           internalNotes: validatedData.internalNotes,
           originalInvoiceId: validatedData.originalInvoiceId || null,
@@ -945,13 +1038,17 @@ export async function updateInvoice(id: string, data: unknown) {
     }
 
     // Calcular totales
-    let invoiceSubtotal = 0;
-    let invoiceVatAmount = 0;
+    let totalLineDiscounts = 0;
 
     const linesData = validatedData.lines.map((line) => {
-      const amounts = calculateLineAmounts(line.quantity, line.unitPrice, line.vatRate);
-      invoiceSubtotal += amounts.subtotal;
-      invoiceVatAmount += amounts.vatAmount;
+      const amounts = calculateLineAmounts(
+        line.quantity,
+        line.unitPrice,
+        line.vatRate,
+        line.discountPercent,
+        line.discountAmount,
+      );
+      totalLineDiscounts += amounts.discountValue;
 
       return {
         productId: line.productId,
@@ -962,10 +1059,30 @@ export async function updateInvoice(id: string, data: unknown) {
         vatAmount: new Prisma.Decimal(amounts.vatAmount),
         subtotal: new Prisma.Decimal(amounts.subtotal),
         total: new Prisma.Decimal(amounts.total),
+        discountPercent: line.discountPercent != null ? new Prisma.Decimal(line.discountPercent) : null,
+        discountAmount: line.discountAmount != null ? new Prisma.Decimal(line.discountAmount) : null,
       };
     });
 
+    const sumLineSubtotals = linesData.reduce((acc, l) => acc + Number(l.subtotal), 0);
+
+    const globalDiscount = calculateGlobalDiscount(
+      sumLineSubtotals,
+      validatedData.globalDiscountPercent,
+      validatedData.globalDiscountAmount,
+    );
+
+    const { invoiceSubtotal, invoiceVatAmount } = calculateInvoiceTotalsWithGlobalDiscount(
+      validatedData.lines.map((line, i) => ({
+        subtotal: Number(linesData[i].subtotal),
+        vatRate: line.vatRate,
+      })),
+      globalDiscount,
+    );
+
     const invoiceTotal = invoiceSubtotal + invoiceVatAmount;
+    const totalBeforeDiscount = sumLineSubtotals;
+    const discountTotal = totalLineDiscounts + globalDiscount;
 
     const result = await prisma.$transaction(async (tx) => {
       await tx.salesInvoiceLine.deleteMany({ where: { invoiceId: id } });
@@ -980,6 +1097,10 @@ export async function updateInvoice(id: string, data: unknown) {
           subtotal: new Prisma.Decimal(invoiceSubtotal),
           vatAmount: new Prisma.Decimal(invoiceVatAmount),
           total: new Prisma.Decimal(invoiceTotal),
+          globalDiscountPercent: validatedData.globalDiscountPercent != null ? new Prisma.Decimal(validatedData.globalDiscountPercent) : null,
+          globalDiscountAmount: validatedData.globalDiscountAmount != null ? new Prisma.Decimal(validatedData.globalDiscountAmount) : null,
+          totalBeforeDiscount: new Prisma.Decimal(totalBeforeDiscount),
+          discountTotal: new Prisma.Decimal(discountTotal),
           notes: validatedData.notes,
           internalNotes: validatedData.internalNotes,
           lines: { create: linesData },
