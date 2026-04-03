@@ -104,7 +104,7 @@ export function InvoiceTemplate({ data }: InvoiceTemplateProps) {
         {/* TABLA DE PRODUCTOS */}
         <View style={styles.table}>
           <View style={styles.tableHeader}>
-            <Text style={styles.col1}>Código</Text>
+            <Text style={styles.col1}>#</Text>
             <Text style={styles.col2}>Descripción</Text>
             <Text style={styles.col3}>Cant.</Text>
             <Text style={styles.col4}>UM</Text>
@@ -117,7 +117,7 @@ export function InvoiceTemplate({ data }: InvoiceTemplateProps) {
 
           {lines.map((line, index) => (
             <View key={index} style={styles.tableRow}>
-              <Text style={styles.col1}>{line.code}</Text>
+              <Text style={styles.col1}>{index + 1}</Text>
               <Text style={styles.col2}>{line.description}</Text>
               <Text style={styles.col3}>{line.quantity.toFixed(3)}</Text>
               <Text style={styles.col4}>{line.unitOfMeasure}</Text>
