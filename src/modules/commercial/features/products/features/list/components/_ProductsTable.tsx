@@ -1,8 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus } from 'lucide-react';
+import { DollarSign, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/shared/components/ui/button';
@@ -29,6 +29,7 @@ import {
   PRODUCT_STATUS_LABELS,
 } from '../../../shared/types';
 import { deleteProduct } from '../actions.server';
+import { _BulkPriceAdjustModal } from './_BulkPriceAdjustModal';
 
 interface FacetCounts {
   type: Record<string, number>;
@@ -47,6 +48,19 @@ export function _ProductsTable({ data, totalRows, searchParams, permissions, fac
   const router = useRouter();
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
+  const [selectedRows, setSelectedRows] = useState<Product[]>([]);
+  const [bulkPriceOpen, setBulkPriceOpen] = useState(false);
+
+  const selectedIds = useMemo(() => selectedRows.map((r) => r.id), [selectedRows]);
+
+  const handleSelectionChange = useCallback((rows: Product[]) => {
+    setSelectedRows(rows);
+  }, []);
+
+  const handleBulkPriceSuccess = useCallback(() => {
+    setSelectedRows([]);
+    router.refresh();
+  }, [router]);
 
   const handleRefresh = () => {
     router.refresh();
@@ -129,14 +143,36 @@ export function _ProductsTable({ data, totalRows, searchParams, permissions, fac
         tableId="commercial-products"
         facetedFilters={facetedFilters}
         showFilterToggle
+        enableRowSelection
+        showRowSelection
+        onRowSelectionChange={handleSelectionChange}
         toolbarActions={
-          permissions.canCreate ? (
-            <Button onClick={() => router.push('/dashboard/commercial/products/new')}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nuevo Producto
-            </Button>
-          ) : null
+          <>
+            {selectedIds.length > 0 && permissions.canUpdate && (
+              <Button
+                variant="outline"
+                onClick={() => setBulkPriceOpen(true)}
+              >
+                <DollarSign className="h-4 w-4 mr-2" />
+                Ajustar Precios ({selectedIds.length})
+              </Button>
+            )}
+            {permissions.canCreate && (
+              <Button onClick={() => router.push('/dashboard/commercial/products/new')}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nuevo Producto
+              </Button>
+            )}
+          </>
         }
+      />
+
+      {/* Modal de ajuste masivo de precios */}
+      <_BulkPriceAdjustModal
+        selectedIds={selectedIds}
+        open={bulkPriceOpen}
+        onOpenChange={setBulkPriceOpen}
+        onSuccess={handleBulkPriceSuccess}
       />
 
       {/* Diálogo de confirmación para eliminar */}
