@@ -1,9 +1,10 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import { CardTitle } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
 import { formatCurrency } from '@/shared/utils/formatters';
-import type { LucideIcon } from 'lucide-react';
+import { ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
+import { _CollapsibleCard } from './_CollapsibleCard';
 
 interface DebtItem {
   name: string;
@@ -14,21 +15,24 @@ interface DebtItem {
 
 interface TopDebtsWidgetProps {
   title: string;
-  icon: LucideIcon;
+  iconVariant: 'receivable' | 'payable';
   data: DebtItem[];
   emptyMessage?: string;
+  defaultOpen?: boolean;
 }
 
-export function _TopDebtsWidget({ title, icon: Icon, data, emptyMessage = 'Sin deudas pendientes' }: TopDebtsWidgetProps) {
+export function _TopDebtsWidget({ title, iconVariant, data, emptyMessage = 'Sin deudas pendientes', defaultOpen }: TopDebtsWidgetProps) {
+  const Icon = iconVariant === 'receivable' ? ArrowDownCircle : ArrowUpCircle;
   return (
-    <Card>
-      <CardHeader className="pb-2">
+    <_CollapsibleCard
+      header={
         <div className="flex items-center gap-2">
           <Icon className="h-4 w-4 text-muted-foreground" />
           <CardTitle className="text-base">{title}</CardTitle>
         </div>
-      </CardHeader>
-      <CardContent>
+      }
+      defaultOpen={defaultOpen}
+    >
         {data.length === 0 ? (
           <div className="flex h-[200px] items-center justify-center text-sm text-muted-foreground">
             {emptyMessage}
@@ -55,7 +59,6 @@ export function _TopDebtsWidget({ title, icon: Icon, data, emptyMessage = 'Sin d
             ))}
           </div>
         )}
-      </CardContent>
-    </Card>
+    </_CollapsibleCard>
   );
 }

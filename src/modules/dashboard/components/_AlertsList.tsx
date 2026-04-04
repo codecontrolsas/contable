@@ -1,9 +1,10 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import { CardTitle } from '@/shared/components/ui/card';
 import { AlertTriangle, ArrowDownCircle, ArrowUpCircle, Receipt } from 'lucide-react';
 import { formatCurrency } from '@/shared/utils/formatters';
 import moment from 'moment';
+import { _CollapsibleCard } from './_CollapsibleCard';
 
 interface Alert {
   type: 'overdue_receivable' | 'overdue_payable' | 'overdue_expense';
@@ -15,6 +16,7 @@ interface Alert {
 
 interface AlertsListProps {
   alerts: Alert[];
+  defaultOpen?: boolean;
 }
 
 const alertIcons = {
@@ -29,13 +31,9 @@ const alertColors = {
   overdue_expense: 'text-red-400',
 };
 
-export function _AlertsList({ alerts }: AlertsListProps) {
+export function _AlertsList({ alerts, defaultOpen }: AlertsListProps) {
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Alertas y Vencimientos</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <_CollapsibleCard header={<CardTitle className="text-base">Alertas y Vencimientos</CardTitle>} defaultOpen={defaultOpen}>
         {alerts.length === 0 ? (
           <div className="flex h-[200px] flex-col items-center justify-center gap-2 text-muted-foreground">
             <AlertTriangle className="h-8 w-8" />
@@ -66,7 +64,6 @@ export function _AlertsList({ alerts }: AlertsListProps) {
             })}
           </div>
         )}
-      </CardContent>
-    </Card>
+    </_CollapsibleCard>
   );
 }

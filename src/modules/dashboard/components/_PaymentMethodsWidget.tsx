@@ -1,9 +1,10 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import { CardTitle } from '@/shared/components/ui/card';
 import { CreditCard } from 'lucide-react';
 import { formatCurrency } from '@/shared/utils/formatters';
 import { Badge } from '@/shared/components/ui/badge';
+import { _CollapsibleCard } from './_CollapsibleCard';
 
 interface PaymentMethodItem {
   method: string;
@@ -13,20 +14,22 @@ interface PaymentMethodItem {
 
 interface PaymentMethodsWidgetProps {
   data: PaymentMethodItem[];
+  defaultOpen?: boolean;
 }
 
-export function _PaymentMethodsWidget({ data }: PaymentMethodsWidgetProps) {
+export function _PaymentMethodsWidget({ data, defaultOpen }: PaymentMethodsWidgetProps) {
   const grandTotal = data.reduce((sum, d) => sum + d.total, 0);
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
+    <_CollapsibleCard
+      header={
         <div className="flex items-center gap-2">
           <CreditCard className="h-4 w-4 text-muted-foreground" />
           <CardTitle className="text-base">Medios de Pago (Cobros)</CardTitle>
         </div>
-      </CardHeader>
-      <CardContent>
+      }
+      defaultOpen={defaultOpen}
+    >
         {data.length === 0 ? (
           <div className="flex h-[200px] items-center justify-center text-sm text-muted-foreground">
             Sin cobros en los últimos 30 días
@@ -62,7 +65,6 @@ export function _PaymentMethodsWidget({ data }: PaymentMethodsWidgetProps) {
             })}
           </div>
         )}
-      </CardContent>
-    </Card>
+    </_CollapsibleCard>
   );
 }

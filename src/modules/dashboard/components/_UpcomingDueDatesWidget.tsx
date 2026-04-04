@@ -1,10 +1,11 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import { CardTitle } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
 import { CalendarClock } from 'lucide-react';
 import { formatCurrency } from '@/shared/utils/formatters';
 import moment from 'moment';
+import { _CollapsibleCard } from './_CollapsibleCard';
 
 interface DueItem {
   type: 'sale' | 'purchase';
@@ -17,6 +18,7 @@ interface DueItem {
 
 interface UpcomingDueDatesWidgetProps {
   data: DueItem[];
+  defaultOpen?: boolean;
 }
 
 function getDueColor(daysUntilDue: number): string {
@@ -38,16 +40,17 @@ function getDueLabel(daysUntilDue: number): string {
   return `${daysUntilDue} días`;
 }
 
-export function _UpcomingDueDatesWidget({ data }: UpcomingDueDatesWidgetProps) {
+export function _UpcomingDueDatesWidget({ data, defaultOpen }: UpcomingDueDatesWidgetProps) {
   return (
-    <Card>
-      <CardHeader className="pb-2">
+    <_CollapsibleCard
+      header={
         <div className="flex items-center gap-2">
           <CalendarClock className="h-4 w-4 text-muted-foreground" />
           <CardTitle className="text-base">Próximos Vencimientos</CardTitle>
         </div>
-      </CardHeader>
-      <CardContent>
+      }
+      defaultOpen={defaultOpen}
+    >
         {data.length === 0 ? (
           <div className="flex h-[200px] items-center justify-center text-sm text-muted-foreground">
             Sin vencimientos próximos
@@ -80,7 +83,6 @@ export function _UpcomingDueDatesWidget({ data }: UpcomingDueDatesWidgetProps) {
             ))}
           </div>
         )}
-      </CardContent>
-    </Card>
+    </_CollapsibleCard>
   );
 }

@@ -1,8 +1,9 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import { CardTitle } from '@/shared/components/ui/card';
 import { Package } from 'lucide-react';
 import { formatCurrency } from '@/shared/utils/formatters';
+import { _CollapsibleCard } from './_CollapsibleCard';
 
 interface ProductItem {
   code: string;
@@ -13,18 +14,20 @@ interface ProductItem {
 
 interface TopProductsWidgetProps {
   data: ProductItem[];
+  defaultOpen?: boolean;
 }
 
-export function _TopProductsWidget({ data }: TopProductsWidgetProps) {
+export function _TopProductsWidget({ data, defaultOpen }: TopProductsWidgetProps) {
   return (
-    <Card>
-      <CardHeader className="pb-2">
+    <_CollapsibleCard
+      header={
         <div className="flex items-center gap-2">
           <Package className="h-4 w-4 text-muted-foreground" />
           <CardTitle className="text-base">Productos Más Vendidos</CardTitle>
         </div>
-      </CardHeader>
-      <CardContent>
+      }
+      defaultOpen={defaultOpen}
+    >
         {data.length === 0 ? (
           <div className="flex h-[200px] items-center justify-center text-sm text-muted-foreground">
             Sin ventas en los últimos 30 días
@@ -54,7 +57,6 @@ export function _TopProductsWidget({ data }: TopProductsWidgetProps) {
             ))}
           </div>
         )}
-      </CardContent>
-    </Card>
+    </_CollapsibleCard>
   );
 }

@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import { CardTitle } from '@/shared/components/ui/card';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import { Package, ArrowRight } from 'lucide-react';
+import { _CollapsibleCard } from './_CollapsibleCard';
 
 interface CriticalStockProduct {
   productId: string;
@@ -18,20 +19,22 @@ interface CriticalStockProduct {
 
 interface CriticalStockListProps {
   products: CriticalStockProduct[];
+  defaultOpen?: boolean;
 }
 
-export function _CriticalStockList({ products }: CriticalStockListProps) {
+export function _CriticalStockList({ products, defaultOpen }: CriticalStockListProps) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-base">Stock Crítico</CardTitle>
+    <_CollapsibleCard
+      header={<CardTitle className="text-base">Stock Crítico</CardTitle>}
+      defaultOpen={defaultOpen}
+      headerRight={
         <Button variant="ghost" size="sm" asChild className="h-7 text-xs">
           <Link href="/dashboard/commercial/stock">
             Ver todo <ArrowRight className="ml-1 h-3 w-3" />
           </Link>
         </Button>
-      </CardHeader>
-      <CardContent>
+      }
+    >
         {products.length === 0 ? (
           <div className="flex h-[200px] flex-col items-center justify-center gap-2 text-muted-foreground">
             <Package className="h-8 w-8" />
@@ -67,7 +70,6 @@ export function _CriticalStockList({ products }: CriticalStockListProps) {
             ))}
           </div>
         )}
-      </CardContent>
-    </Card>
+    </_CollapsibleCard>
   );
 }
