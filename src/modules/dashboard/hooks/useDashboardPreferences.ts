@@ -16,19 +16,29 @@ function getStorageKey(companyId: string): string {
   return `dashboard-prefs-${companyId}`;
 }
 
+// Cache to return stable references for useSyncExternalStore
+let cachedRaw: string | null = null;
+let cachedResult: DashboardPreferences = DEFAULT_PREFERENCES;
+
 function getSnapshot(companyId: string): DashboardPreferences {
   if (typeof window === 'undefined') return DEFAULT_PREFERENCES;
+  const raw = localStorage.getItem(getStorageKey(companyId));
+  if (raw === cachedRaw) return cachedResult;
+  cachedRaw = raw;
+  if (!raw) {
+    cachedResult = DEFAULT_PREFERENCES;
+    return cachedResult;
+  }
   try {
-    const raw = localStorage.getItem(getStorageKey(companyId));
-    if (!raw) return DEFAULT_PREFERENCES;
     const parsed = JSON.parse(raw);
-    return {
+    cachedResult = {
       hiddenWidgets: Array.isArray(parsed.hiddenWidgets) ? parsed.hiddenWidgets : [],
       accordionsOpen: typeof parsed.accordionsOpen === 'boolean' ? parsed.accordionsOpen : true,
     };
   } catch {
-    return DEFAULT_PREFERENCES;
+    cachedResult = DEFAULT_PREFERENCES;
   }
+  return cachedResult;
 }
 
 function savePreferences(companyId: string, prefs: DashboardPreferences): void {
