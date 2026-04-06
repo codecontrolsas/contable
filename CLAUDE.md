@@ -118,6 +118,7 @@ Todas las reglas detalladas están en `.claude/rules/`. Se cargan automáticamen
 | Doc. Usuario | `@.claude/rules/user-documentation.md` | Actualizar guía de usuario con cada cambio visible |
 | Permisos | `@.claude/rules/permissions.md` | checkPermission en actions, PermissionGuard en pages, usePermissions en client |
 | Industria | `@.claude/rules/industry.md` | Features por tipo de empresa (INDUSTRY_MODULES, INDUSTRY_FEATURES, useIndustry) |
+| Módulos | `@.claude/rules/modules.md` | Registrar módulos nuevos en sistema de activación por empresa |
 
 ---
 
@@ -362,6 +363,37 @@ const { isFeatureAvailable } = useIndustry();
 - **Módulos completos** específicos: registrar en `INDUSTRY_MODULES`
 - **Features dentro de módulos existentes**: registrar en `INDUSTRY_FEATURES`
 - Features **universales** (mayoría): no requieren configuración
+
+### 13. Registrar Módulos Nuevos en el Sistema de Activación
+
+Al crear un nuevo módulo de primer nivel, SIEMPRE registrarlo en el sistema de activación por empresa:
+
+```typescript
+// 1. Registrar en src/shared/lib/modules/constants.ts
+export const ACTIVATABLE_MODULES = {
+  // ... existentes ...
+  newModule: 'newModule',  // ← agregar aquí
+};
+
+// 2. Agregar label, descripción e ícono
+MODULE_DISPLAY_LABELS: { newModule: 'Nuevo Módulo' }
+MODULE_DESCRIPTIONS: { newModule: 'Descripción del módulo' }
+MODULE_ICONS: { newModule: 'IconName' }
+
+// 3. Si depende de otro módulo, agregar dependencia
+MODULE_DEPENDENCIES: { newModule: ['commercial'] }  // ← si aplica
+
+// 4. Mapear permisos del módulo al módulo activable
+PERMISSION_MODULE_MAP: {
+  'newModule': 'newModule',
+  'newModule.submodule': 'newModule',
+  'company.newModule-config': 'newModule',  // configs relacionadas
+}
+```
+
+Sin este registro, el módulo no aparecerá en la pantalla de activación (`/dashboard/company/modules`) y no podrá ser desactivado por la empresa.
+
+**Tres capas de filtrado en sidebar**: RBAC (permisos) → Industria (tipo empresa) → Módulos activos (por empresa)
 
 ---
 
