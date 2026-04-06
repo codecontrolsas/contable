@@ -336,6 +336,11 @@ const getNavConfig = (isSingleMode: boolean, activeCompanyId?: string): NavItemW
             href: '/dashboard/company/general/audit',
             module: 'company.general.audit',
           },
+          {
+            title: 'Módulos',
+            href: '/dashboard/company/modules',
+            module: 'company.general.users',
+          },
         ],
       },
       {

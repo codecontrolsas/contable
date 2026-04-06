@@ -24,7 +24,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
   // Obtener companies y permisos del sidebar en paralelo
   const [companies, sidebarPermissions] = await Promise.all([
     getMyCompanies(),
-    getSidebarPermissions(activeCompany.industry),
+    getSidebarPermissions(activeCompany.industry, activeCompany.activeModules),
   ]);
 
   return (

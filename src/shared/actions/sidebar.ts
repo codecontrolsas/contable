@@ -1,6 +1,7 @@
 'use server';
 
 import { getIndustryType, isModuleAvailableForIndustry } from '@/shared/lib/industry';
+import { isModuleActiveForCompany } from '@/shared/lib/modules';
 import { getCurrentUserPermissions, MODULES } from '@/shared/lib/permissions';
 
 /**
@@ -12,12 +13,14 @@ export type SidebarPermissions = Record<string, boolean>;
 /**
  * Obtiene los permisos de vista para todos los módulos del sidebar.
  *
- * - Owners y roles de sistema (owner, developer) tienen todos los permisos
- * - Usuarios normales solo ven items donde tienen permiso 'view'
- * - Módulos restringidos por industria se filtran para todas las categorías de usuario
+ * Aplica tres capas de filtrado:
+ * 1. Permisos RBAC del usuario (roles y permisos)
+ * 2. Filtro de industria (módulos específicos por tipo de empresa)
+ * 3. Módulos activos de la empresa (activación/desactivación por empresa)
  */
 export async function getSidebarPermissions(
   industry?: string | null,
+  activeModules?: string[],
 ): Promise<SidebarPermissions> {
   const userPermissions = await getCurrentUserPermissions();
 
@@ -50,6 +53,16 @@ export async function getSidebarPermissions(
   for (const mod of Object.keys(permissions)) {
     if (!isModuleAvailableForIndustry(mod, industryType)) {
       permissions[mod] = false;
+    }
+  }
+
+  // Aplicar filtro de módulos activos de la empresa (Nivel 2)
+  // Se aplica DESPUÉS de industria. Vacío = todos activos (backward compatible)
+  if (activeModules && activeModules.length > 0) {
+    for (const mod of Object.keys(permissions)) {
+      if (!isModuleActiveForCompany(mod, activeModules)) {
+        permissions[mod] = false;
+      }
     }
   }
 
