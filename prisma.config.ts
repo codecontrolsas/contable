@@ -1,5 +1,7 @@
-import "dotenv/config";
 import { defineConfig } from "prisma/config";
+
+// Load .env in development; in Docker, DATABASE_URL is passed via -e flag
+try { await import("dotenv/config"); } catch {}
 
 export default defineConfig({
   schema: "prisma/schema.prisma",

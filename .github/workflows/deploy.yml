@@ -82,6 +82,7 @@ jobs:
             docker tag ghcr.io/codecontrolsas/baxer-n:latest baxer-next-r5wztq:latest &&
             docker run --rm \
               --network dokploy-network \
+              --user root \
               -e DATABASE_URL='${DATABASE_URL}' \
               ghcr.io/codecontrolsas/baxer-n:latest \
               npx prisma db push --accept-data-loss &&
