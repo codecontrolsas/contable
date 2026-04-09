@@ -83,21 +83,18 @@ jobs:
           GHCR_PAT: ${{ secrets.GHCR_PAT }}
           GHCR_USER: ${{ secrets.GHCR_USER }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          DB_B64=$(echo -n "${DATABASE_URL}" | base64 -w0)
-          ssh root@${VPS_HOST} "echo ${DB_B64} | base64 -d > /tmp/.db_url"
           ssh root@${VPS_HOST} "
             echo '${GHCR_PAT}' | docker login ghcr.io -u '${GHCR_USER}' --password-stdin &&
             docker pull ghcr.io/codecontrolsas/baxer-n:latest &&
             docker pull ghcr.io/codecontrolsas/baxer-n:migrate &&
             docker tag ghcr.io/codecontrolsas/baxer-n:latest baxer-next-r5wztq:latest &&
+            DB_URL=\$(docker service inspect baxer-next-r5wztq --format '{{range .Spec.TaskTemplate.ContainerSpec.Env}}{{println .}}{{end}}' | grep ^DATABASE_URL= | cut -d= -f2-) &&
             docker run --rm \
               --network dokploy-network \
-              -e DATABASE_URL=\$(cat /tmp/.db_url) \
+              -e DATABASE_URL=\$DB_URL \
               ghcr.io/codecontrolsas/baxer-n:migrate \
               npx prisma db push --accept-data-loss &&
-            rm -f /tmp/.db_url &&
             docker service update --image baxer-next-r5wztq:latest --force baxer-next-r5wztq &&
             docker image prune -f
           "
