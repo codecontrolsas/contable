@@ -536,6 +536,9 @@ export async function getProductsForSelect() {
         costPrice: true,
         vatRate: true,
         trackStock: true,
+        productSuppliers: {
+          select: { supplierId: true, supplierCode: true, supplierPrice: true },
+        },
       },
       orderBy: { name: 'asc' },
     });
@@ -544,6 +547,12 @@ export async function getProductsForSelect() {
       ...p,
       costPrice: Number(p.costPrice),
       vatRate: Number(p.vatRate),
+      supplierIds: p.productSuppliers.map((ps) => ps.supplierId),
+      productSuppliers: p.productSuppliers.map((ps) => ({
+        supplierId: ps.supplierId,
+        supplierCode: ps.supplierCode,
+        supplierPrice: ps.supplierPrice ? Number(ps.supplierPrice) : null,
+      })),
     }));
   } catch (error) {
     logger.error('Error al obtener productos', {

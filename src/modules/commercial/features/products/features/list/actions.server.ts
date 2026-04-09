@@ -207,6 +207,7 @@ export async function getProductById(id: string): Promise<Product | null> {
       ...product,
       warehouseStocks: undefined,
       costPrice: Number(product.costPrice),
+      profitMargin: Number(product.profitMargin),
       salePrice: Number(product.salePrice),
       salePriceWithTax: Number(product.salePriceWithTax),
       vatRate: Number(product.vatRate),
@@ -300,6 +301,7 @@ export async function createProduct(data: CreateProductFormData): Promise<Produc
     return {
       ...product,
       costPrice: Number(product.costPrice),
+      profitMargin: Number(product.profitMargin),
       salePrice: Number(product.salePrice),
       salePriceWithTax: Number(product.salePriceWithTax),
       vatRate: Number(product.vatRate),
@@ -395,6 +397,7 @@ export async function updateProduct(
     return {
       ...product,
       costPrice: Number(product.costPrice),
+      profitMargin: Number(product.profitMargin),
       salePrice: Number(product.salePrice),
       salePriceWithTax: Number(product.salePriceWithTax),
       vatRate: Number(product.vatRate),

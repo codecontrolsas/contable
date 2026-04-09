@@ -245,3 +245,79 @@ export async function getSupplierAccountStatement(supplierId: string) {
 export type SupplierAccountStatement = Awaited<ReturnType<typeof getSupplierAccountStatement>>;
 export type SupplierInvoiceWithBalance = SupplierAccountStatement['invoices'][number];
 export type SupplierPayment = SupplierAccountStatement['payments'][number];
+
+// ============================================
+// PRODUCTOS DEL PROVEEDOR
+// ============================================
+
+export async function getSupplierProducts(supplierId: string) {
+  await checkPermission('commercial.suppliers', 'view', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  const items = await prisma.productSupplier.findMany({
+    where: { supplierId, product: { companyId } },
+    include: {
+      product: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          costPrice: true,
+          salePrice: true,
+          status: true,
+        },
+      },
+    },
+    orderBy: { product: { name: 'asc' } },
+  });
+
+  return items.map((i) => ({
+    id: i.id,
+    productId: i.productId,
+    productCode: i.product.code,
+    productName: i.product.name,
+    productStatus: i.product.status,
+    costPrice: Number(i.product.costPrice),
+    salePrice: Number(i.product.salePrice),
+    supplierCode: i.supplierCode,
+    supplierPrice: i.supplierPrice ? Number(i.supplierPrice) : null,
+  }));
+}
+
+export async function addProductToSupplier(
+  supplierId: string,
+  data: { productId: string; supplierCode?: string; supplierPrice?: number }
+) {
+  await checkPermission('commercial.suppliers', 'update', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  const existing = await prisma.productSupplier.findUnique({
+    where: { productId_supplierId: { productId: data.productId, supplierId } },
+  });
+  if (existing) throw new Error('El producto ya está asociado a este proveedor');
+
+  await prisma.productSupplier.create({
+    data: {
+      productId: data.productId,
+      supplierId,
+      supplierCode: data.supplierCode || null,
+      supplierPrice: data.supplierPrice ?? null,
+    },
+  });
+
+  return { success: true };
+}
+
+export async function removeProductFromSupplier(productSupplierId: string) {
+  await checkPermission('commercial.suppliers', 'update', { redirect: true });
+
+  await prisma.productSupplier.delete({
+    where: { id: productSupplierId },
+  });
+
+  return { success: true };
+}
+
+export type SupplierProduct = Awaited<ReturnType<typeof getSupplierProducts>>[number];

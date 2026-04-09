@@ -31,13 +31,14 @@ import {
   getPurchaseOrderLinesForInvoicing,
 } from '../../list/actions.server';
 import { isCreditNote, isDebitNote } from '@/modules/commercial/shared/voucher-utils';
+import { addProductToSupplier } from '@/modules/commercial/features/suppliers/features/detail/actions.server';
 import {
   purchaseInvoiceFormSchema,
   VOUCHER_TYPE_LABELS,
   type PurchaseInvoiceFormInput,
 } from '../../shared/validators';
 import moment from 'moment';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/shared/components/ui/card';
 import { Separator } from '@/shared/components/ui/separator';
@@ -144,6 +145,14 @@ export function _PurchaseInvoiceForm({
   const watchedVoucherType = form.watch('voucherType');
   const watchedSupplierId = form.watch('supplierId');
   const showOriginalInvoice = watchedVoucherType && (isCreditNote(watchedVoucherType) || isDebitNote(watchedVoucherType));
+
+  // Ordenar productos: primero los del proveedor seleccionado
+  const sortedProducts = useMemo(() => {
+    if (!watchedSupplierId) return products;
+    const supplierProducts = products.filter((p) => p.supplierIds?.includes(watchedSupplierId));
+    const otherProducts = products.filter((p) => !p.supplierIds?.includes(watchedSupplierId));
+    return [...supplierProducts, ...otherProducts];
+  }, [products, watchedSupplierId]);
 
   // Facturas tipo C no llevan IVA — forzar 0% en todas las líneas
   const isTypeC = watchedVoucherType?.endsWith('_C') || false;
@@ -285,13 +294,32 @@ export function _PurchaseInvoiceForm({
     });
   };
 
-  const fillProductData = (index: number, productId: string) => {
+  const fillProductData = async (index: number, productId: string) => {
     const product = products.find((p) => p.id === productId);
     if (!product) return;
 
     form.setValue(`lines.${index}.description`, product.name);
     form.setValue(`lines.${index}.unitCost`, product.costPrice.toString());
     form.setValue(`lines.${index}.vatRate`, isTypeC ? '0' : product.vatRate.toString());
+
+    // Sugerir asociar si el producto no está vinculado al proveedor
+    if (watchedSupplierId && !product.supplierIds?.includes(watchedSupplierId)) {
+      const supplierId = watchedSupplierId;
+      toast(`"${product.name}" no está asociado a este proveedor`, {
+        action: {
+          label: 'Asociar',
+          onClick: async () => {
+            try {
+              await addProductToSupplier(supplierId, { productId });
+              toast.success('Producto asociado al proveedor');
+            } catch {
+              // No bloquea el flujo
+            }
+          },
+        },
+        duration: 8000,
+      });
+    }
   };
 
   return (
@@ -616,12 +644,15 @@ export function _PurchaseInvoiceForm({
                               <SelectValue placeholder="Opcional" />
                             </SelectTrigger>
                           </FormControl>
-                          <SelectContent>
-                            {products.map((product) => (
-                              <SelectItem key={product.id} value={product.id}>
-                                {product.code} - {product.name}
-                              </SelectItem>
-                            ))}
+                          <SelectContent position="popper" className="max-h-[250px]">
+                            {sortedProducts.map((product) => {
+                              const isSupplierProduct = watchedSupplierId && product.supplierIds?.includes(watchedSupplierId);
+                              return (
+                                <SelectItem key={product.id} value={product.id}>
+                                  {isSupplierProduct && '★ '}{product.code} - {product.name}
+                                </SelectItem>
+                              );
+                            })}
                           </SelectContent>
                         </Select>
                         <FormMessage />

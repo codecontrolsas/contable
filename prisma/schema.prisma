@@ -1881,7 +1881,8 @@ model Supplier {
   paymentOrders    PaymentOrder[]
   expenses         Expense[]
   checks           Check[]
-  receivingNotes   ReceivingNote[]
+  receivingNotes    ReceivingNote[]
+  productSuppliers  ProductSupplier[]
 
   createdBy String   @map("created_by")
   createdAt DateTime @default(now()) @map("created_at")
@@ -1890,6 +1891,23 @@ model Supplier {
   @@unique([companyId, code])
   @@unique([companyId, taxId])
   @@map("suppliers")
+}
+
+model ProductSupplier {
+  id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId  String @map("product_id") @db.Uuid
+  supplierId String @map("supplier_id") @db.Uuid
+
+  supplierCode  String? @map("supplier_code") // Código del producto en el proveedor
+  supplierPrice Decimal? @map("supplier_price") @db.Decimal(12, 2) // Precio del proveedor
+
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([productId, supplierId])
+  @@map("product_suppliers")
 }
 
 // ============================================
@@ -1966,6 +1984,7 @@ model Product {
   priceListItems       PriceListItem[]
   stockMovements       StockMovement[]
   stockTransferLines   StockTransferLine[]
+  productSuppliers     ProductSupplier[]
   warehouseStocks      WarehouseStock[]
   salesInvoiceLines    SalesInvoiceLine[]
   purchaseInvoiceLines PurchaseInvoiceLine[]

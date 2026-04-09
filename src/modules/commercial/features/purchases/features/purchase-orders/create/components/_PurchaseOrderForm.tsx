@@ -4,7 +4,7 @@ import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/shared/components/ui/button';
 import {
   Form,
@@ -82,6 +82,14 @@ export function _PurchaseOrderForm({
 }: PurchaseOrderFormProps) {
   const router = useRouter();
   const [totals, setTotals] = useState({ subtotal: 0, vatAmount: 0, total: 0 });
+  const watchedSupplierId = form.watch('supplierId');
+
+  const sortedProducts = useMemo(() => {
+    if (!watchedSupplierId) return products;
+    const supplierProducts = products.filter((p: any) => p.supplierIds?.includes(watchedSupplierId));
+    const otherProducts = products.filter((p: any) => !p.supplierIds?.includes(watchedSupplierId));
+    return [...supplierProducts, ...otherProducts];
+  }, [products, watchedSupplierId]);
 
   const form = useForm<PurchaseOrderFormInput>({
     resolver: zodResolver(purchaseOrderFormSchema),
@@ -317,12 +325,15 @@ export function _PurchaseOrderForm({
                               <SelectValue placeholder="Sin producto" />
                             </SelectTrigger>
                           </FormControl>
-                          <SelectContent>
-                            {products.map((product) => (
-                              <SelectItem key={product.id} value={product.id}>
-                                [{product.code}] {product.name}
-                              </SelectItem>
-                            ))}
+                          <SelectContent position="popper" className="max-h-[250px]">
+                            {sortedProducts.map((product: any) => {
+                              const isSupplierProduct = watchedSupplierId && product.supplierIds?.includes(watchedSupplierId);
+                              return (
+                                <SelectItem key={product.id} value={product.id}>
+                                  {isSupplierProduct && '★ '}[{product.code}] {product.name}
+                                </SelectItem>
+                              );
+                            })}
                           </SelectContent>
                         </Select>
                         <FormMessage />
