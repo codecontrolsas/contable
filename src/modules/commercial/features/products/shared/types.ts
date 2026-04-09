@@ -1,4 +1,4 @@
-import { ProductType, ProductStatus } from '@/generated/prisma/enums';
+import { ProductType, ProductStatus, ProductUsage } from '@/generated/prisma/enums';
 
 // ============================================
 // Product Category Types
@@ -36,9 +36,11 @@ export interface Product extends Record<string, unknown> {
   name: string;
   description: string | null;
   type: ProductType;
+  usage: ProductUsage;
   categoryId: string | null;
   unitOfMeasure: string;
   costPrice: number;
+  profitMargin: number;
   salePrice: number;
   salePriceWithTax: number;
   vatRate: number;
@@ -128,6 +130,12 @@ export const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {
   PRODUCT: 'Producto',
   SERVICE: 'Servicio',
   COMBO: 'Combo',
+};
+
+export const PRODUCT_USAGE_LABELS: Record<ProductUsage, string> = {
+  PURCHASE: 'Solo Compra',
+  SALE: 'Solo Venta',
+  PURCHASE_SALE: 'Compra/Venta',
 };
 
 export const PRODUCT_STATUS_LABELS: Record<ProductStatus, string> = {

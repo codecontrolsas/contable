@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ProductType, ProductStatus } from '@/generated/prisma/enums';
+import { ProductType, ProductStatus, ProductUsage } from '@/generated/prisma/enums';
 
 // ============================================
 // Helpers
@@ -37,9 +37,11 @@ export const createProductSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido').max(200),
   description: emptyStringToUndefined.pipe(z.string().max(1000).optional()),
   type: z.nativeEnum(ProductType),
+  usage: z.nativeEnum(ProductUsage).optional().default('PURCHASE_SALE'),
   categoryId: emptyStringToUndefined.pipe(z.string().uuid().optional()),
   unitOfMeasure: emptyStringToUndefined.pipe(z.string().max(20).optional()),
   costPrice: z.coerce.number().min(0, 'El precio de costo debe ser mayor o igual a 0'),
+  profitMargin: z.coerce.number().min(0, 'El % de ganancia debe ser mayor o igual a 0').max(1000).optional().default(0),
   salePrice: z.coerce.number().min(0, 'El precio de venta debe ser mayor o igual a 0'),
   vatRate: z.coerce.number().min(0).max(100).optional(),
   trackStock: z.boolean().optional(),

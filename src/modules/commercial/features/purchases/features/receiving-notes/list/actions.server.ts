@@ -440,7 +440,7 @@ export async function getProductsForSelect() {
 
   try {
     const products = await prisma.product.findMany({
-      where: { companyId, status: 'ACTIVE', trackStock: true },
+      where: { companyId, status: 'ACTIVE', trackStock: true, usage: { in: ['PURCHASE', 'PURCHASE_SALE'] } },
       select: {
         id: true,
         code: true,

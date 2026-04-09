@@ -177,6 +177,19 @@ export function getColumns({ onEdit, onDelete, permissions, showOemCode = false 
       },
     },
     {
+      accessorKey: 'profitMargin',
+      meta: { title: '% Ganancia' },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="% Ganancia" />,
+      cell: ({ row }) => {
+        const margin = row.original.profitMargin;
+        return margin > 0 ? (
+          <span className="text-sm font-mono">{margin}%</span>
+        ) : (
+          <span className="text-xs text-muted-foreground">—</span>
+        );
+      },
+    },
+    {
       id: 'stock',
       meta: { title: 'Stock' },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Stock" />,

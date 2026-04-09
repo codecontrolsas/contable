@@ -69,6 +69,7 @@ export async function getActiveProducts() {
     where: {
       companyId: companyId,
       status: 'ACTIVE',
+      usage: { in: ['SALE', 'PURCHASE_SALE'] },
     },
     select: {
       id: true,

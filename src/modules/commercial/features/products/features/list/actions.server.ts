@@ -104,6 +104,7 @@ export async function getProducts(params: GetProductsParams = {}) {
         ...product,
         warehouseStocks: undefined,
         costPrice: Number(product.costPrice),
+        profitMargin: Number(product.profitMargin),
         salePrice: Number(product.salePrice),
         salePriceWithTax: Number(product.salePriceWithTax),
         vatRate: Number(product.vatRate),
@@ -249,9 +250,14 @@ export async function createProduct(data: CreateProductFormData): Promise<Produc
     }
     const code = `PROD-${nextNumber.toString().padStart(4, '0')}`;
 
-    // Calcular precio con IVA
+    // Calcular precio de venta y con IVA
     const vatRate = validatedData.vatRate || 21;
-    const salePriceWithTax = validatedData.salePrice * (1 + vatRate / 100);
+    const profitMargin = validatedData.profitMargin || 0;
+    let salePrice = validatedData.salePrice;
+    if (validatedData.costPrice > 0 && profitMargin > 0) {
+      salePrice = Math.round(validatedData.costPrice * (1 + profitMargin / 100) * 100) / 100;
+    }
+    const salePriceWithTax = salePrice * (1 + vatRate / 100);
 
     const product = await prisma.product.create({
       data: {
@@ -260,10 +266,12 @@ export async function createProduct(data: CreateProductFormData): Promise<Produc
         name: validatedData.name,
         description: validatedData.description,
         type: validatedData.type,
+        usage: validatedData.usage,
         categoryId: validatedData.categoryId,
         unitOfMeasure: validatedData.unitOfMeasure || 'UN',
         costPrice: validatedData.costPrice,
-        salePrice: validatedData.salePrice,
+        profitMargin,
+        salePrice,
         salePriceWithTax,
         vatRate,
         trackStock: validatedData.trackStock !== false,
@@ -332,13 +340,19 @@ export async function updateProduct(
       throw new Error('Producto no encontrado');
     }
 
-    // Calcular precio con IVA si cambió el precio o el IVA
-    let salePriceWithTax = Number(existing.salePriceWithTax);
-    if (validatedData.salePrice !== undefined || validatedData.vatRate !== undefined) {
-      const salePrice = validatedData.salePrice ?? Number(existing.salePrice);
-      const vatRate = validatedData.vatRate ?? Number(existing.vatRate);
-      salePriceWithTax = salePrice * (1 + vatRate / 100);
+    // Recalcular precio de venta si cambiaron costo o margen
+    let salePrice = validatedData.salePrice ?? Number(existing.salePrice);
+    const costPrice = validatedData.costPrice ?? Number(existing.costPrice);
+    const profitMargin = validatedData.profitMargin ?? Number(existing.profitMargin);
+    if (validatedData.costPrice !== undefined || validatedData.profitMargin !== undefined) {
+      if (costPrice > 0 && profitMargin > 0) {
+        salePrice = Math.round(costPrice * (1 + profitMargin / 100) * 100) / 100;
+      }
     }
+
+    // Calcular precio con IVA
+    const vatRate = validatedData.vatRate ?? Number(existing.vatRate);
+    const salePriceWithTax = salePrice * (1 + vatRate / 100);
 
     const product = await prisma.product.update({
       where: { id },
@@ -346,10 +360,12 @@ export async function updateProduct(
         name: validatedData.name,
         description: validatedData.description,
         type: validatedData.type,
+        usage: validatedData.usage,
         categoryId: validatedData.categoryId,
         unitOfMeasure: validatedData.unitOfMeasure,
         costPrice: validatedData.costPrice,
-        salePrice: validatedData.salePrice,
+        profitMargin: validatedData.profitMargin,
+        salePrice,
         salePriceWithTax,
         vatRate: validatedData.vatRate,
         trackStock: validatedData.trackStock,
@@ -594,7 +610,7 @@ export async function bulkUpdatePrices(input: BulkPriceAdjustmentInput) {
   // Cargar productos
   const products = await prisma.product.findMany({
     where: { id: { in: input.productIds }, companyId },
-    select: { id: true, salePrice: true, costPrice: true, vatRate: true, salePriceWithTax: true },
+    select: { id: true, salePrice: true, costPrice: true, profitMargin: true, vatRate: true, salePriceWithTax: true },
   });
 
   if (products.length === 0) throw new Error('No se encontraron productos');
@@ -603,14 +619,22 @@ export async function bulkUpdatePrices(input: BulkPriceAdjustmentInput) {
   const updates = products.map((product) => {
     const currentSalePrice = Number(product.salePrice);
     const currentCostPrice = Number(product.costPrice);
+    const profitMargin = Number(product.profitMargin);
     const vatRate = Number(product.vatRate);
 
-    const newSalePrice = input.applyToSalePrice
-      ? applyPriceAdjustment(currentSalePrice, input.adjustmentType, input.value)
-      : currentSalePrice;
     const newCostPrice = input.applyCostPrice
       ? applyPriceAdjustment(currentCostPrice, input.adjustmentType, input.value)
       : currentCostPrice;
+
+    // Recalcular precio de venta: si tiene margen y se ajustó costo, recalcular desde costo
+    let newSalePrice: number;
+    if (input.applyCostPrice && profitMargin > 0) {
+      newSalePrice = Math.round(newCostPrice * (1 + profitMargin / 100) * 100) / 100;
+    } else if (input.applyToSalePrice) {
+      newSalePrice = applyPriceAdjustment(currentSalePrice, input.adjustmentType, input.value);
+    } else {
+      newSalePrice = currentSalePrice;
+    }
 
     const newSalePriceWithTax = Math.round(newSalePrice * (1 + vatRate / 100) * 100) / 100;
 

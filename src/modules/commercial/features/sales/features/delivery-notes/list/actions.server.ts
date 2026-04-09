@@ -173,7 +173,7 @@ export async function getProductsForDelivery() {
 
   try {
     return await prisma.product.findMany({
-      where: { companyId, status: 'ACTIVE', trackStock: true },
+      where: { companyId, status: 'ACTIVE', trackStock: true, usage: { in: ['SALE', 'PURCHASE_SALE'] } },
       select: { id: true, code: true, name: true, unitOfMeasure: true },
       orderBy: { name: 'asc' },
     });

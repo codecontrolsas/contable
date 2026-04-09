@@ -525,6 +525,7 @@ export async function getProductsForSelect() {
       where: {
         companyId,
         status: 'ACTIVE',
+        usage: { in: ['PURCHASE', 'PURCHASE_SALE'] },
       },
       select: {
         id: true,

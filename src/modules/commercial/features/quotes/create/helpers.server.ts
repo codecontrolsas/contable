@@ -34,7 +34,7 @@ export async function getActiveProductsForQuote() {
   if (!companyId) throw new Error('No hay empresa activa');
 
   const products = await prisma.product.findMany({
-    where: { companyId, status: 'ACTIVE' },
+    where: { companyId, status: 'ACTIVE', usage: { in: ['SALE', 'PURCHASE_SALE'] } },
     select: {
       id: true,
       code: true,

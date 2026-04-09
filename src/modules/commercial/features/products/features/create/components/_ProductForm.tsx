@@ -24,10 +24,11 @@ import {
 import { Checkbox } from '@/shared/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { createProductSchema, updateProductSchema, type CreateProductFormData, type UpdateProductFormData } from '../../../shared/validators';
-import { ProductType, ProductStatus } from '@/generated/prisma/enums';
+import { ProductType, ProductStatus, ProductUsage } from '@/generated/prisma/enums';
 import type { ProductCategory } from '../../../shared/types';
 import {
   PRODUCT_TYPE_LABELS,
+  PRODUCT_USAGE_LABELS,
   PRODUCT_STATUS_LABELS,
   UNIT_OF_MEASURE_OPTIONS,
   VAT_RATE_OPTIONS,
@@ -69,9 +70,11 @@ export function _ProductForm({
       name: '',
       description: '',
       type: ProductType.PRODUCT,
+      usage: ProductUsage.PURCHASE_SALE,
       categoryId: undefined,
       unitOfMeasure: 'UN',
       costPrice: 0,
+      profitMargin: 0,
       salePrice: 0,
       vatRate: 21,
       trackStock: true,
@@ -88,10 +91,22 @@ export function _ProductForm({
     },
   });
 
-  // Calcular precio con IVA cuando cambian el precio o el IVA
+  // Calcular precio de venta = costPrice * (1 + profitMargin / 100)
+  const costPrice = form.watch('costPrice');
+  const profitMargin = form.watch('profitMargin');
   const salePrice = form.watch('salePrice');
   const vatRate = form.watch('vatRate');
 
+  useEffect(() => {
+    const cost = Number(costPrice) || 0;
+    const margin = Number(profitMargin) || 0;
+    if (cost > 0 && margin > 0) {
+      const calculatedSalePrice = Math.round(cost * (1 + margin / 100) * 100) / 100;
+      form.setValue('salePrice', calculatedSalePrice);
+    }
+  }, [costPrice, profitMargin]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Calcular precio con IVA
   useEffect(() => {
     const price = Number(salePrice) || 0;
     const vat = Number(vatRate) || 0;
@@ -138,6 +153,31 @@ export function _ProductForm({
                       </FormControl>
                       <SelectContent>
                         {Object.entries(PRODUCT_TYPE_LABELS).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="usage"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Uso</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar uso" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Object.entries(PRODUCT_USAGE_LABELS).map(([value, label]) => (
                           <SelectItem key={value} value={value}>
                             {label}
                           </SelectItem>
@@ -229,7 +269,7 @@ export function _ProductForm({
             <CardDescription>Configuración de precios y alícuota de IVA</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
               <FormField
                 control={form.control}
                 name="costPrice"
@@ -245,6 +285,31 @@ export function _ProductForm({
                         {...field}
                       />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="profitMargin"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>% Ganancia</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          placeholder="0"
+                          {...field}
+                          className="pr-7"
+                        />
+                        <span className="absolute right-3 top-2.5 text-muted-foreground text-sm">%</span>
+                      </div>
+                    </FormControl>
+                    <FormDescription>Calcula el precio de venta</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

@@ -1794,6 +1794,14 @@ enum ProductType {
   @@map("product_type")
 }
 
+enum ProductUsage {
+  PURCHASE      // Solo compra
+  SALE          // Solo venta
+  PURCHASE_SALE // Compra y venta
+
+  @@map("product_usage")
+}
+
 enum ProductStatus {
   ACTIVE
   INACTIVE
@@ -1912,7 +1920,8 @@ model Product {
   code        String // SKU
   name        String
   description String?
-  type        ProductType @default(PRODUCT)
+  type        ProductType  @default(PRODUCT)
+  usage       ProductUsage @default(PURCHASE_SALE) @map("usage")
 
   // Categorización
   categoryId String? @map("category_id") @db.Uuid
@@ -1922,6 +1931,7 @@ model Product {
 
   // Precios
   costPrice        Decimal @default(0) @map("cost_price") @db.Decimal(12, 2)
+  profitMargin     Decimal @default(0) @map("profit_margin") @db.Decimal(5, 2) // % de ganancia
   salePrice        Decimal @default(0) @map("sale_price") @db.Decimal(12, 2)
   salePriceWithTax Decimal @default(0) @map("sale_price_with_tax") @db.Decimal(12, 2)
 
