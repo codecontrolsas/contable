@@ -38,7 +38,7 @@ jobs:
             type=raw,value=latest
             type=sha,prefix=
 
-      - name: Build and push
+      - name: Build and push app
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -47,6 +47,15 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Build and push migrate
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          target: migrate
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:migrate
+          cache-from: type=gha
 
   deploy:
     needs: build-and-push
@@ -79,13 +88,13 @@ jobs:
           ssh root@${VPS_HOST} "
             echo '${GHCR_PAT}' | docker login ghcr.io -u '${GHCR_USER}' --password-stdin &&
             docker pull ghcr.io/codecontrolsas/baxer-n:latest &&
+            docker pull ghcr.io/codecontrolsas/baxer-n:migrate &&
             docker tag ghcr.io/codecontrolsas/baxer-n:latest baxer-next-r5wztq:latest &&
             docker run --rm \
               --network dokploy-network \
-              --user root \
               -e DATABASE_URL='${DATABASE_URL}' \
-              ghcr.io/codecontrolsas/baxer-n:latest \
-              node node_modules/prisma/build/index.js db push --accept-data-loss &&
+              ghcr.io/codecontrolsas/baxer-n:migrate \
+              npx prisma db push --accept-data-loss &&
             docker service update --image baxer-next-r5wztq:latest --force baxer-next-r5wztq &&
             docker image prune -f
           "

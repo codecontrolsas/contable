@@ -33,7 +33,14 @@ ENV RESEND_API_KEY="re_dummy"
 # Build Next.js (lee .env.production para NEXT_PUBLIC_* vars)
 RUN npm run build
 
-# --- Stage 3: Production ---
+# --- Stage 3: Migration (for deploy pipeline) ---
+FROM node:22-alpine AS migrate
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY prisma ./prisma/
+COPY prisma.config.ts ./
+
+# --- Stage 4: Production ---
 FROM node:22-alpine AS runner
 RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
@@ -56,10 +63,6 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Copiar Prisma Client generado
 COPY --from=builder /app/src/generated ./src/generated
 
-# Copiar Prisma CLI para db push en deploy
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
 USER nextjs
 
