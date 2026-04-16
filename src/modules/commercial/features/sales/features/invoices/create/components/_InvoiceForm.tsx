@@ -56,6 +56,7 @@ interface InvoiceLineRowProps {
   discountPresets: Array<{ id: string; name: string; percentage: number }>;
   onProductSelect: (index: number, productId: string) => void;
   onRemove: () => void;
+  isTypeC: boolean;
 }
 
 function _InvoiceLineRow({
@@ -65,6 +66,7 @@ function _InvoiceLineRow({
   discountPresets,
   onProductSelect,
   onRemove,
+  isTypeC,
 }: InvoiceLineRowProps) {
   const line = useWatch({ control: form.control, name: `lines.${index}` });
 
@@ -964,6 +966,7 @@ export function InvoiceForm({ customers, pointsOfSale, products, mode = 'create'
                     discountPresets={discountPresets}
                     onProductSelect={handleProductSelect}
                     onRemove={() => remove(index)}
+                    isTypeC={isTypeC}
                   />
                 ))}
               </div>
