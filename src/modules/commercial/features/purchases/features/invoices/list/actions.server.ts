@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { getActiveCompanyId } from '@/shared/lib/company';
@@ -31,7 +31,7 @@ import { applyPurchaseCreditNote } from '@/modules/commercial/shared/credit-note
  */
 export async function getPurchaseInvoicesPaginated(searchParams: DataTableSearchParams) {
   await checkPermission('commercial.purchases', 'view', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -243,7 +243,7 @@ export async function getPurchaseInvoiceFacetCounts() {
  */
 export async function getPurchaseInvoiceById(id: string) {
   await checkPermission('commercial.purchases', 'view', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -480,7 +480,7 @@ export async function getPurchaseInvoiceById(id: string) {
  * Obtiene proveedores para select (solo activos)
  */
 export async function getSuppliersForSelect() {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -514,7 +514,7 @@ export async function getSuppliersForSelect() {
  * Obtiene productos para select (solo activos)
  */
 export async function getProductsForSelect() {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -567,7 +567,7 @@ export async function getProductsForSelect() {
  */
 export async function getAllPurchaseInvoicesForExport(searchParams: DataTableSearchParams) {
   await checkPermission('commercial.purchases', 'view', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -792,7 +792,7 @@ export async function getPurchaseOrderLinesForInvoicing(orderId: string) {
  */
 export async function createPurchaseInvoice(input: PurchaseInvoiceFormInput) {
   await checkPermission('commercial.purchases', 'create', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -908,7 +908,7 @@ export async function createPurchaseInvoice(input: PurchaseInvoiceFormInput) {
  */
 export async function updatePurchaseInvoice(id: string, input: PurchaseInvoiceFormInput) {
   await checkPermission('commercial.purchases', 'update', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -1053,7 +1053,7 @@ export async function updatePurchaseInvoice(id: string, input: PurchaseInvoiceFo
  */
 export async function confirmPurchaseInvoice(id: string) {
   await checkPermission('commercial.purchases', 'approve', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -1273,7 +1273,7 @@ export async function confirmPurchaseInvoice(id: string) {
  */
 export async function cancelPurchaseInvoice(id: string) {
   await checkPermission('commercial.purchases', 'delete', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();

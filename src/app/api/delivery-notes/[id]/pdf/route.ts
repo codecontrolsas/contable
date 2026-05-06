@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { prisma } from '@/shared/lib/prisma';
 import { getActiveCompanyId, getActiveCompany } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
@@ -12,7 +12,7 @@ import type { DeliveryNotePDFData } from '@/modules/commercial/features/sales/fe
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   try {
-    const { userId } = await auth();
+    const userId = await getCurrentUserId();
     if (!userId) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
     }

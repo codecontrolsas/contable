@@ -1,12 +1,12 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { prisma } from '@/shared/lib/prisma';
 import { getActiveCompanyId } from '@/shared/lib/company';
 
 // Obtener clientes activos para el selector
 export async function getActiveCustomers() {
-  const { userId: authUserId } = await auth();
+  const authUserId = await getCurrentUserId();
   if (!authUserId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -32,7 +32,7 @@ export async function getActiveCustomers() {
 
 // Obtener puntos de venta activos para el selector
 export async function getActivePointsOfSale() {
-  const { userId: authUserId } = await auth();
+  const authUserId = await getCurrentUserId();
   if (!authUserId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -59,7 +59,7 @@ export async function getActivePointsOfSale() {
 
 // Obtener productos activos para el selector
 export async function getActiveProducts() {
-  const { userId: authUserId } = await auth();
+  const authUserId = await getCurrentUserId();
   if (!authUserId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();

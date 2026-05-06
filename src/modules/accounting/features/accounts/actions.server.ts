@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { checkPermission } from '@/shared/lib/permissions';
@@ -12,7 +12,7 @@ import { validateAccountCode, validateAccountNature, validateAccountParent } fro
  * Crea una nueva cuenta contable
  */
 export async function createAccount(params: { companyId: string, input: CreateAccountInput }) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.accounts', 'create', { redirect: true });
   try {
@@ -49,7 +49,7 @@ export async function createAccount(params: { companyId: string, input: CreateAc
  * Actualiza una cuenta contable existente
  */
 export async function updateAccount(companyId: string, accountId: string, input: Partial<CreateAccountInput>) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.accounts', 'update', { redirect: true });
 
@@ -99,7 +99,7 @@ export async function updateAccount(companyId: string, accountId: string, input:
  * Elimina una cuenta contable (soft delete)
  */
 export async function deleteAccount(companyId: string, accountId: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.accounts', 'delete', { redirect: true });
 
@@ -151,7 +151,7 @@ export async function deleteAccount(companyId: string, accountId: string) {
  * Obtiene todas las cuentas de una empresa
  */
 export async function getAccounts(companyId: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.accounts', 'view', { redirect: true });
 
@@ -175,7 +175,7 @@ export async function getAccounts(companyId: string) {
  * Obtiene una cuenta contable por ID
  */
 export async function getAccountById(companyId: string, accountId: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.accounts', 'view', { redirect: true });
 

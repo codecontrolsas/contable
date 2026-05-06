@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
 import { prisma } from '@/shared/lib/prisma';
@@ -106,7 +106,7 @@ export async function getPendingPurchaseInvoices(supplierId: string): Promise<Pe
  */
 export async function createPaymentOrder(data: CreatePaymentOrderFormData) {
   await checkPermission('commercial.treasury.payment-orders', 'create', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -208,7 +208,7 @@ export async function createPaymentOrder(data: CreatePaymentOrderFormData) {
  */
 export async function confirmPaymentOrder(paymentOrderId: string) {
   await checkPermission('commercial.treasury.payment-orders', 'approve', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -744,7 +744,7 @@ export async function getPaymentOrder(id: string): Promise<PaymentOrderWithDetai
  */
 export async function deletePaymentOrder(paymentOrderId: string) {
   await checkPermission('commercial.treasury.payment-orders', 'delete', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();

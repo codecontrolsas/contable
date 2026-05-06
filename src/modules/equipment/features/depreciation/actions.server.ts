@@ -1,4 +1,4 @@
-'use server';
+﻿'use server';
 
 import { Prisma } from '@/generated/prisma/client';
 import { getActiveCompanyId } from '@/shared/lib/company';
@@ -6,7 +6,7 @@ import { logger } from '@/shared/lib/logger';
 import { checkPermission } from '@/shared/lib/permissions';
 import { prisma } from '@/shared/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 
 import {
   generateDepreciationSchedule,
@@ -122,7 +122,7 @@ export async function createVehicleDepreciation(vehicleId: string, input: Deprec
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const parsed = depreciationConfigSchema.safeParse(input);
@@ -403,7 +403,7 @@ export async function postDepreciationEntry(scheduleEntryId: string) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   try {
@@ -574,7 +574,7 @@ export async function postAllPendingDepreciations(upToDate: Date) {
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   try {
@@ -761,7 +761,7 @@ export async function createValueAdjustment(vehicleId: string, input: ValueAdjus
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const parsed = valueAdjustmentSchema.safeParse(input);

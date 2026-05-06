@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { Prisma } from '@/generated/prisma/client';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
@@ -25,7 +25,7 @@ const BASE_PATH = '/dashboard/commercial/delivery-notes';
 
 export async function getDeliveryNotesPaginated(searchParams: DataTableSearchParams) {
   await checkPermission('commercial.delivery-notes', 'view', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -93,7 +93,7 @@ export async function getDeliveryNotesPaginated(searchParams: DataTableSearchPar
 
 export async function getDeliveryNoteById(id: string) {
   await checkPermission('commercial.delivery-notes', 'view', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -192,7 +192,7 @@ export async function getProductsForDelivery() {
  */
 export async function createDeliveryNote(input: DeliveryNoteFormInput) {
   await checkPermission('commercial.delivery-notes', 'create', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -321,7 +321,7 @@ export async function createDeliveryNote(input: DeliveryNoteFormInput) {
  */
 export async function updateDeliveryNote(id: string, input: DeliveryNoteFormInput) {
   await checkPermission('commercial.delivery-notes', 'update', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -448,7 +448,7 @@ export async function updateDeliveryNote(id: string, input: DeliveryNoteFormInpu
  */
 export async function deleteDeliveryNote(id: string) {
   await checkPermission('commercial.delivery-notes', 'delete', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -504,7 +504,7 @@ export async function deleteDeliveryNote(id: string) {
  */
 export async function acceptDeliveryNote(id: string) {
   await checkPermission('commercial.delivery-notes', 'approve', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -543,7 +543,7 @@ export async function acceptDeliveryNote(id: string) {
  */
 export async function cancelDeliveryNote(id: string) {
   await checkPermission('commercial.delivery-notes', 'delete', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -619,7 +619,7 @@ export async function cancelDeliveryNote(id: string) {
  */
 export async function invoiceDeliveryNotes(deliveryNoteIds: string[]) {
   await checkPermission('commercial.invoices', 'create', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -784,7 +784,7 @@ export async function invoiceDeliveryNotes(deliveryNoteIds: string[]) {
 
 export async function getAcceptedDeliveryNotesByCustomer() {
   await checkPermission('commercial.delivery-notes', 'view', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();

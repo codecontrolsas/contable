@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { getActiveCompanyId } from '@/shared/lib/company';
@@ -13,7 +13,7 @@ import moment from 'moment';
 
 export async function getSalesByPeriod(startDate: Date, endDate: Date) {
   await checkPermission('commercial.invoices', 'view', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -77,7 +77,7 @@ export async function getSalesByPeriod(startDate: Date, endDate: Date) {
 
 export async function getSalesByCustomer(startDate: Date, endDate: Date) {
   await checkPermission('commercial.invoices', 'view', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -170,7 +170,7 @@ export async function getSalesByCustomer(startDate: Date, endDate: Date) {
 
 export async function getSalesByProduct(startDate: Date, endDate: Date) {
   await checkPermission('commercial.invoices', 'view', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -269,7 +269,7 @@ export async function getSalesByProduct(startDate: Date, endDate: Date) {
 
 export async function getVATSalesBook(startDate: Date, endDate: Date) {
   await checkPermission('commercial.invoices', 'view', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();

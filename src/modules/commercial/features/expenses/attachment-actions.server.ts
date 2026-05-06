@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
 import { prisma } from '@/shared/lib/prisma';
@@ -18,7 +18,7 @@ export async function uploadExpenseAttachment(params: {
   fileName: string;
   file: number[];
 }) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -74,7 +74,7 @@ export async function uploadExpenseAttachment(params: {
  * Elimina un archivo adjunto de un gasto
  */
 export async function deleteExpenseAttachment(attachmentId: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();

@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
@@ -31,7 +31,7 @@ interface GetPriceListsParams {
 export async function getPriceLists(params: GetPriceListsParams = {}) {
   await checkPermission('commercial.price-lists', 'view', { redirect: true });
   const { page = 1, pageSize = 10, filters = {} } = params;
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) {
     throw new Error('No autenticado');
   }
@@ -95,7 +95,7 @@ export async function getPriceLists(params: GetPriceListsParams = {}) {
 
 export async function getPriceListById(id: string): Promise<PriceList | null> {
   await checkPermission('commercial.price-lists', 'view', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) {
     throw new Error('No autenticado');
   }
@@ -124,7 +124,7 @@ export async function getPriceListById(id: string): Promise<PriceList | null> {
 
 export async function createPriceList(data: CreatePriceListFormData): Promise<PriceList> {
   await checkPermission('commercial.price-lists', 'create', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) {
     throw new Error('No autenticado');
   }
@@ -175,7 +175,7 @@ export async function updatePriceList(
   data: UpdatePriceListFormData
 ): Promise<PriceList> {
   await checkPermission('commercial.price-lists', 'update', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) {
     throw new Error('No autenticado');
   }
@@ -231,7 +231,7 @@ export async function updatePriceList(
 
 export async function deletePriceList(id: string): Promise<void> {
   await checkPermission('commercial.price-lists', 'delete', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) {
     throw new Error('No autenticado');
   }
@@ -277,7 +277,7 @@ export async function deletePriceList(id: string): Promise<void> {
 
 export async function setDefaultPriceList(id: string): Promise<void> {
   await checkPermission('commercial.price-lists', 'update', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) {
     throw new Error('No autenticado');
   }
@@ -322,7 +322,7 @@ export async function setDefaultPriceList(id: string): Promise<void> {
 
 export async function getPriceListItems(priceListId: string): Promise<PriceListItem[]> {
   await checkPermission('commercial.price-lists', 'view', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) {
     throw new Error('No autenticado');
   }
@@ -381,7 +381,7 @@ export async function createPriceListItem(
   data: CreatePriceListItemFormData
 ): Promise<PriceListItem> {
   await checkPermission('commercial.price-lists', 'create', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) {
     throw new Error('No autenticado');
   }
@@ -476,7 +476,7 @@ export async function updatePriceListItem(
   data: UpdatePriceListItemFormData
 ): Promise<PriceListItem> {
   await checkPermission('commercial.price-lists', 'update', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) {
     throw new Error('No autenticado');
   }
@@ -553,7 +553,7 @@ export async function updatePriceListItem(
 
 export async function deletePriceListItem(id: string): Promise<void> {
   await checkPermission('commercial.price-lists', 'delete', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) {
     throw new Error('No autenticado');
   }
@@ -590,7 +590,7 @@ export async function deletePriceListItem(id: string): Promise<void> {
 
 export async function bulkDeletePriceListItems(ids: string[]): Promise<number> {
   await checkPermission('commercial.price-lists', 'delete', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -635,7 +635,7 @@ export async function bulkAddPriceListItems(
   data: BulkAddInput
 ): Promise<{ added: number; skipped: number }> {
   await checkPermission('commercial.price-lists', 'update', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();

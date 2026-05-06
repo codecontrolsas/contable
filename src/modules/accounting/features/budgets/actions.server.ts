@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { prisma } from '@/shared/lib/prisma';
 import { Prisma } from '@/generated/prisma/client';
 import { logger } from '@/shared/lib/logger';
@@ -142,7 +142,7 @@ async function calculateBudgetExecution(
  * Verifica que existan AccountingSettings y cuentas de resultado.
  */
 export async function getBudgetsPageData() {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.budgets', 'view', { redirect: true });
 
@@ -193,7 +193,7 @@ export async function getBudgetsPageData() {
  * Convierte totalAmount Decimal a Number().
  */
 export async function getBudgets(fiscalYear?: number) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.budgets', 'view', { redirect: true });
 
@@ -261,7 +261,7 @@ export async function getBudgets(fiscalYear?: number) {
  * Retorna desvíos absolutos y porcentuales por mes.
  */
 export async function getBudgetDetail(budgetId: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.budgets', 'view', { redirect: true });
 
@@ -412,7 +412,7 @@ export async function getBudgetDetail(budgetId: string) {
  * Excluye cuentas que ya tienen presupuesto para el año fiscal dado.
  */
 export async function getBudgetableAccounts(fiscalYear: number) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.budgets', 'view', { redirect: true });
 
@@ -456,7 +456,7 @@ export async function getBudgetableAccounts(fiscalYear: number) {
  * fiscalYearStart de AccountingSettings y presupuestos existentes.
  */
 export async function getAvailableFiscalYears() {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.budgets', 'view', { redirect: true });
 
@@ -508,7 +508,7 @@ export async function getAvailableFiscalYears() {
  * Calcula totalAmount como suma de monthlyAmounts.
  */
 export async function createBudget(input: CreateBudgetInput) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.budgets', 'create', { redirect: true });
 
@@ -617,7 +617,7 @@ export async function createBudget(input: CreateBudgetInput) {
  * Recalcula totalAmount.
  */
 export async function updateBudget(id: string, input: UpdateBudgetInput) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.budgets', 'update', { redirect: true });
 
@@ -679,7 +679,7 @@ export async function updateBudget(id: string, input: UpdateBudgetInput) {
  * Valida que totalAmount > 0.
  */
 export async function activateBudget(id: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.budgets', 'approve', { redirect: true });
 
@@ -733,7 +733,7 @@ export async function activateBudget(id: string) {
  * Usa transacción Prisma.
  */
 export async function createBudgetRevision(input: CreateRevisionInput) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.budgets', 'update', { redirect: true });
 
@@ -828,7 +828,7 @@ export async function createBudgetRevision(input: CreateRevisionInput) {
  * Cambia estado de ACTIVE a CLOSED.
  */
 export async function closeBudget(id: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.budgets', 'approve', { redirect: true });
 
@@ -874,7 +874,7 @@ export async function closeBudget(id: string) {
  * Las revisiones se eliminan en cascada.
  */
 export async function deleteBudget(id: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.budgets', 'delete', { redirect: true });
 

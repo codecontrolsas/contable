@@ -1,11 +1,11 @@
-/**
+﻿/**
  * API Route para generar y servir PDF de factura de compra
  * GET /api/purchase-invoices/:id/pdf
  * Query params: ?include=creditNotes,paymentOrders,creditNoteApplications,receivingNotes,purchaseOrder
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { prisma } from '@/shared/lib/prisma';
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
@@ -33,7 +33,7 @@ function formatCurrency(value: number | { toNumber?: () => number }): string {
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   try {
-    const { userId } = await auth();
+    const userId = await getCurrentUserId();
     if (!userId) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
     }

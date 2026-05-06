@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser, SignOutButton } from '@clerk/nextjs';
+import { authClient } from '@/shared/lib/auth-client';
 import { toast } from 'sonner';
 import { Building2, Mail, UserCircle, AlertCircle, Clock, CheckCircle2 } from 'lucide-react';
 
@@ -24,9 +24,22 @@ interface Props {
 
 export function _AcceptInvitationForm({ invitation, token }: Props) {
   const router = useRouter();
-  const { isSignedIn, user } = useUser();
+  const { data: session, isPending: sessionPending } = authClient.useSession();
+  const isSignedIn = !!session;
+  const user = session?.user;
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+
+  // Evitar flicker mientras se resuelve la sesión inicial
+  if (sessionPending) {
+    return (
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle>Cargando…</CardTitle>
+        </CardHeader>
+      </Card>
+    );
+  }
 
   // Caso: Invitación no encontrada
   if (!invitation) {
@@ -95,7 +108,7 @@ export function _AcceptInvitationForm({ invitation, token }: Props) {
     );
   }
 
-  const userEmail = user?.primaryEmailAddress?.emailAddress;
+  const userEmail = user?.email;
   const emailMatches =
     userEmail?.toLowerCase() === invitation.email.toLowerCase();
 
@@ -128,11 +141,21 @@ export function _AcceptInvitationForm({ invitation, token }: Props) {
           </div>
         </CardContent>
         <CardFooter className="flex-col gap-2">
-          <SignOutButton redirectUrl={`/invite?token=${token}`}>
-            <Button className="w-full">
-              Cerrar sesión e iniciar con otra cuenta
-            </Button>
-          </SignOutButton>
+          <Button
+            className="w-full"
+            onClick={() => {
+              void authClient.signOut({
+                fetchOptions: {
+                  onSuccess: () =>
+                    router.push(
+                      `/sign-in?redirect=${encodeURIComponent(`/invite?token=${token}`)}`
+                    ),
+                },
+              });
+            }}
+          >
+            Cerrar sesión e iniciar con otra cuenta
+          </Button>
         </CardFooter>
       </Card>
     );
@@ -141,6 +164,8 @@ export function _AcceptInvitationForm({ invitation, token }: Props) {
   // Caso: Usuario NO logueado
   if (!isSignedIn) {
     const redirectUrl = encodeURIComponent(`/invite?token=${token}`);
+    const signUpUrl = `/sign-up?invitation=${token}&email=${encodeURIComponent(invitation.email)}`;
+    const signInUrl = `/sign-in?redirect=${redirectUrl}&invitation=${token}`;
 
     return (
       <Card className="w-full max-w-md">
@@ -170,14 +195,14 @@ export function _AcceptInvitationForm({ invitation, token }: Props) {
         <CardFooter className="flex-col gap-2">
           <Button
             className="w-full"
-            onClick={() => router.push(`/sign-up?redirect_url=${redirectUrl}`)}
+            onClick={() => router.push(signUpUrl)}
           >
             Crear cuenta
           </Button>
           <Button
             variant="outline"
             className="w-full"
-            onClick={() => router.push(`/sign-in?redirect_url=${redirectUrl}`)}
+            onClick={() => router.push(signInUrl)}
           >
             Ya tengo cuenta
           </Button>

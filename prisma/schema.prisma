@@ -90,6 +90,7 @@ model Company {
   logoUrl         String?    @map("logo_url")
   isActive        Boolean    @default(true) @map("is_active")
   isSingleCompany Boolean    @default(false) @map("is_single_company") // Modo empresa única - sin selector de empresas
+  onboardingCompleted Boolean @default(false) @map("onboarding_completed")
   activeModules   String[]   @default([]) @map("active_modules") // Módulos activos (vacío = todos activos)
   createdAt       DateTime   @default(now()) @map("created_at")
   updatedAt       DateTime   @updatedAt @map("updated_at")
@@ -3636,4 +3637,81 @@ model AssetValueAdjustment {
   @@index([vehicleId])
   @@index([companyId])
   @@map("asset_value_adjustments")
+}
+
+// ============================================
+// BETTER AUTH - Tablas de autenticación
+// ============================================
+
+model User {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email         String   @unique
+  emailVerified Boolean  @default(false) @map("email_verified")
+  name          String
+  image         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Campos extendidos
+  firstName     String? @map("first_name")
+  lastName      String? @map("last_name")
+  imageKey      String? @map("image_key")
+  imageUrl      String? @map("image_url")
+  legacyClerkId String? @unique @map("legacy_clerk_id")
+
+  sessions Session[]
+  accounts BetterAuthAccount[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  expiresAt DateTime @map("expires_at")
+  token     String   @unique
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  userId    String   @map("user_id") @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("session")
+}
+
+// IMPORTANTE: el modelo se llama BetterAuthAccount (no Account) porque
+// ya existe `model Account` para el Plan de Cuentas contable.
+// La tabla DB es `account` (singular), distinta de `accounts` (plural)
+// del plan contable, así que no hay colisión a nivel SQL.
+model BetterAuthAccount {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  userId                String    @map("user_id") @db.Uuid
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  password              String?
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  idToken               String?   @map("id_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
+  scope                 String?
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  identifier String
+  value      String
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@index([identifier])
+  @@map("verification")
 }

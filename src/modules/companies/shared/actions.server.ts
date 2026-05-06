@@ -1,13 +1,13 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { prisma } from '@/shared/lib/prisma';
 
 /**
  * Verifica si el usuario tiene acceso a una company
  */
 export async function userHasAccessToCompany(companyId: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) return false;
 
   try {

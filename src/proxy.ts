@@ -1,26 +1,47 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+import { NextResponse, type NextRequest } from 'next/server';
+import { auth } from '@/shared/lib/auth';
 
-/**
- * Proxy de autenticación con Clerk (Next.js 16)
- *
- * Rutas públicas: /, /sign-in, /sign-up, /eq/[id]
- * Rutas protegidas: Todo lo demás (incluyendo /dashboard/*)
- */
+const PUBLIC_PATHS = new Set([
+  '/',
+  '/sign-in',
+  '/sign-up',
+  '/reset-password',
+  '/verify-email',
+  '/invite',
+]);
 
-// Rutas que NO requieren autenticación
-const isPublicRoute = createRouteMatcher(['/', '/sign-in(.*)', '/sign-up(.*)', '/eq/(.*)']);
+const PUBLIC_PREFIXES = [
+  '/eq/',
+  '/api/auth/',
+  '/api/webhooks/',
+  '/sign-in/',
+  '/sign-up/',
+  '/reset-password/',
+  '/verify-email/',
+  '/invite/',
+];
 
-export default clerkMiddleware(async (auth, req) => {
-  if (!isPublicRoute(req)) {
-    await auth.protect();
+export default async function proxy(req: NextRequest) {
+  const path = req.nextUrl.pathname;
+
+  if (PUBLIC_PATHS.has(path) || PUBLIC_PREFIXES.some((p) => path.startsWith(p))) {
+    return NextResponse.next();
   }
-});
+
+  const session = await auth.api.getSession({ headers: req.headers });
+
+  if (!session) {
+    const url = new URL('/sign-in', req.url);
+    if (path !== '/sign-in') url.searchParams.set('redirect', path);
+    return NextResponse.redirect(url);
+  }
+
+  return NextResponse.next();
+}
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files
     '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    // Always run for API routes
     '/(api|trpc)(.*)',
   ],
 };

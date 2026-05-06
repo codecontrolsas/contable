@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { getActiveCompanyId } from '@/shared/lib/company';
@@ -20,7 +20,7 @@ import type { ProductCategory } from '../../shared/types';
 export async function getCategories(): Promise<ProductCategory[]> {
   await checkPermission('commercial.categories', 'view', { redirect: true });
   try {
-    const { userId } = await auth();
+    const userId = await getCurrentUserId();
     if (!userId) throw new Error('No autenticado');
 
     const companyId = await getActiveCompanyId();
@@ -48,7 +48,7 @@ export async function getCategories(): Promise<ProductCategory[]> {
 export async function getCategoryById(id: string): Promise<ProductCategory | null> {
   await checkPermission('commercial.categories', 'view', { redirect: true });
   try {
-    const { userId } = await auth();
+    const userId = await getCurrentUserId();
     if (!userId) throw new Error('No autenticado');
 
     const companyId = await getActiveCompanyId();
@@ -75,7 +75,7 @@ export async function getCategoryById(id: string): Promise<ProductCategory | nul
 export async function createCategory(data: CreateCategoryFormData): Promise<ProductCategory> {
   await checkPermission('commercial.categories', 'create', { redirect: true });
   try {
-    const { userId } = await auth();
+    const userId = await getCurrentUserId();
     if (!userId) throw new Error('No autenticado');
 
     const companyId = await getActiveCompanyId();
@@ -147,7 +147,7 @@ export async function updateCategory(
 ): Promise<ProductCategory> {
   await checkPermission('commercial.categories', 'update', { redirect: true });
   try {
-    const { userId } = await auth();
+    const userId = await getCurrentUserId();
     if (!userId) throw new Error('No autenticado');
 
     const companyId = await getActiveCompanyId();
@@ -231,7 +231,7 @@ export async function updateCategory(
 export async function deleteCategory(id: string): Promise<void> {
   await checkPermission('commercial.categories', 'delete', { redirect: true });
   try {
-    const { userId } = await auth();
+    const userId = await getCurrentUserId();
     if (!userId) throw new Error('No autenticado');
 
     const companyId = await getActiveCompanyId();

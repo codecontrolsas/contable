@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
 import { prisma } from '@/shared/lib/prisma';
@@ -111,7 +111,7 @@ export async function getPendingInvoices(customerId: string): Promise<PendingInv
  */
 export async function createReceipt(data: CreateReceiptFormData) {
   await checkPermission('commercial.treasury.receipts', 'create', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -212,7 +212,7 @@ export async function createReceipt(data: CreateReceiptFormData) {
  */
 export async function confirmReceipt(receiptId: string) {
   await checkPermission('commercial.treasury.receipts', 'approve', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -765,7 +765,7 @@ export async function getAvailableBankAccounts() {
  */
 export async function deleteReceipt(receiptId: string) {
   await checkPermission('commercial.treasury.receipts', 'delete', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();

@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { revalidateCompanyRoutes } from '@/modules/companies/shared/utils';
@@ -15,7 +15,7 @@ export interface UpdateCompanyInput extends Partial<CreateCompanyInput> {
  * Actualiza una company (solo owner)
  */
 export async function updateCompany(companyId: string, input: UpdateCompanyInput) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   try {

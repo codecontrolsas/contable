@@ -1,9 +1,10 @@
 'use client';
 
-import { useUser, useClerk } from '@clerk/nextjs';
-import { User, Bell, LogOut, MoreVertical, Sun, Moon, Monitor } from 'lucide-react';
+import { Bell, LogOut, MoreVertical, Sun, Moon, Monitor } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { useRouter } from 'next/navigation';
 
+import { authClient } from '@/shared/lib/auth-client';
 import {
   Avatar,
   AvatarFallback,
@@ -31,11 +32,20 @@ import {
 
 /**
  * Navegación de usuario en el sidebar
- * Integrado con Clerk para datos del usuario
+ * Integrado con Better Auth para datos del usuario
  */
 export function _NavUser() {
-  const { user, isLoaded } = useUser();
-  const clerk = useClerk();
+  const router = useRouter();
+  const { data: session, isPending } = authClient.useSession();
+  const sessionUser = session?.user as
+    | (NonNullable<typeof session>['user'] & {
+        firstName?: string | null;
+        lastName?: string | null;
+        imageKey?: string | null;
+        imageUrl?: string | null;
+      })
+    | undefined;
+  const isLoaded = !isPending;
   const { isMobile } = useSidebar();
   const { theme, setTheme } = useTheme();
 
@@ -55,10 +65,22 @@ export function _NavUser() {
     );
   }
 
+  const fullName =
+    [sessionUser?.firstName, sessionUser?.lastName]
+      .filter(Boolean)
+      .join(' ')
+      .trim() ||
+    sessionUser?.name ||
+    'Usuario';
+
+  const avatarSrc = sessionUser?.imageUrl ?? sessionUser?.image ?? undefined;
+
   const userInitials =
-    user?.firstName && user?.lastName
-      ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
-      : user?.firstName?.[0]?.toUpperCase() || 'U';
+    sessionUser?.firstName && sessionUser?.lastName
+      ? `${sessionUser.firstName[0]}${sessionUser.lastName[0]}`.toUpperCase()
+      : sessionUser?.firstName?.[0]?.toUpperCase() ||
+        sessionUser?.name?.[0]?.toUpperCase() ||
+        'U';
 
   return (
     <SidebarMenu>
@@ -70,13 +92,13 @@ export function _NavUser() {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user?.imageUrl} alt={user?.fullName || 'Usuario'} />
+                <AvatarImage src={avatarSrc} alt={fullName} />
                 <AvatarFallback className="rounded-lg">{userInitials}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user?.fullName || 'Usuario'}</span>
+                <span className="truncate font-medium">{fullName}</span>
                 <span className="truncate text-xs text-muted-foreground">
-                  {user?.primaryEmailAddress?.emailAddress || 'email@ejemplo.com'}
+                  {sessionUser?.email || 'email@ejemplo.com'}
                 </span>
               </div>
               <MoreVertical className="ml-auto size-4" />
@@ -91,26 +113,19 @@ export function _NavUser() {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user?.imageUrl} alt={user?.fullName || 'Usuario'} />
+                  <AvatarImage src={avatarSrc} alt={fullName} />
                   <AvatarFallback className="rounded-lg">{userInitials}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user?.fullName || 'Usuario'}</span>
+                  <span className="truncate font-medium">{fullName}</span>
                   <span className="truncate text-xs text-muted-foreground">
-                    {user?.primaryEmailAddress?.emailAddress}
+                    {sessionUser?.email}
                   </span>
                 </div>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem
-                className="cursor-pointer"
-                onClick={() => clerk.openUserProfile()}
-              >
-                <User className="mr-2 size-4" />
-                Cuenta
-              </DropdownMenuItem>
               <DropdownMenuItem disabled>
                 <Bell className="mr-2 size-4" />
                 Notificaciones
@@ -165,7 +180,11 @@ export function _NavUser() {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-destructive focus:text-destructive cursor-pointer"
-              onClick={() => clerk.signOut({ redirectUrl: '/' })}
+              onClick={() => {
+                void authClient.signOut({
+                  fetchOptions: { onSuccess: () => router.push('/') },
+                });
+              }}
             >
               <LogOut className="mr-2 size-4" />
               Cerrar Sesión

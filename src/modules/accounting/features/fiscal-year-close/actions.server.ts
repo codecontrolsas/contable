@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { checkPermission } from '@/shared/lib/permissions';
@@ -37,7 +37,7 @@ interface ClosePreview {
  * Obtiene el estado del ejercicio fiscal
  */
 export async function getFiscalYearStatus(companyId: string): Promise<FiscalYearStatus> {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.fiscal-year-close', 'view', { redirect: true });
 
@@ -93,7 +93,7 @@ export async function getFiscalYearStatus(companyId: string): Promise<FiscalYear
  * Genera preview del asiento de cierre de ejercicio
  */
 export async function previewFiscalYearClose(companyId: string): Promise<ClosePreview> {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.fiscal-year-close', 'view', { redirect: true });
 
@@ -230,7 +230,7 @@ export async function previewFiscalYearClose(companyId: string): Promise<ClosePr
  * Ejecuta el cierre del ejercicio fiscal
  */
 export async function closeFiscalYear(companyId: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.fiscal-year-close', 'approve', { redirect: true });
 

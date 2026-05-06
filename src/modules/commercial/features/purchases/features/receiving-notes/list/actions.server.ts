@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { Prisma } from '@/generated/prisma/client';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
@@ -26,7 +26,7 @@ import moment from 'moment';
  */
 export async function getReceivingNotesPaginated(searchParams: DataTableSearchParams) {
   await checkPermission('commercial.receiving-notes', 'view', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -123,7 +123,7 @@ export async function getReceivingNotesPaginated(searchParams: DataTableSearchPa
  */
 export async function getReceivingNoteById(id: string) {
   await checkPermission('commercial.receiving-notes', 'view', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -465,7 +465,7 @@ export async function getProductsForSelect() {
  */
 export async function createReceivingNote(input: ReceivingNoteFormInput) {
   await checkPermission('commercial.receiving-notes', 'create', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -525,7 +525,7 @@ export async function createReceivingNote(input: ReceivingNoteFormInput) {
  */
 export async function updateReceivingNote(id: string, input: ReceivingNoteFormInput) {
   await checkPermission('commercial.receiving-notes', 'update', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -590,7 +590,7 @@ export async function updateReceivingNote(id: string, input: ReceivingNoteFormIn
  */
 export async function deleteReceivingNote(id: string) {
   await checkPermission('commercial.receiving-notes', 'delete', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -629,7 +629,7 @@ export async function deleteReceivingNote(id: string) {
  */
 export async function confirmReceivingNote(id: string) {
   await checkPermission('commercial.receiving-notes', 'approve', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -744,7 +744,7 @@ export async function confirmReceivingNote(id: string) {
  */
 export async function cancelReceivingNote(id: string) {
   await checkPermission('commercial.receiving-notes', 'delete', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();

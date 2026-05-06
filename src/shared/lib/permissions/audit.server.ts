@@ -1,10 +1,10 @@
 'use server';
 
-import { auth } from '@clerk/nextjs/server';
 import type { Prisma } from '@/generated/prisma/client';
 
 import { prisma } from '@/shared/lib/prisma';
 import { getActiveCompanyId } from '@/shared/lib/company';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { logger } from '@/shared/lib/logger';
 
 import type { AuditAction } from './constants';
@@ -27,7 +27,7 @@ interface CreateAuditLogParams {
  */
 export async function createAuditLog(params: CreateAuditLogParams): Promise<void> {
   try {
-    const { userId } = await auth();
+    const userId = await getCurrentUserId();
     if (!userId) {
       log.warn('Attempted to create audit log without user');
       return;

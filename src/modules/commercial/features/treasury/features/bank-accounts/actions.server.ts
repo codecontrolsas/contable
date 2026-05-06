@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
 import { prisma } from '@/shared/lib/prisma';
@@ -14,7 +14,7 @@ import { checkPermission } from '@/shared/lib/permissions';
  */
 export async function createBankAccount(data: BankAccountFormData) {
   await checkPermission('commercial.treasury.bank-accounts', 'create', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -88,7 +88,7 @@ export async function createBankAccount(data: BankAccountFormData) {
  */
 export async function updateBankAccount(id: string, data: BankAccountFormData) {
   await checkPermission('commercial.treasury.bank-accounts', 'update', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -244,7 +244,7 @@ export async function getBankAccountById(id: string) {
  */
 export async function deactivateBankAccount(id: string) {
   await checkPermission('commercial.treasury.bank-accounts', 'update', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -307,7 +307,7 @@ export async function deactivateBankAccount(id: string) {
  */
 export async function activateBankAccount(id: string) {
   await checkPermission('commercial.treasury.bank-accounts', 'update', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -355,7 +355,7 @@ export async function activateBankAccount(id: string) {
  */
 export async function closeBankAccount(id: string) {
   await checkPermission('commercial.treasury.bank-accounts', 'delete', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();

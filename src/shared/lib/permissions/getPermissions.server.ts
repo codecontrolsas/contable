@@ -1,9 +1,8 @@
 'use server';
 
-import { auth } from '@clerk/nextjs/server';
-
 import { prisma } from '@/shared/lib/prisma';
 import { getActiveCompanyId } from '@/shared/lib/company';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { logger } from '@/shared/lib/logger';
 
 import type { PermissionMap, UserPermissions, RoleWithPermissions } from './types';
@@ -22,7 +21,7 @@ const log = logger;
  */
 export async function getCurrentUserPermissions(): Promise<UserPermissions | null> {
   try {
-    const { userId } = await auth();
+    const userId = await getCurrentUserId();
     if (!userId) return null;
 
     const companyId = await getActiveCompanyId();

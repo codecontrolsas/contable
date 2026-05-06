@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { revalidateCompanyRoutes } from '@/modules/companies/shared/utils';
@@ -25,7 +25,7 @@ export interface CreateCompanyInput {
  * Crea una nueva company y asigna al usuario como owner
  */
 export async function createCompany(input: CreateCompanyInput) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   try {

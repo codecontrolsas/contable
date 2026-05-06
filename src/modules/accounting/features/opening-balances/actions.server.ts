@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { getActiveCompanyId } from '@/shared/lib/company';
@@ -36,7 +36,7 @@ const APERTURA_ACCOUNT_NAME = 'Apertura';
  * Obtiene todos los datos necesarios para la página de saldos de apertura
  */
 export async function getOpeningBalancesPageData() {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -177,7 +177,7 @@ export async function getOpeningBalancesPageData() {
  * Obtiene facturas de apertura (venta y compra)
  */
 export async function getOpeningBalanceInvoices() {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -311,7 +311,7 @@ export async function saveOpeningBalanceEntry(
   input: OpeningBalanceFormInput,
   replaceExisting: boolean
 ) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -501,7 +501,7 @@ export async function saveOpeningBalanceEntry(
 export async function createOpeningSalesInvoice(
   input: OpeningSalesInvoiceInput
 ) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -604,7 +604,7 @@ export async function createOpeningSalesInvoice(
 export async function createOpeningPurchaseInvoice(
   input: OpeningPurchaseInvoiceInput
 ) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -708,7 +708,7 @@ export async function deleteOpeningInvoice(
   type: 'sales' | 'purchases',
   id: string
 ) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -803,7 +803,7 @@ export async function deleteOpeningInvoice(
 export async function importOpeningSalesInvoicesFromExcel(
   base64Content: string
 ) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -966,7 +966,7 @@ export async function importOpeningSalesInvoicesFromExcel(
 export async function importOpeningPurchaseInvoicesFromExcel(
   base64Content: string
 ) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();

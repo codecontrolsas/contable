@@ -1,10 +1,10 @@
 'use server';
 
-import { auth, clerkClient } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
 
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
+import { getCurrentUser, getCurrentUserId } from '@/shared/lib/current-user';
 
 /**
  * Obtiene una invitación por su token
@@ -37,7 +37,7 @@ export async function getInvitationByToken(token: string) {
  * Acepta una invitación y crea el CompanyMember
  */
 export async function acceptInvitation(token: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) {
     throw new Error('Debes iniciar sesión para aceptar la invitación');
   }
@@ -64,11 +64,8 @@ export async function acceptInvitation(token: string) {
   }
 
   // Validar que el email del usuario coincida con el de la invitación
-  const clerk = await clerkClient();
-  const user = await clerk.users.getUser(userId);
-  const userEmail = user.emailAddresses.find(
-    (e) => e.id === user.primaryEmailAddressId
-  )?.emailAddress;
+  const currentUser = await getCurrentUser();
+  const userEmail = currentUser?.email;
 
   if (userEmail?.toLowerCase() !== invitation.email.toLowerCase()) {
     throw new Error(

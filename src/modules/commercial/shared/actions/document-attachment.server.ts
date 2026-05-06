@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { uploadFile, deleteFile, getPresignedDownloadUrl } from '@/shared/lib/storage';
@@ -28,7 +28,7 @@ export async function uploadDocumentAttachment(params: {
   fileName: string;
   file: number[];
 }) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const { documentType, documentId, companyId, companyName, documentNumber, fileName, file } = params;
@@ -83,7 +83,7 @@ export async function deleteDocumentAttachment(params: {
   documentId: string;
   companyId: string;
 }) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const { documentType, documentId, companyId } = params;

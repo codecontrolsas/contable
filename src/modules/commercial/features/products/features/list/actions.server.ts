@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { Prisma } from '@/generated/prisma/client';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
@@ -32,7 +32,7 @@ export async function getProducts(params: GetProductsParams = {}) {
   if (!companyId) throw new Error('No hay empresa activa');
 
   try {
-    const { userId } = await auth();
+    const userId = await getCurrentUserId();
     if (!userId) throw new Error('No autenticado');
 
     const filtersWhere = buildFiltersWhere(filters, {
@@ -182,7 +182,7 @@ export async function getProductFacetCounts() {
 export async function getProductById(id: string): Promise<Product | null> {
   await checkPermission('commercial.products', 'view', { redirect: true });
   try {
-    const { userId } = await auth();
+    const userId = await getCurrentUserId();
     if (!userId) throw new Error('No autenticado');
 
     const companyId = await getActiveCompanyId();
@@ -227,7 +227,7 @@ export async function getProductById(id: string): Promise<Product | null> {
 export async function createProduct(data: CreateProductFormData): Promise<Product> {
   await checkPermission('commercial.products', 'create', { redirect: true });
   try {
-    const { userId } = await auth();
+    const userId = await getCurrentUserId();
     if (!userId) throw new Error('No autenticado');
 
     const companyId = await getActiveCompanyId();
@@ -326,7 +326,7 @@ export async function updateProduct(
 ): Promise<Product> {
   await checkPermission('commercial.products', 'update', { redirect: true });
   try {
-    const { userId } = await auth();
+    const userId = await getCurrentUserId();
     if (!userId) throw new Error('No autenticado');
 
     const companyId = await getActiveCompanyId();
@@ -419,7 +419,7 @@ export async function updateProduct(
 export async function deleteProduct(id: string): Promise<void> {
   await checkPermission('commercial.products', 'delete', { redirect: true });
   try {
-    const { userId } = await auth();
+    const userId = await getCurrentUserId();
     if (!userId) throw new Error('No autenticado');
 
     const companyId = await getActiveCompanyId();
@@ -720,7 +720,7 @@ export async function processProductImport(
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   // Validate rows

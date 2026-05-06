@@ -1,8 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { auth, clerkClient } from '@clerk/nextjs/server';
 
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { getActiveCompanyId } from '@/shared/lib/company';
@@ -85,30 +85,30 @@ export async function getCompanyMembersPaginated(searchParams: DataTableSearchPa
       prisma.companyMember.count({ where }),
     ]);
 
-    // Enriquecer con datos de Clerk
-    const clerk = await clerkClient();
-    const enrichedMembers = await Promise.all(
-      members.map(async (member) => {
-        try {
-          const clerkUser = await clerk.users.getUser(member.userId);
-          return {
-            ...member,
-            email: clerkUser.emailAddresses[0]?.emailAddress ?? 'Sin email',
-            firstName: clerkUser.firstName ?? '',
-            lastName: clerkUser.lastName ?? '',
-            imageUrl: clerkUser.imageUrl,
-          };
-        } catch {
-          return {
-            ...member,
-            email: 'Usuario no encontrado',
-            firstName: '',
-            lastName: '',
-            imageUrl: null,
-          };
-        }
-      })
-    );
+    // Enriquecer con datos de usuarios (batch)
+    const userIds = members.map((m) => m.userId);
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        imageUrl: true,
+      },
+    });
+    const userMap = new Map(users.map((u) => [u.id, u]));
+
+    const enrichedMembers = members.map((member) => {
+      const u = userMap.get(member.userId);
+      return {
+        ...member,
+        email: u?.email ?? 'Sin email',
+        firstName: u?.firstName ?? '',
+        lastName: u?.lastName ?? '',
+        imageUrl: u?.imageUrl ?? null,
+      };
+    });
 
     return { data: enrichedMembers, total };
   } catch (error) {
@@ -254,7 +254,7 @@ export async function getAvailableEmployeesForInvitation() {
  * Invita a un usuario a la empresa
  */
 export async function inviteUser(input: InviteUserInput) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('company.general.users', 'create', { redirect: true });
 
@@ -286,17 +286,18 @@ export async function inviteUser(input: InviteUserInput) {
     }
 
     // Verificar si el usuario ya es miembro
-    const clerk = await clerkClient();
-    const existingUsers = await clerk.users.getUserList({
-      emailAddress: [input.email.toLowerCase()],
+    const existingUser = await prisma.user.findUnique({
+      where: { email: input.email.toLowerCase() },
+      select: { id: true },
     });
 
-    if (existingUsers.data.length > 0) {
+    if (existingUser) {
       const existingMember = await prisma.companyMember.findFirst({
         where: {
           companyId,
-          userId: existingUsers.data[0].id,
+          userId: existingUser.id,
         },
+        select: { id: true },
       });
 
       if (existingMember) {
@@ -372,9 +373,12 @@ export async function inviteUser(input: InviteUserInput) {
       select: { name: true },
     });
 
-    const inviter = await clerk.users.getUser(userId);
+    const inviter = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { firstName: true, lastName: true },
+    });
     const inviterName =
-      `${inviter.firstName || ''} ${inviter.lastName || ''}`.trim() ||
+      `${inviter?.firstName || ''} ${inviter?.lastName || ''}`.trim() ||
       'Un administrador';
 
     try {
@@ -404,7 +408,7 @@ export async function inviteUser(input: InviteUserInput) {
  * Cancela una invitación pendiente (la elimina)
  */
 export async function cancelInvitation(invitationId: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('company.general.users', 'update', { redirect: true });
 
@@ -450,7 +454,7 @@ export async function cancelInvitation(invitationId: string) {
  * Actualiza el rol de un miembro
  */
 export async function updateMemberRole(input: UpdateMemberRoleInput) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('company.general.users', 'update', { redirect: true });
 
@@ -510,7 +514,7 @@ export async function updateMemberRole(input: UpdateMemberRoleInput) {
  * Desactiva un miembro (soft delete)
  */
 export async function deactivateMember(memberId: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('company.general.users', 'delete', { redirect: true });
 

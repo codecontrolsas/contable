@@ -1,6 +1,6 @@
 'use server';
 
-import { resend, EMAIL_FROM } from '@/shared/lib/email';
+import { sendEmail } from '@/shared/lib/email';
 import { InvitationEmail } from '@/shared/emails/InvitationEmail';
 import { logger } from '@/shared/lib/logger';
 
@@ -15,8 +15,7 @@ interface SendInvitationEmailParams {
 
 export async function sendInvitationEmail(params: SendInvitationEmailParams) {
   try {
-    const { error } = await resend.emails.send({
-      from: EMAIL_FROM,
+    await sendEmail({
       to: params.to,
       subject: `Invitación a unirte a ${params.companyName}`,
       react: InvitationEmail({
@@ -27,19 +26,9 @@ export async function sendInvitationEmail(params: SendInvitationEmailParams) {
         expiresAt: params.expiresAt,
       }),
     });
-
-    if (error) {
-      logger.error('Error enviando email de invitación', {
-        data: { error, to: params.to },
-      });
-      throw new Error('Error al enviar email de invitación');
-    }
-
     logger.info('Email de invitación enviado', { data: { to: params.to } });
   } catch (error) {
-    logger.error('Error enviando email de invitación', {
-      data: { error, to: params.to },
-    });
+    logger.error('Error enviando email de invitación', { data: { error, to: params.to } });
     throw new Error('Error al enviar email de invitación');
   }
 }

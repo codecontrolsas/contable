@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { SignInButton, SignUpButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
+import { auth } from '@/shared/lib/auth';
+import { headers } from 'next/headers';
 import { Button } from '@/shared/components/ui/button';
 import { ArrowRight, CheckCircle, Shield, Zap } from 'lucide-react';
 import { APP_NAME, APP_SHORT_NAME, APP_DESCRIPTION } from '@/shared/config/instance';
@@ -30,7 +31,10 @@ const features = [
   },
 ];
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const session = await auth.api.getSession({ headers: await headers() });
+  const isSignedIn = !!session;
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header/Navigation */}
@@ -43,23 +47,23 @@ export default function LandingPage() {
             <span className="font-semibold text-lg">{APP_NAME}</span>
           </div>
           <nav className="flex items-center gap-4">
-            <SignedOut>
-              <SignInButton mode="modal">
-                <Button variant="ghost">Iniciar Sesión</Button>
-              </SignInButton>
-              <SignUpButton mode="modal">
-                <Button>
-                  Comenzar
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </SignUpButton>
-            </SignedOut>
-            <SignedIn>
+            {!isSignedIn ? (
+              <>
+                <Link href="/sign-in">
+                  <Button variant="ghost">Iniciar Sesión</Button>
+                </Link>
+                <Link href="/sign-up">
+                  <Button>
+                    Comenzar
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              </>
+            ) : (
               <Link href="/dashboard">
                 <Button variant="ghost">Dashboard</Button>
               </Link>
-              <UserButton afterSignOutUrl="/" />
-            </SignedIn>
+            )}
           </nav>
         </div>
       </header>
@@ -76,22 +80,21 @@ export default function LandingPage() {
           más desde un solo lugar.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <SignedOut>
-            <SignInButton mode="modal">
+          {!isSignedIn ? (
+            <Link href="/sign-in">
               <Button size="lg" className="w-full sm:w-auto">
                 Iniciar Sesión
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-            </SignInButton>
-          </SignedOut>
-          <SignedIn>
+            </Link>
+          ) : (
             <Link href="/dashboard">
               <Button size="lg" className="w-full sm:w-auto">
                 Ir al Dashboard
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
-          </SignedIn>
+          )}
           <Button size="lg" variant="outline" className="w-full sm:w-auto">
             Ver Demo
           </Button>
@@ -124,22 +127,21 @@ export default function LandingPage() {
           <p className="text-lg opacity-90 mb-8 max-w-xl mx-auto">
             Únete a las empresas que ya están optimizando su gestión con nuestra plataforma.
           </p>
-          <SignedOut>
-            <SignInButton mode="modal">
+          {!isSignedIn ? (
+            <Link href="/sign-in">
               <Button size="lg" variant="secondary">
                 Acceder a la Plataforma
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-            </SignInButton>
-          </SignedOut>
-          <SignedIn>
+            </Link>
+          ) : (
             <Link href="/dashboard">
               <Button size="lg" variant="secondary">
                 Ir al Dashboard
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
-          </SignedIn>
+          )}
         </div>
       </section>
 

@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
@@ -20,7 +20,7 @@ import type { ProductCategory } from '../shared/types';
 
 export async function getCategories(): Promise<ProductCategory[]> {
   await checkPermission('commercial.categories', 'view', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) {
     throw new Error('No autenticado');
   }
@@ -59,7 +59,7 @@ export async function getCategories(): Promise<ProductCategory[]> {
 
 export async function getCategoryById(id: string): Promise<ProductCategory> {
   await checkPermission('commercial.categories', 'view', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) {
     throw new Error('No autenticado');
   }
@@ -113,7 +113,7 @@ export async function getCategoryById(id: string): Promise<ProductCategory> {
 
 export async function createCategory(data: CreateCategoryFormData): Promise<ProductCategory> {
   await checkPermission('commercial.categories', 'create', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) {
     throw new Error('No autenticado');
   }
@@ -178,7 +178,7 @@ export async function updateCategory(
   data: UpdateCategoryFormData
 ): Promise<ProductCategory> {
   await checkPermission('commercial.categories', 'update', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) {
     throw new Error('No autenticado');
   }
@@ -261,7 +261,7 @@ export async function updateCategory(
 
 export async function deleteCategory(id: string): Promise<void> {
   await checkPermission('commercial.categories', 'delete', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) {
     throw new Error('No autenticado');
   }
@@ -339,7 +339,7 @@ async function getDescendantIds(categoryId: string): Promise<string[]> {
 }
 
 export async function getParentCategories(): Promise<ProductCategory[]> {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) {
     throw new Error('No autenticado');
   }
