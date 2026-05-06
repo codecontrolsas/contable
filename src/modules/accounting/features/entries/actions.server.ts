@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { checkPermission } from '@/shared/lib/permissions';
@@ -14,7 +14,7 @@ import { JournalEntryStatus } from '@/generated/prisma/enums';
  * Crea un nuevo asiento contable
  */
 export async function createJournalEntry(companyId: string, input: CreateJournalEntryInput) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.entries', 'create', { redirect: true });
 
@@ -103,7 +103,7 @@ export async function createJournalEntry(companyId: string, input: CreateJournal
  * Registra un asiento contable
  */
 export async function postJournalEntry(companyId: string, entryId: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.entries', 'approve', { redirect: true });
 
@@ -203,7 +203,7 @@ export async function postJournalEntry(companyId: string, entryId: string) {
  * Anula un asiento contable
  */
 export async function reverseJournalEntry(companyId: string, entryId: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.entries', 'approve', { redirect: true });
 
@@ -342,7 +342,7 @@ export async function reverseJournalEntry(companyId: string, entryId: string) {
  * Obtiene todos los asientos contables de una empresa
  */
 export async function getJournalEntries(companyId: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.entries', 'view', { redirect: true });
 
@@ -396,7 +396,7 @@ export async function getJournalEntries(companyId: string) {
  * Obtiene un asiento contable por ID
  */
 export async function getJournalEntryById(companyId: string, entryId: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.entries', 'view', { redirect: true });
 

@@ -1,7 +1,5 @@
 'use client';
 
-import { ClerkProvider } from '@clerk/nextjs';
-import { esES } from '@clerk/localizations';
 import type { ReactNode } from 'react';
 
 interface SessionProviderProps {
@@ -9,14 +7,9 @@ interface SessionProviderProps {
 }
 
 /**
- * Provider de autenticación con Clerk
- *
- * Configurado con localización en español
+ * Pass-through. Better Auth no requiere provider — las cookies se manejan en server.
+ * Mantenemos el componente para no romper el árbol del layout.
  */
 export function SessionProvider({ children }: SessionProviderProps) {
-  return (
-    <ClerkProvider localization={esES}>
-      {children}
-    </ClerkProvider>
-  );
+  return <>{children}</>;
 }

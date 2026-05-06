@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { revalidatePath } from 'next/cache';
 
 import { getActiveCompanyId } from '@/shared/lib/company';
@@ -55,7 +55,7 @@ export async function uploadEquipmentDocument(
     return { success: false, error: 'No hay empresa activa' };
   }
 
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) {
     return { success: false, error: 'No autenticado' };
   }
@@ -389,7 +389,7 @@ export async function revertEquipmentDocumentVersion(
     return { success: false, error: 'No hay empresa activa' };
   }
 
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) {
     return { success: false, error: 'No autenticado' };
   }

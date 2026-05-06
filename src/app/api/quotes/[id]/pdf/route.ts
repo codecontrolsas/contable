@@ -1,10 +1,10 @@
-/**
+﻿/**
  * API Route para generar y servir PDF de presupuesto
  * GET /api/quotes/:id/pdf
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { prisma } from '@/shared/lib/prisma';
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
@@ -18,7 +18,7 @@ export async function GET(
   const { id } = await params;
   try {
     // Autenticación
-    const { userId } = await auth();
+    const userId = await getCurrentUserId();
     if (!userId) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
     }

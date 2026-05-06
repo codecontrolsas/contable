@@ -2,7 +2,7 @@
 
 import { logger } from '@/shared/lib/logger';
 import { prisma } from '@/shared/lib/prisma';
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 
 /**
  * Obtiene SOLO el ID de la company activa (versión ligera)
@@ -11,7 +11,7 @@ import { auth } from '@clerk/nextjs/server';
  * @returns string | null - El ID de la company activa o null
  */
 export async function getActiveCompanyId() {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) return null;
 
   try {
@@ -79,7 +79,7 @@ export async function getActiveCompanyId() {
  * 3. Si no tiene ninguna company → retornar null
  */
 export async function getActiveCompany() {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) return null;
 
   try {
@@ -205,7 +205,7 @@ export async function getActiveCompany() {
  * Cambia la company activa del usuario
  */
 export async function setActiveCompany(companyId: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   try {
@@ -250,7 +250,7 @@ export async function setActiveCompany(companyId: string) {
  * Obtiene las preferencias del usuario
  */
 export async function getUserPreferences() {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) return null;
 
   try {

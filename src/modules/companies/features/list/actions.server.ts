@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 
@@ -8,7 +8,7 @@ import { logger } from '@/shared/lib/logger';
  * Obtiene todas las companies donde el usuario es miembro activo
  */
 export async function getMyCompanies() {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   try {

@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { prisma } from '@/shared/lib/prisma';
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
@@ -14,7 +14,7 @@ import { isCreditNote } from '@/modules/commercial/shared/voucher-utils';
 export async function getSupplierAccountStatement(supplierId: string) {
   await checkPermission('commercial.suppliers', 'view', { redirect: true });
   try {
-    const { userId } = await auth();
+    const userId = await getCurrentUserId();
     if (!userId) throw new Error('No autenticado');
 
     const companyId = await getActiveCompanyId();

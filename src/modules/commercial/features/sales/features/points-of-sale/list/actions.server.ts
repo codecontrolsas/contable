@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { getActiveCompanyId } from '@/shared/lib/company';
@@ -11,7 +11,7 @@ import { revalidatePath } from 'next/cache';
 // Obtener todos los puntos de venta de la empresa
 export async function getPointsOfSale() {
   await checkPermission('commercial.points-of-sale', 'view', { redirect: true });
-  const { userId: authUserId } = await auth();
+  const authUserId = await getCurrentUserId();
   if (!authUserId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -53,7 +53,7 @@ export async function getPointsOfSale() {
 // Obtener un punto de venta por ID
 export async function getPointOfSaleById(id: string) {
   await checkPermission('commercial.points-of-sale', 'view', { redirect: true });
-  const { userId: authUserId } = await auth();
+  const authUserId = await getCurrentUserId();
   if (!authUserId) throw new Error('No autenticado');
   const userId = authUserId; // Para usar en el resto de la función
 
@@ -98,7 +98,7 @@ export async function getPointOfSaleById(id: string) {
 // Crear un nuevo punto de venta
 export async function createPointOfSale(data: unknown) {
   await checkPermission('commercial.points-of-sale', 'create', { redirect: true });
-  const { userId: authUserId } = await auth();
+  const authUserId = await getCurrentUserId();
   if (!authUserId) throw new Error('No autenticado');
   const userId = authUserId; // Para usar en el resto de la función
 
@@ -162,7 +162,7 @@ export async function createPointOfSale(data: unknown) {
 // Actualizar un punto de venta
 export async function updatePointOfSale(id: string, data: unknown) {
   await checkPermission('commercial.points-of-sale', 'update', { redirect: true });
-  const { userId: authUserId } = await auth();
+  const authUserId = await getCurrentUserId();
   if (!authUserId) throw new Error('No autenticado');
   const userId = authUserId; // Para usar en el resto de la función
 
@@ -237,7 +237,7 @@ export async function updatePointOfSale(id: string, data: unknown) {
 // Eliminar un punto de venta
 export async function deletePointOfSale(id: string) {
   await checkPermission('commercial.points-of-sale', 'delete', { redirect: true });
-  const { userId: authUserId } = await auth();
+  const authUserId = await getCurrentUserId();
   if (!authUserId) throw new Error('No autenticado');
   const userId = authUserId; // Para usar en el resto de la función
 
@@ -301,7 +301,7 @@ export async function deletePointOfSale(id: string) {
 // Alternar estado activo de un punto de venta
 export async function togglePointOfSaleStatus(id: string) {
   await checkPermission('commercial.points-of-sale', 'update', { redirect: true });
-  const { userId: authUserId } = await auth();
+  const authUserId = await getCurrentUserId();
   if (!authUserId) throw new Error('No autenticado');
   const userId = authUserId; // Para usar en el resto de la función
 

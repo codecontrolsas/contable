@@ -1,7 +1,5 @@
 'use server';
 
-import { clerkClient } from '@clerk/nextjs/server';
-
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { getActiveCompanyId } from '@/shared/lib/company';
@@ -55,28 +53,21 @@ export async function getAuditLogsPaginated(searchParams: DataTableSearchParams)
       prisma.permissionAuditLog.count({ where }),
     ]);
 
-    // Enriquecer con datos de usuarios de Clerk
+    // Enriquecer con datos de usuarios (batch)
     const userIds = [...new Set(logs.map((log) => log.performedBy))];
-    const clerk = await clerkClient();
-    const usersMap = new Map<string, { firstName: string; lastName: string; imageUrl: string | null }>();
-
-    await Promise.all(
-      userIds.map(async (userId) => {
-        try {
-          const user = await clerk.users.getUser(userId);
-          usersMap.set(userId, {
-            firstName: user.firstName ?? '',
-            lastName: user.lastName ?? '',
-            imageUrl: user.imageUrl,
-          });
-        } catch {
-          usersMap.set(userId, {
-            firstName: 'Usuario',
-            lastName: 'Desconocido',
-            imageUrl: null,
-          });
-        }
-      })
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, firstName: true, lastName: true, imageUrl: true },
+    });
+    const usersMap = new Map<string, { firstName: string; lastName: string; imageUrl: string | null }>(
+      users.map((u) => [
+        u.id,
+        {
+          firstName: u.firstName ?? '',
+          lastName: u.lastName ?? '',
+          imageUrl: u.imageUrl ?? null,
+        },
+      ])
     );
 
     const enrichedLogs = logs.map((log) => ({

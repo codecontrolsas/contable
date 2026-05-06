@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { getActiveCompanyId } from '@/shared/lib/company';
@@ -12,7 +12,7 @@ import { checkPermission } from '@/shared/lib/permissions';
 
 export async function getPurchasesByPeriod(startDate: Date, endDate: Date, supplierId?: string) {
   await checkPermission('commercial.purchases', 'view', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -76,7 +76,7 @@ export async function getPurchasesByPeriod(startDate: Date, endDate: Date, suppl
 
 export async function getPurchasesBySupplier(startDate: Date, endDate: Date, supplierId?: string) {
   await checkPermission('commercial.purchases', 'view', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -169,7 +169,7 @@ export async function getPurchasesBySupplier(startDate: Date, endDate: Date, sup
 
 export async function getPurchasesByProduct(startDate: Date, endDate: Date, supplierId?: string) {
   await checkPermission('commercial.purchases', 'view', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -270,7 +270,7 @@ export async function getPurchasesByProduct(startDate: Date, endDate: Date, supp
 
 export async function getVATPurchaseBook(startDate: Date, endDate: Date, supplierId?: string) {
   await checkPermission('commercial.purchases', 'view', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();

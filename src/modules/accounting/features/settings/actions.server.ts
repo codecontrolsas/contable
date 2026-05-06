@@ -1,7 +1,7 @@
-'use server';
+﻿'use server';
 
 import moment from 'moment';
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { checkPermission } from '@/shared/lib/permissions';
@@ -11,7 +11,7 @@ import { revalidateAccountingRoutes } from '../../shared/utils';
  * Obtiene la configuración contable de una empresa
  */
 export async function getAccountingSettings(companyId: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.settings', 'view', { redirect: true });
 
@@ -60,7 +60,7 @@ export async function saveAccountingSettings(
     assetDisposalGainLossAccountId?: string | null;
   }
 ) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.settings', 'update', { redirect: true });
 
@@ -99,7 +99,7 @@ export async function saveAccountingSettings(
  * Obtiene la información de bloqueo de períodos contables
  */
 export async function getLockedPeriod(companyId: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.settings', 'view', { redirect: true });
 
@@ -132,7 +132,7 @@ export async function getLockedPeriod(companyId: string) {
  * Pasar null para desbloquear todos los períodos.
  */
 export async function setLockedPeriod(companyId: string, lockedUntilDate: Date | null) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.settings', 'update', { redirect: true });
 
@@ -186,7 +186,7 @@ export async function setLockedPeriod(companyId: string, lockedUntilDate: Date |
  * Obtiene todas las cuentas activas de la empresa para los selectores
  */
 export async function getActiveAccounts(companyId: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.settings', 'view', { redirect: true });
 

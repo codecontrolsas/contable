@@ -1,7 +1,6 @@
 'use server';
 
-import { auth } from '@clerk/nextjs/server';
-
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { logger } from '@/shared/lib/logger';
 import { prisma } from '@/shared/lib/prisma';
 
@@ -16,7 +15,7 @@ interface TablePreferences {
 export async function getTablePreferences(
   tableId: string
 ): Promise<TablePreferences | null> {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) return null;
 
   try {
@@ -42,7 +41,7 @@ export async function saveTableColumnVisibility(
   tableId: string,
   visibility: Record<string, boolean>
 ): Promise<void> {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) return;
 
   try {
@@ -75,7 +74,7 @@ export async function saveTableFilterVisibility(
   tableId: string,
   visibility: Record<string, boolean>
 ): Promise<void> {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) return;
 
   try {

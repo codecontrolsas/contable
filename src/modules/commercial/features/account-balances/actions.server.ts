@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { getActiveCompanyId } from '@/shared/lib/company';
@@ -41,7 +41,7 @@ interface PayableItem extends PendingInvoiceItem {
 
 export async function getAccountsReceivable(startDate?: Date, endDate?: Date, overdueOnly?: boolean) {
   await checkPermission('commercial.invoices', 'view', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -204,7 +204,7 @@ export async function getAccountsReceivable(startDate?: Date, endDate?: Date, ov
 
 export async function getAccountsPayable(startDate?: Date, endDate?: Date, overdueOnly?: boolean) {
   await checkPermission('commercial.purchases', 'view', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();

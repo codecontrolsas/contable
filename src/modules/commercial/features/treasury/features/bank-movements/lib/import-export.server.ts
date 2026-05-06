@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
@@ -15,7 +15,7 @@ import { generateBankMovementsTemplate, VALID_MOVEMENT_TYPES } from './excel-tem
  * Descarga la plantilla vacía de Excel para importar movimientos bancarios
  */
 export async function downloadBankMovementsTemplate() {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   try {
@@ -129,7 +129,7 @@ function parseCellValue(cellValue: ExcelJS.CellValue): string {
  * Importa movimientos bancarios desde un archivo Excel
  */
 export async function importBankMovementsFromExcel(bankAccountId: string, fileBuffer: number[]) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();

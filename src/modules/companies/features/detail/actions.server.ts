@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { revalidateCompanyRoutes } from '@/modules/companies/shared/utils';
@@ -14,7 +14,7 @@ const ERROR_CODES = {
  * Obtiene una company por ID (solo si el usuario es miembro)
  */
 export async function getCompanyById(companyId: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   if (!companyId) {
@@ -87,7 +87,7 @@ export async function getCompanyById(companyId: string) {
  * Elimina una company (soft delete, solo owner)
  */
 export async function deleteCompany(companyId: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   if (!companyId) {
@@ -127,7 +127,7 @@ export async function deleteCompany(companyId: string) {
  * Actualiza el modo Single Company (solo owner, solo en DEV)
  */
 export async function updateCompanySingleMode(companyId: string, isSingleCompany: boolean) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   if (!companyId) {

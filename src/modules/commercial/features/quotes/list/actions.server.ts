@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { getActiveCompanyId } from '@/shared/lib/company';
@@ -405,7 +405,7 @@ export async function getNextQuoteNumber(): Promise<string> {
 // Crear presupuesto
 export async function createQuote(data: unknown) {
   await checkPermission('commercial.quotes', 'create', { redirect: true });
-  const { userId: authUserId } = await auth();
+  const authUserId = await getCurrentUserId();
   if (!authUserId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -827,7 +827,7 @@ export async function updateQuoteStatus(id: string, newStatus: string) {
 // Duplicar presupuesto
 export async function duplicateQuote(id: string) {
   await checkPermission('commercial.quotes', 'create', { redirect: true });
-  const { userId: authUserId } = await auth();
+  const authUserId = await getCurrentUserId();
   if (!authUserId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();

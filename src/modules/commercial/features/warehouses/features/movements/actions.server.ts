@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { getActiveCompanyId } from '@/shared/lib/company';
@@ -72,7 +72,7 @@ export async function getStockProductsForSelect() {
 
 export async function createStockAdjustment(data: unknown) {
   await checkPermission('commercial.movements', 'create', { redirect: true });
-  const { userId: authUserId } = await auth();
+  const authUserId = await getCurrentUserId();
   if (!authUserId) throw new Error('No autenticado');
   const userId = authUserId;
 
@@ -236,7 +236,7 @@ export async function createStockAdjustment(data: unknown) {
 
 export async function createStockTransfer(data: unknown) {
   await checkPermission('commercial.movements', 'create', { redirect: true });
-  const { userId: authUserId } = await auth();
+  const authUserId = await getCurrentUserId();
   if (!authUserId) throw new Error('No autenticado');
   const userId = authUserId;
 

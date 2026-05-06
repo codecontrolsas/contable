@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
 import { checkPermission } from '@/shared/lib/permissions';
@@ -22,7 +22,7 @@ function parsePeriod(period?: string) {
 // ============================================
 
 export async function getDashboardKPIs(period?: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('dashboard', 'view', { redirect: true });
 
@@ -176,7 +176,7 @@ export async function getDashboardKPIs(period?: string) {
 // ============================================
 
 export async function getSalesTrend(period?: string, months: number = 6) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('dashboard', 'view', { redirect: true });
 
@@ -230,7 +230,7 @@ export async function getSalesTrend(period?: string, months: number = 6) {
 // ============================================
 
 export async function getPurchasesTrend(period?: string, months: number = 6) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('dashboard', 'view', { redirect: true });
 
@@ -282,7 +282,7 @@ export async function getPurchasesTrend(period?: string, months: number = 6) {
 // ============================================
 
 export async function getProfitabilityTrend(period?: string, excludeCategoryIds?: string[], months: number = 6) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('dashboard', 'view', { redirect: true });
 
@@ -388,7 +388,7 @@ export async function getProfitabilityTrend(period?: string, excludeCategoryIds?
 // ============================================
 
 export async function getExpenseCategories() {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('dashboard', 'view', { redirect: true });
 
@@ -413,7 +413,7 @@ export async function getExpenseCategories() {
 // ============================================
 
 export async function getCriticalStockProducts() {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('dashboard', 'view', { redirect: true });
 
@@ -471,7 +471,7 @@ export async function getCriticalStockProducts() {
 // ============================================
 
 export async function getRecentAlerts(period?: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('dashboard', 'view', { redirect: true });
 
@@ -606,7 +606,7 @@ export async function getRecentAlerts(period?: string) {
 // ============================================
 
 export async function getTopClientDebts(limit = 10) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('dashboard', 'view', { redirect: true });
 
@@ -665,7 +665,7 @@ export async function getTopClientDebts(limit = 10) {
 // ============================================
 
 export async function getTopSupplierDebts(limit = 10) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('dashboard', 'view', { redirect: true });
 
@@ -722,7 +722,7 @@ export async function getTopSupplierDebts(limit = 10) {
 // ============================================
 
 export async function getTopSellingProducts(limit = 10) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('dashboard', 'view', { redirect: true });
 
@@ -782,7 +782,7 @@ export async function getTopSellingProducts(limit = 10) {
 // ============================================
 
 export async function getWeeklySalesComparison() {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('dashboard', 'view', { redirect: true });
 
@@ -831,7 +831,7 @@ export async function getWeeklySalesComparison() {
 // ============================================
 
 export async function getPaymentMethodBreakdown() {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('dashboard', 'view', { redirect: true });
 
@@ -890,7 +890,7 @@ export async function getPaymentMethodBreakdown() {
 // ============================================
 
 export async function getUpcomingDueDates(limit = 10) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('dashboard', 'view', { redirect: true });
 

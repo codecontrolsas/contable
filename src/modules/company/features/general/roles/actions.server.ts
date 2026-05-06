@@ -1,7 +1,7 @@
-'use server';
+﻿'use server';
 
 import { revalidatePath } from 'next/cache';
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
@@ -272,7 +272,7 @@ export async function getPermissionsConfig() {
  * Crea un nuevo rol
  */
 export async function createRole(input: CreateRoleInput) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('company.general.roles', 'create', { redirect: true });
 
@@ -351,7 +351,7 @@ export async function createRole(input: CreateRoleInput) {
  * Actualiza un rol
  */
 export async function updateRole(roleId: string, input: UpdateRoleInput) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('company.general.roles', 'update', { redirect: true });
 
@@ -444,7 +444,7 @@ export async function updateRole(roleId: string, input: UpdateRoleInput) {
  * Elimina un rol
  */
 export async function deleteRole(roleId: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('company.general.roles', 'delete', { redirect: true });
 

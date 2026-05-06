@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
 import { prisma } from '@/shared/lib/prisma';
@@ -78,7 +78,7 @@ export async function getAllExpenseCategories() {
  */
 export async function createExpenseCategory(data: ExpenseCategoryFormInput) {
   await checkPermission('commercial.expenses', 'create', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -111,7 +111,7 @@ export async function createExpenseCategory(data: ExpenseCategoryFormInput) {
  */
 export async function updateExpenseCategory(id: string, data: ExpenseCategoryFormInput) {
   await checkPermission('commercial.expenses', 'update', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -147,7 +147,7 @@ export async function updateExpenseCategory(id: string, data: ExpenseCategoryFor
  */
 export async function toggleExpenseCategory(id: string) {
   await checkPermission('commercial.expenses', 'update', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -381,7 +381,7 @@ export async function getExpenseById(id: string) {
  */
 export async function createExpense(data: ExpenseFormInput) {
   await checkPermission('commercial.expenses', 'create', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -433,7 +433,7 @@ export async function createExpense(data: ExpenseFormInput) {
  */
 export async function updateExpense(id: string, data: ExpenseFormInput) {
   await checkPermission('commercial.expenses', 'update', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -481,7 +481,7 @@ export async function confirmExpense(id: string): Promise<{
   budgetWarning?: { message: string; executedPercent: number };
 }> {
   await checkPermission('commercial.expenses', 'approve', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -561,7 +561,7 @@ export async function confirmExpense(id: string): Promise<{
  */
 export async function cancelExpense(id: string) {
   await checkPermission('commercial.expenses', 'delete', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -611,7 +611,7 @@ export async function cancelExpense(id: string) {
  */
 export async function deleteExpense(id: string) {
   await checkPermission('commercial.expenses', 'delete', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();

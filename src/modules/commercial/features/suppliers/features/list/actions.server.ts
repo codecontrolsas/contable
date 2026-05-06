@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { checkPermission } from '@/shared/lib/permissions';
@@ -30,7 +30,7 @@ export async function getSuppliers(searchParams: DataTableSearchParams = {}) {
   if (!companyId) throw new Error('No hay empresa activa');
 
   try {
-    const { userId } = await auth();
+    const userId = await getCurrentUserId();
     if (!userId) throw new Error('No autenticado');
 
     const state = parseSearchParams(searchParams);
@@ -124,7 +124,7 @@ export async function getSupplierFacetCounts() {
 export async function getSupplierById(id: string): Promise<Supplier | null> {
   await checkPermission('commercial.suppliers', 'view', { redirect: true });
   try {
-    const { userId } = await auth();
+    const userId = await getCurrentUserId();
     if (!userId) throw new Error('No autenticado');
 
     const companyId = await getActiveCompanyId();
@@ -152,7 +152,7 @@ export async function getSupplierById(id: string): Promise<Supplier | null> {
 export async function createSupplier(data: CreateSupplierFormData): Promise<Supplier> {
   await checkPermission('commercial.suppliers', 'create', { redirect: true });
   try {
-    const { userId } = await auth();
+    const userId = await getCurrentUserId();
     if (!userId) throw new Error('No autenticado');
 
     const companyId = await getActiveCompanyId();
@@ -245,7 +245,7 @@ export async function updateSupplier(
 ): Promise<Supplier> {
   await checkPermission('commercial.suppliers', 'update', { redirect: true });
   try {
-    const { userId } = await auth();
+    const userId = await getCurrentUserId();
     if (!userId) throw new Error('No autenticado');
 
     const companyId = await getActiveCompanyId();
@@ -334,7 +334,7 @@ export async function updateSupplier(
 export async function toggleSupplierStatus(id: string): Promise<void> {
   await checkPermission('commercial.suppliers', 'update', { redirect: true });
   try {
-    const { userId } = await auth();
+    const userId = await getCurrentUserId();
     if (!userId) throw new Error('No autenticado');
 
     const companyId = await getActiveCompanyId();
@@ -373,7 +373,7 @@ export async function toggleSupplierStatus(id: string): Promise<void> {
 export async function deleteSupplier(id: string): Promise<void> {
   await checkPermission('commercial.suppliers', 'delete', { redirect: true });
   try {
-    const { userId } = await auth();
+    const userId = await getCurrentUserId();
     if (!userId) throw new Error('No autenticado');
 
     const companyId = await getActiveCompanyId();

@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
 import { prisma } from '@/shared/lib/prisma';
@@ -13,7 +13,7 @@ import { checkPermission } from '@/shared/lib/permissions';
  */
 export async function createCashRegister(data: CashRegisterFormData) {
   await checkPermission('commercial.treasury.cash-registers', 'create', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -74,7 +74,7 @@ export async function createCashRegister(data: CashRegisterFormData) {
  */
 export async function updateCashRegister(id: string, data: CashRegisterFormData) {
   await checkPermission('commercial.treasury.cash-registers', 'update', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -145,7 +145,7 @@ export async function updateCashRegister(id: string, data: CashRegisterFormData)
  */
 export async function deactivateCashRegister(id: string) {
   await checkPermission('commercial.treasury.cash-registers', 'update', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -201,7 +201,7 @@ export async function deactivateCashRegister(id: string) {
  */
 export async function activateCashRegister(id: string) {
   await checkPermission('commercial.treasury.cash-registers', 'update', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();

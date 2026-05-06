@@ -5,6 +5,7 @@ import { getMyCompanies } from '@/modules/companies/features/list';
 import { getSidebarPermissions } from '@/shared/actions/sidebar';
 import { getIndustryType } from '@/shared/lib/industry';
 import { DashboardLayout } from '@/shared/components/layout/DashboardLayout';
+import { OnboardingGate } from '@/modules/onboarding/features/company-setup';
 
 /**
  * Layout del Dashboard
@@ -36,6 +37,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
       industryType={industryType}
     >
       {children}
+      <OnboardingGate />
     </DashboardLayout>
   );
 }

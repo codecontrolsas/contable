@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { checkPermission } from '@/shared/lib/permissions';
@@ -12,7 +12,7 @@ import { generateAccountsTemplate } from './excel-template';
  * Descarga la plantilla vacía de Excel para importar cuentas
  */
 export async function downloadAccountsTemplate() {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.accounts', 'view', { redirect: true });
 
@@ -36,7 +36,7 @@ export async function downloadAccountsTemplate() {
  * Exporta el plan de cuentas actual a Excel
  */
 export async function exportAccountsToExcel(companyId: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.accounts', 'view', { redirect: true });
 
@@ -186,7 +186,7 @@ function validateAccountRow(row: {
  * Importa cuentas desde un archivo Excel
  */
 export async function importAccountsFromExcel(companyId: string, fileBuffer: number[]) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.accounts', 'create', { redirect: true });
 

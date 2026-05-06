@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
 import { prisma } from '@/shared/lib/prisma';
@@ -14,7 +14,7 @@ import { checkPermission } from '@/shared/lib/permissions';
  */
 export async function createCashMovement(data: CashMovementFormData) {
   await checkPermission('commercial.treasury.cash-registers', 'create', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -198,7 +198,7 @@ export async function getCashRegisterMovements(cashRegisterId: string, limit = 5
  */
 export async function deleteCashMovement(movementId: string) {
   await checkPermission('commercial.treasury.cash-registers', 'delete', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();

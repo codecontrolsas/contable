@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { prisma } from '@/shared/lib/prisma';
 import { Prisma } from '@/generated/prisma/client';
 import { logger } from '@/shared/lib/logger';
@@ -97,7 +97,7 @@ function startOfDay(date: Date): Date {
  * Obtiene el balance de sumas y saldos
  */
 export async function getTrialBalance(companyId: string, fromDate: Date, toDate: Date) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.reports', 'view', { redirect: true });
 
@@ -184,7 +184,7 @@ export async function getTrialBalance(companyId: string, fromDate: Date, toDate:
  * Obtiene el libro diario
  */
 export async function getJournalBook(companyId: string, fromDate: Date, toDate: Date) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.reports', 'view', { redirect: true });
 
@@ -231,7 +231,7 @@ export async function getJournalBook(companyId: string, fromDate: Date, toDate: 
  * Obtiene el libro mayor
  */
 export async function getGeneralLedger(companyId: string, fromDate: Date, toDate: Date) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.reports', 'view', { redirect: true });
 
@@ -361,7 +361,7 @@ interface BalanceSheetResult {
  * Muestra: Activo = Pasivo + Patrimonio Neto
  */
 export async function getBalanceSheet(companyId: string, asOfDate: Date) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.reports', 'view', { redirect: true });
 
@@ -487,7 +487,7 @@ interface IncomeStatementResult {
  * Muestra: Ingresos - Gastos = Resultado del Período
  */
 export async function getIncomeStatement(companyId: string, fromDate: Date, toDate: Date) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.reports', 'view', { redirect: true });
 
@@ -606,7 +606,7 @@ export async function getEntriesWithoutDocuments(
   fromDate: Date,
   toDate: Date
 ) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.reports', 'view', { redirect: true });
 
@@ -663,7 +663,7 @@ export async function getReversalLog(
   fromDate: Date,
   toDate: Date
 ) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.reports', 'view', { redirect: true });
 
@@ -723,7 +723,7 @@ export async function getDocumentEntryTraceability(
   toDate: Date,
   documentType?: 'sales_invoice' | 'purchase_invoice' | 'receipt' | 'payment_order'
 ) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.reports', 'view', { redirect: true });
 
@@ -907,7 +907,7 @@ export async function getDocumentEntryTraceability(
 // ============================================
 
 export async function getFixedAssetsRegister(companyId: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.reports', 'view', { redirect: true });
 
@@ -990,7 +990,7 @@ export async function getFixedAssetsRegister(companyId: string) {
 // ============================================
 
 export async function getPeriodDepreciations(companyId: string, fromDate: Date, toDate: Date) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.reports', 'view', { redirect: true });
 
@@ -1097,7 +1097,7 @@ export async function getBudgetVarianceReport(
   companyId: string,
   fiscalYear: number
 ): Promise<BudgetVarianceResult> {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.reports', 'view', { redirect: true });
 
@@ -1360,7 +1360,7 @@ export async function getMonthlyVATReport(
   year: number,
   month: number
 ): Promise<MonthlyVATResult> {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.reports', 'view', { redirect: true });
 

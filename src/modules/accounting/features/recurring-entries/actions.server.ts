@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { checkPermission } from '@/shared/lib/permissions';
@@ -43,7 +43,7 @@ const FREQUENCY_LABELS: Record<string, string> = {
  * Obtiene todos los asientos recurrentes de la empresa
  */
 export async function getRecurringEntries(companyId: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.recurring-entries', 'view', { redirect: true });
 
@@ -94,7 +94,7 @@ export async function createRecurringEntry(
     lines: { accountId: string; description?: string; debit: number; credit: number }[];
   }
 ) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.recurring-entries', 'create', { redirect: true });
 
@@ -144,7 +144,7 @@ export async function createRecurringEntry(
  * Elimina (soft delete) un asiento recurrente
  */
 export async function deleteRecurringEntry(companyId: string, id: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.recurring-entries', 'delete', { redirect: true });
 
@@ -175,7 +175,7 @@ export async function deleteRecurringEntry(companyId: string, id: string) {
  * Genera un asiento contable desde una plantilla recurrente
  */
 export async function generateRecurringEntry(companyId: string, recurringEntryId: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.recurring-entries', 'create', { redirect: true });
 
@@ -267,7 +267,7 @@ export async function generateRecurringEntry(companyId: string, recurringEntryId
  * Genera todos los asientos recurrentes pendientes
  */
 export async function generateAllPendingRecurringEntries(companyId: string) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.recurring-entries', 'create', { redirect: true });
 

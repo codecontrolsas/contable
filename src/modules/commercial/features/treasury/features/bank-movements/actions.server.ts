@@ -1,6 +1,6 @@
-'use server';
+﻿'use server';
 
-import { auth } from '@clerk/nextjs/server';
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
 import { prisma } from '@/shared/lib/prisma';
@@ -29,7 +29,7 @@ type PrismaTransactionClient = Omit<
  */
 export async function createBankMovement(data: BankMovementFormData) {
   await checkPermission('commercial.treasury.bank-accounts', 'create', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -525,7 +525,7 @@ export async function getAccountsForBankMovement() {
  */
 export async function reconcileBankMovement(movementId: string, reconcile: boolean) {
   await checkPermission('commercial.treasury.bank-accounts', 'update', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -593,7 +593,7 @@ export async function reconcileBankMovement(movementId: string, reconcile: boole
  */
 export async function reconcileMultipleBankMovements(movementIds: string[], reconcile: boolean) {
   await checkPermission('commercial.treasury.bank-accounts', 'update', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -634,7 +634,7 @@ export async function reconcileMultipleBankMovements(movementIds: string[], reco
  */
 export async function deleteBankMovement(movementId: string) {
   await checkPermission('commercial.treasury.bank-accounts', 'delete', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -848,7 +848,7 @@ export async function linkBankMovementToDocument(
   documentId: string
 ) {
   await checkPermission('commercial.treasury.bank-accounts', 'update', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -896,7 +896,7 @@ export async function linkBankMovementToDocument(
  */
 export async function unlinkBankMovementFromDocument(movementId: string) {
   await checkPermission('commercial.treasury.bank-accounts', 'update', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();
@@ -1012,7 +1012,7 @@ export async function getCashRegistersForTransfer() {
  */
 export async function createBankTransfer(data: BankTransferFormData) {
   await checkPermission('commercial.treasury.bank-accounts', 'create', { redirect: true });
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
   const companyId = await getActiveCompanyId();

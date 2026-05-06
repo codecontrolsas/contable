@@ -1,5 +1,4 @@
-import { auth } from '@clerk/nextjs/server';
-
+import { getCurrentUserId } from '@/shared/lib/current-user';
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
 import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 import { getModulePermissions } from '@/shared/lib/permissions';
@@ -17,7 +16,7 @@ interface Props {
 }
 
 export async function UsersList({ searchParams }: Props) {
-  const { userId } = await auth();
+  const userId = await getCurrentUserId();
 
   const [
     membersResult,
