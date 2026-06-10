@@ -12,7 +12,12 @@ import {
   buildFiltersWhere,
   buildDateRangeFiltersWhere,
 } from '@/shared/components/common/DataTable/helpers';
-import type { CreateCheckFormData, DepositCheckFormData, EndorseCheckFormData } from '../../shared/validators';
+import type {
+  CreateCheckFormData,
+  DepositCheckFormData,
+  EndorseCheckFormData,
+  UpdateCheckFormData,
+} from '../../shared/validators';
 import type { CheckListItem, CheckWithDetails } from '../../shared/types';
 import { checkPermission } from '@/shared/lib/permissions';
 
@@ -122,6 +127,7 @@ export async function getCheckById(id: string): Promise<CheckWithDetails | null>
         amount: true,
         issueDate: true,
         dueDate: true,
+        isElectronic: true,
         drawerName: true,
         drawerTaxId: true,
         payeeName: true,
@@ -222,6 +228,54 @@ export async function createCheck(data: CreateCheckFormData) {
   } catch (error) {
     logger.error('Error al crear cheque', { data: { error, companyId } });
     throw new Error('Error al crear cheque');
+  }
+}
+
+// ============================================
+// EDITAR CHEQUE (solo en cartera / PORTFOLIO)
+// ============================================
+
+export async function updateCheck(data: UpdateCheckFormData) {
+  await checkPermission('commercial.treasury.checks', 'update', { redirect: true });
+  const userId = await getCurrentUserId();
+  if (!userId) throw new Error('No autenticado');
+
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  try {
+    const check = await prisma.check.findFirst({
+      where: { id: data.checkId, companyId },
+      select: { id: true, status: true },
+    });
+
+    if (!check) throw new Error('Cheque no encontrado');
+    // Solo se permite editar la metadata mientras el cheque sigue en cartera
+    if (check.status !== 'PORTFOLIO') {
+      throw new Error('Solo se pueden editar cheques en cartera');
+    }
+
+    await prisma.check.update({
+      where: { id: check.id },
+      data: {
+        checkNumber: data.checkNumber,
+        bankName: data.bankName,
+        branch: data.branch || null,
+        accountNumber: data.accountNumber || null,
+        issueDate: data.issueDate,
+        dueDate: data.dueDate,
+        drawerName: data.drawerName,
+        drawerTaxId: data.drawerTaxId || null,
+        payeeName: data.payeeName || null,
+        notes: data.notes || null,
+      },
+    });
+
+    revalidatePath('/dashboard/commercial/treasury/checks');
+    return { success: true };
+  } catch (error) {
+    logger.error('Error al editar cheque', { data: { error, companyId } });
+    throw new Error(error instanceof Error ? error.message : 'Error al editar cheque');
   }
 }
 

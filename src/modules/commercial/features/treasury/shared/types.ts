@@ -418,6 +418,7 @@ export interface CheckWithDetails extends Record<string, unknown> {
   amount: number;
   issueDate: Date;
   dueDate: Date;
+  isElectronic: boolean;
   drawerName: string;
   drawerTaxId: string | null;
   payeeName: string | null;

@@ -278,9 +278,22 @@ export function _TreasuryGuide() {
               <ul className="list-disc pl-6 mt-1 space-y-1">
                 <li>Efectivo (asociar caja)</li>
                 <li>Transferencia (asociar cuenta bancaria)</li>
-                <li>Cheque (indicar número)</li>
+                <li>
+                  Cheque (indicar número, banco emisor, emisor/librador, fecha de
+                  emisión y fecha de vencimiento)
+                </li>
+                <li>
+                  E-Cheq (mismos datos del cheque, más la cuenta de depósito donde
+                  ingresó el e-cheq)
+                </li>
                 <li>Tarjeta de débito/crédito (últimos 4 dígitos)</li>
               </ul>
+              <p className="text-sm text-muted-foreground mt-1">
+                Al confirmar el recibo, los cheques y e-cheq se registran
+                automáticamente en <strong>Tesorería → Cheques</strong> en estado
+                "En cartera", con sus fechas reales. Podés corregir sus datos
+                desde allí mientras sigan en cartera.
+              </p>
             </li>
             <li>
               Agrega <strong>retenciones</strong> si corresponde (IVA,
@@ -330,6 +343,21 @@ export function _TreasuryGuide() {
             <li>
               Indica las <strong>formas de pago</strong> (mismas opciones que
               recibos)
+            </li>
+            <li>
+              Si pagás con <strong>cheque o e-cheq</strong>, elegí si es:
+              <ul className="list-disc pl-6 mt-1 space-y-1">
+                <li>
+                  <strong>Propio</strong>: se emite un cheque nuevo (cargás número,
+                  banco y fechas)
+                </li>
+                <li>
+                  <strong>De terceros</strong>: se <strong>endosa</strong> un cheque
+                  recibido que tengas <strong>en cartera</strong>. Elegís el cheque
+                  de la lista y el monto se completa solo; al confirmar, ese cheque
+                  pasa a estado "Endosado" a nombre del proveedor
+                </li>
+              </ul>
             </li>
             <li>
               Agrega <strong>retenciones</strong> si corresponde
@@ -437,6 +465,28 @@ export function _TreasuryGuide() {
           <p className="text-sm text-muted-foreground mt-2">
             Desde el detalle del cheque puedes realizar acciones como depositar,
             endosar o marcar como rechazado.
+          </p>
+
+          <p className="mt-3">
+            <strong>Editar un cheque:</strong>
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Mientras un cheque esté <strong>En Cartera</strong> podés corregir sus
+            datos (número, banco emisor, emisor/librador, CUIT, fechas de emisión y
+            vencimiento, sucursal, cuenta y notas) desde la acción{' '}
+            <strong>Editar</strong> del menú de la fila. Una vez depositado,
+            endosado o acreditado, ya no se puede modificar.
+          </p>
+
+          <p className="mt-3">
+            <strong>E-Cheq:</strong>
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Los e-cheq se identifican con la etiqueta <strong>E-Cheq</strong> en el
+            detalle. Se cargan como forma de cobro o pago indicando la cuenta
+            bancaria donde ingresan (cobranza) o desde la que se emiten (pago). El
+            saldo de la cuenta recién se actualiza cuando el e-cheq se acredita o
+            debita, no al confirmar el recibo u orden de pago.
           </p>
         </CardContent>
       </Card>

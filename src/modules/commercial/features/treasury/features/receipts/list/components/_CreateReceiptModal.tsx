@@ -125,6 +125,12 @@ export function CreateReceiptModal({ onSuccess }: CreateReceiptModalProps) {
       checkNumber: null,
       cardLast4: null,
       reference: null,
+      // Metadata de cheque/e-cheq: fecha de emisión por defecto = fecha del recibo
+      checkBankName: null,
+      checkIssueDate: form.getValues('date') ?? new Date(),
+      checkDueDate: null,
+      checkDrawerName: null,
+      checkDrawerTaxId: null,
     });
   };
 
@@ -516,20 +522,130 @@ export function CreateReceiptModal({ onSuccess }: CreateReceiptModalProps) {
                         />
                       )}
 
-                      {paymentMethod === 'CHECK' && (
-                        <FormField
-                          control={form.control}
-                          name={`payments.${index}.checkNumber`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Número de Cheque</FormLabel>
-                              <FormControl>
-                                <Input placeholder="123456" {...field} value={field.value || ''} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
+                      {(paymentMethod === 'CHECK' || paymentMethod === 'ECHEQ') && (
+                        <div className="space-y-3 rounded-md border bg-muted/30 p-3">
+                          <p className="text-sm font-medium">
+                            Datos del {paymentMethod === 'ECHEQ' ? 'e-cheq' : 'cheque'}
+                          </p>
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <FormField
+                              control={form.control}
+                              name={`payments.${index}.checkNumber`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Número *</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="123456" {...field} value={field.value || ''} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name={`payments.${index}.checkBankName`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Banco emisor *</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="Banco Nación" {...field} value={field.value || ''} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name={`payments.${index}.checkDrawerName`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Emisor / Librador *</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="Nombre del emisor" {...field} value={field.value || ''} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name={`payments.${index}.checkDrawerTaxId`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>CUIT del emisor (opcional)</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="30-12345678-9" {...field} value={field.value || ''} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name={`payments.${index}.checkIssueDate`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Fecha de emisión</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="date"
+                                      value={field.value ? moment(field.value).format('YYYY-MM-DD') : ''}
+                                      onChange={(e) =>
+                                        field.onChange(e.target.value ? new Date(e.target.value + 'T12:00:00') : null)
+                                      }
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name={`payments.${index}.checkDueDate`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Fecha de vencimiento *</FormLabel>
+                                  <FormControl>
+                                    <Input
+                                      type="date"
+                                      value={field.value ? moment(field.value).format('YYYY-MM-DD') : ''}
+                                      onChange={(e) =>
+                                        field.onChange(e.target.value ? new Date(e.target.value + 'T12:00:00') : null)
+                                      }
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          {paymentMethod === 'ECHEQ' && (
+                            <FormField
+                              control={form.control}
+                              name={`payments.${index}.bankAccountId`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Cuenta de depósito *</FormLabel>
+                                  <Select onValueChange={field.onChange} value={field.value || undefined}>
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Cuenta donde ingresó el e-cheq" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      {bankAccounts.map((account) => (
+                                        <SelectItem key={account.id} value={account.id}>
+                                          {account.bankName} - {account.accountNumber}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
                           )}
-                        />
+                        </div>
                       )}
 
                       {(paymentMethod === 'DEBIT_CARD' || paymentMethod === 'CREDIT_CARD') && (

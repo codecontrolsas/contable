@@ -2274,6 +2274,7 @@ enum BankMovementType {
 enum PaymentMethod {
   CASH // Efectivo
   CHECK // Cheque
+  ECHEQ // Cheque electrónico (e-cheq)
   TRANSFER // Transferencia
   DEBIT_CARD // Tarjeta de débito
   CREDIT_CARD // Tarjeta de crédito
@@ -2912,6 +2913,13 @@ model ReceiptPayment {
   cardLast4      String? @map("card_last4")
   reference      String? // Referencia adicional
 
+  // Metadata del cheque/e-cheq (cuando paymentMethod es CHECK o ECHEQ)
+  checkBankName     String?   @map("check_bank_name")
+  checkIssueDate    DateTime? @map("check_issue_date")
+  checkDueDate      DateTime? @map("check_due_date")
+  checkDrawerName   String?   @map("check_drawer_name")
+  checkDrawerTaxId  String?   @map("check_drawer_tax_id")
+
   receipt      Receipt       @relation(fields: [receiptId], references: [id], onDelete: Cascade)
   cashRegister CashRegister? @relation(fields: [cashRegisterId], references: [id])
   bankAccount  BankAccount?  @relation(fields: [bankAccountId], references: [id])
@@ -2992,6 +3000,16 @@ model PaymentOrderPayment {
   checkNumber    String? @map("check_number")
   cardLast4      String? @map("card_last4")
   reference      String? // Referencia adicional
+
+  // Metadata del cheque/e-cheq (cuando paymentMethod es CHECK o ECHEQ)
+  checkBankName     String?   @map("check_bank_name")
+  checkIssueDate    DateTime? @map("check_issue_date")
+  checkDueDate      DateTime? @map("check_due_date")
+  checkDrawerName   String?   @map("check_drawer_name")
+  checkDrawerTaxId  String?   @map("check_drawer_tax_id")
+  // Cheque de tercero (en cartera) que se endosa al confirmar la OP. Si está vacío y el
+  // método es CHECK/ECHEQ, se crea un cheque propio (OWN).
+  endorsedCheckId   String?   @map("endorsed_check_id") @db.Uuid
 
   paymentOrder PaymentOrder  @relation(fields: [paymentOrderId], references: [id], onDelete: Cascade)
   cashRegister CashRegister? @relation(fields: [cashRegisterId], references: [id])
@@ -3427,6 +3445,7 @@ model Check {
   amount        Decimal  @db.Decimal(15, 2)
   issueDate     DateTime @map("issue_date")
   dueDate       DateTime @map("due_date")
+  isElectronic  Boolean  @default(false) @map("is_electronic") // true = e-cheq
 
   // Librador y beneficiario
   drawerName  String  @map("drawer_name")

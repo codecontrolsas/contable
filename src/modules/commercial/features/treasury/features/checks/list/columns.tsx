@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu';
-import { MoreHorizontal, Eye, Landmark, ArrowRightLeft, Ban, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Eye, Pencil, Landmark, ArrowRightLeft, Ban, Trash2 } from 'lucide-react';
 import { formatCurrency } from '@/shared/utils/formatters';
 import moment from 'moment';
 import type { CheckListItem } from '../../../shared/types';
@@ -21,24 +21,28 @@ import {
 
 interface ColumnsProps {
   onView: (check: CheckListItem) => void;
+  onEdit: (check: CheckListItem) => void;
   onDeposit: (check: CheckListItem) => void;
   onEndorse: (check: CheckListItem) => void;
   onVoid: (check: CheckListItem) => void;
   onDelete: (check: CheckListItem) => void;
   canDeposit?: boolean;
   canEndorse?: boolean;
+  canUpdate?: boolean;
   canVoid?: boolean;
   canDelete?: boolean;
 }
 
 export function getColumns({
   onView,
+  onEdit,
   onDeposit,
   onEndorse,
   onVoid,
   onDelete,
   canDeposit = true,
   canEndorse = true,
+  canUpdate = true,
   canVoid = true,
   canDelete: canDeleteProp = true,
 }: ColumnsProps): ColumnDef<CheckListItem>[] {
@@ -120,6 +124,12 @@ export function getColumns({
                 <Eye className="mr-2 h-4 w-4" />
                 Ver Detalle
               </DropdownMenuItem>
+              {canUpdate && check.status === 'PORTFOLIO' && (
+                <DropdownMenuItem onClick={() => onEdit(check)}>
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Editar
+                </DropdownMenuItem>
+              )}
               {check.type === 'THIRD_PARTY' && check.status === 'PORTFOLIO' && (
                 <>
                   {canDeposit && (
