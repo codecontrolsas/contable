@@ -129,6 +129,7 @@ export function _CheckDetailModal({ checkId, open, onOpenChange }: Props) {
                 <span className="text-sm text-muted-foreground">
                   {CHECK_TYPE_LABELS[check.type]}
                 </span>
+                {check.isElectronic && <Badge variant="outline">E-Cheq</Badge>}
               </div>
 
               {/* Datos del cheque */}

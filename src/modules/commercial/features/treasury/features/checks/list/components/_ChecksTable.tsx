@@ -22,6 +22,7 @@ import { voidCheck, deleteCheck } from '../../actions.server';
 import { getColumns } from '../columns';
 import { _CreateCheckModal } from './_CreateCheckModal';
 import { _CheckDetailModal } from './_CheckDetailModal';
+import { _EditCheckModal } from './_EditCheckModal';
 import { _DepositCheckModal } from './_DepositCheckModal';
 import { _EndorseCheckModal } from './_EndorseCheckModal';
 import { usePermissions } from '@/shared/hooks/usePermissions';
@@ -42,6 +43,7 @@ export function _ChecksTable({ data, totalRows, searchParams, facetCounts }: Pro
   const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [depositOpen, setDepositOpen] = useState(false);
   const [endorseOpen, setEndorseOpen] = useState(false);
   const [voidDialogOpen, setVoidDialogOpen] = useState(false);
@@ -143,6 +145,10 @@ export function _ChecksTable({ data, totalRows, searchParams, facetCounts }: Pro
           setSelectedCheck(check);
           setDetailOpen(true);
         },
+        onEdit: (check) => {
+          setSelectedCheck(check);
+          setEditOpen(true);
+        },
         onDeposit: (check) => {
           setSelectedCheck(check);
           setDepositOpen(true);
@@ -161,6 +167,7 @@ export function _ChecksTable({ data, totalRows, searchParams, facetCounts }: Pro
         },
         canDeposit: canUpdate,
         canEndorse: canUpdate,
+        canUpdate,
         canVoid: canDelete,
         canDelete,
       }),
@@ -195,6 +202,11 @@ export function _ChecksTable({ data, totalRows, searchParams, facetCounts }: Pro
           <_CheckDetailModal
             open={detailOpen}
             onOpenChange={setDetailOpen}
+            checkId={selectedCheck.id}
+          />
+          <_EditCheckModal
+            open={editOpen}
+            onOpenChange={setEditOpen}
             checkId={selectedCheck.id}
           />
           <_DepositCheckModal

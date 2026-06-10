@@ -18,7 +18,7 @@ import {
 import { Plus, Trash2, ArrowDownToLine } from 'lucide-react';
 import { toast } from 'sonner';
 import { createPaymentOrderSchema, type CreatePaymentOrderFormData, PAYMENT_METHOD_LABELS, WITHHOLDING_TAX_TYPE_LABELS } from '../../../../shared/validators';
-import { createPaymentOrder, getPendingPurchaseInvoices } from '../../actions.server';
+import { createPaymentOrder, getPendingPurchaseInvoices, getPortfolioChecks } from '../../actions.server';
 import { getAvailableCashRegisters, getAvailableBankAccounts } from '../../../receipts/actions.server';
 import { getSuppliersForSelect } from '@/modules/commercial/features/purchases/features/invoices/list/actions.server';
 import { getPendingExpenses } from '@/modules/commercial/features/expenses/actions.server';
@@ -95,6 +95,13 @@ export function CreatePaymentOrderModal({ onSuccess }: CreatePaymentOrderModalPr
     enabled: open,
   });
 
+  // Cheques de terceros en cartera (para endosar como medio de pago)
+  const { data: portfolioChecks = [] } = useQuery({
+    queryKey: ['portfolioChecks'],
+    queryFn: () => getPortfolioChecks(),
+    enabled: open,
+  });
+
   const handleSupplierChange = (supplierId: string) => {
     setSelectedSupplierId(supplierId);
     form.setValue('supplierId', supplierId);
@@ -130,6 +137,14 @@ export function CreatePaymentOrderModal({ onSuccess }: CreatePaymentOrderModalPr
       checkNumber: null,
       cardLast4: null,
       reference: null,
+      // Metadata de cheque/e-cheq: fecha de emisión por defecto = fecha de la OP
+      checkBankName: null,
+      checkIssueDate: form.getValues('date') ?? new Date(),
+      checkDueDate: null,
+      checkDrawerName: null,
+      checkDrawerTaxId: null,
+      checkOwnership: 'OWN',
+      endorsedCheckId: null,
     });
   };
 
@@ -411,6 +426,10 @@ export function CreatePaymentOrderModal({ onSuccess }: CreatePaymentOrderModalPr
 
               {paymentFields.map((field, index) => {
                 const paymentMethod = form.watch(`payments.${index}.paymentMethod`);
+                const checkOwnership = form.watch(`payments.${index}.checkOwnership`) || 'OWN';
+                const isCheckMethod = paymentMethod === 'CHECK' || paymentMethod === 'ECHEQ';
+                const isEcheq = paymentMethod === 'ECHEQ';
+                const carteraChecks = portfolioChecks.filter((c) => c.isElectronic === isEcheq);
 
                 return (
                   <div key={field.id} className="rounded-md border p-3 space-y-3">
@@ -528,22 +547,6 @@ export function CreatePaymentOrderModal({ onSuccess }: CreatePaymentOrderModalPr
                         />
                       )}
 
-                      {paymentMethod === 'CHECK' && (
-                        <FormField
-                          control={form.control}
-                          name={`payments.${index}.checkNumber`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-xs">N° de Cheque</FormLabel>
-                              <FormControl>
-                                <Input placeholder="123456" {...field} value={field.value || ''} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      )}
-
                       {(paymentMethod === 'DEBIT_CARD' || paymentMethod === 'CREDIT_CARD') && (
                         <FormField
                           control={form.control}
@@ -560,6 +563,175 @@ export function CreatePaymentOrderModal({ onSuccess }: CreatePaymentOrderModalPr
                         />
                       )}
                     </div>
+
+                    {/* Datos del cheque / e-cheq — a ancho completo */}
+                    {isCheckMethod && (
+                      <div className="space-y-3 rounded-md border bg-muted/30 p-3">
+                        <FormField
+                          control={form.control}
+                          name={`payments.${index}.checkOwnership`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs">
+                                {isEcheq ? 'E-cheq' : 'Cheque'}: propio o de terceros *
+                              </FormLabel>
+                              <Select
+                                onValueChange={(v) => {
+                                  field.onChange(v);
+                                  if (v === 'OWN') form.setValue(`payments.${index}.endorsedCheckId`, null);
+                                }}
+                                value={field.value || 'OWN'}
+                              >
+                                <FormControl>
+                                  <SelectTrigger className="sm:max-w-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="OWN">Propio (se emite)</SelectItem>
+                                  <SelectItem value="THIRD_PARTY">De terceros (se endosa de cartera)</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        {checkOwnership === 'THIRD_PARTY' ? (
+                          <FormField
+                            control={form.control}
+                            name={`payments.${index}.endorsedCheckId`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs">
+                                  {isEcheq ? 'E-cheq' : 'Cheque'} en cartera a endosar *
+                                </FormLabel>
+                                <Select
+                                  onValueChange={(v) => {
+                                    field.onChange(v);
+                                    const selected = carteraChecks.find((c) => c.id === v);
+                                    if (selected) form.setValue(`payments.${index}.amount`, selected.amount.toFixed(2));
+                                  }}
+                                  value={field.value || undefined}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue
+                                        placeholder={carteraChecks.length ? 'Seleccionar cheque de cartera' : 'No hay cheques de terceros en cartera'}
+                                      />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {carteraChecks.map((c) => (
+                                      <SelectItem key={c.id} value={c.id}>
+                                        N° {c.checkNumber} · {c.bankName} · {formatCurrency(c.amount)} · vto {moment(c.dueDate).format('DD/MM/YYYY')}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        ) : (
+                          <>
+                            <p className="text-xs font-medium">Datos del {isEcheq ? 'e-cheq' : 'cheque'} emitido</p>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <FormField
+                                control={form.control}
+                                name={`payments.${index}.checkNumber`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-xs">N° *</FormLabel>
+                                    <FormControl>
+                                      <Input placeholder="123456" {...field} value={field.value || ''} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name={`payments.${index}.checkBankName`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-xs">Banco *</FormLabel>
+                                    <FormControl>
+                                      <Input placeholder="Banco Nación" {...field} value={field.value || ''} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name={`payments.${index}.checkIssueDate`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-xs">Fecha de emisión</FormLabel>
+                                    <FormControl>
+                                      <Input
+                                        type="date"
+                                        value={field.value ? moment(field.value).format('YYYY-MM-DD') : ''}
+                                        onChange={(e) =>
+                                          field.onChange(e.target.value ? new Date(e.target.value + 'T12:00:00') : null)
+                                        }
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={form.control}
+                                name={`payments.${index}.checkDueDate`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-xs">Vencimiento *</FormLabel>
+                                    <FormControl>
+                                      <Input
+                                        type="date"
+                                        value={field.value ? moment(field.value).format('YYYY-MM-DD') : ''}
+                                        onChange={(e) =>
+                                          field.onChange(e.target.value ? new Date(e.target.value + 'T12:00:00') : null)
+                                        }
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                            {isEcheq && (
+                              <FormField
+                                control={form.control}
+                                name={`payments.${index}.bankAccountId`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel className="text-xs">Cuenta de origen *</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value || undefined}>
+                                      <FormControl>
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Cuenta desde la que se emite" />
+                                        </SelectTrigger>
+                                      </FormControl>
+                                      <SelectContent>
+                                        {bankAccounts.map((account) => (
+                                          <SelectItem key={account.id} value={account.id}>
+                                            {account.bankName} - {account.accountNumber}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}

@@ -342,9 +342,9 @@ export const receiptItemSchema = z.object({
     .refine((val) => parseFloat(val) > 0, 'El monto debe ser mayor a 0'),
 });
 
-// Schema para pago de recibo (forma de pago)
-export const receiptPaymentSchema = z.object({
-  paymentMethod: z.enum(['CASH', 'CHECK', 'TRANSFER', 'DEBIT_CARD', 'CREDIT_CARD', 'ACCOUNT'], {
+// Campos base de una forma de pago (compartidos por recibos y órdenes de pago)
+const basePaymentFields = {
+  paymentMethod: z.enum(['CASH', 'CHECK', 'ECHEQ', 'TRANSFER', 'DEBIT_CARD', 'CREDIT_CARD', 'ACCOUNT'], {
     message: 'Debe seleccionar una forma de pago',
   }),
   amount: z
@@ -362,7 +362,67 @@ export const receiptPaymentSchema = z.object({
     .optional()
     .nullable(),
   reference: z.string().max(200, 'La referencia no puede exceder 200 caracteres').optional().nullable(),
-});
+  // Metadata del cheque / e-cheq (cuando paymentMethod es CHECK o ECHEQ)
+  checkBankName: z.string().max(100, 'El banco no puede exceder 100 caracteres').optional().nullable(),
+  checkIssueDate: z.date().optional().nullable(),
+  checkDueDate: z.date().optional().nullable(),
+  checkDrawerName: z.string().max(150, 'El emisor no puede exceder 150 caracteres').optional().nullable(),
+  checkDrawerTaxId: z.string().max(20, 'El CUIT no puede exceder 20 caracteres').optional().nullable(),
+  // Sólo aplica a Órdenes de Pago: si el cheque/e-cheq es propio o de un tercero (endoso)
+  checkOwnership: z.enum(['OWN', 'THIRD_PARTY']).optional(),
+  // Cheque de tercero (en cartera) a endosar cuando checkOwnership es THIRD_PARTY
+  endorsedCheckId: z.string().uuid('Cheque inválido').optional().nullable(),
+};
+
+// Validaciones comunes para cheque/e-cheq como medio de pago
+function refineCheckPayment(
+  data: {
+    paymentMethod: string;
+    checkNumber?: string | null;
+    checkBankName?: string | null;
+    checkDueDate?: Date | null;
+    checkDrawerName?: string | null;
+    bankAccountId?: string | null;
+    checkOwnership?: 'OWN' | 'THIRD_PARTY';
+    endorsedCheckId?: string | null;
+  },
+  ctx: z.RefinementCtx,
+  options: { requireDrawer?: boolean; allowOwnership?: boolean } = {}
+) {
+  const isCheck = data.paymentMethod === 'CHECK' || data.paymentMethod === 'ECHEQ';
+  if (!isCheck) return;
+
+  // Órdenes de pago con cheque de tercero: se endosa un cheque de la cartera, no se cargan datos
+  if (options.allowOwnership && data.checkOwnership === 'THIRD_PARTY') {
+    if (!data.endorsedCheckId) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['endorsedCheckId'], message: 'Debe seleccionar un cheque de la cartera' });
+    }
+    return;
+  }
+
+  // Cheque propio (OP) o cheque recibido (cobranza): se cargan los datos del cheque
+  if (!data.checkNumber) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['checkNumber'], message: 'El número de cheque es requerido' });
+  }
+  if (!data.checkBankName) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['checkBankName'], message: 'El banco emisor es requerido' });
+  }
+  if (!data.checkDueDate) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['checkDueDate'], message: 'La fecha de vencimiento es requerida' });
+  }
+  if (options.requireDrawer && !data.checkDrawerName) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['checkDrawerName'], message: 'El emisor (librador) es requerido' });
+  }
+  // e-cheq: requiere cuenta de depósito donde ingresó
+  if (data.paymentMethod === 'ECHEQ' && !data.bankAccountId) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['bankAccountId'], message: 'Debe indicar la cuenta de depósito del e-cheq' });
+  }
+}
+
+// Schema para pago de recibo (forma de pago) — el emisor del cheque (cliente o tercero) es requerido
+export const receiptPaymentSchema = z
+  .object(basePaymentFields)
+  .superRefine((data, ctx) => refineCheckPayment(data, ctx, { requireDrawer: true }));
 
 // Schema para crear recibo
 export const createReceiptSchema = z
@@ -406,6 +466,7 @@ export type CreateReceiptFormData = z.infer<typeof createReceiptSchema>;
 export const PAYMENT_METHOD_LABELS = {
   CASH: 'Efectivo',
   CHECK: 'Cheque',
+  ECHEQ: 'E-Cheq',
   TRANSFER: 'Transferencia',
   DEBIT_CARD: 'Tarjeta de Débito',
   CREDIT_CARD: 'Tarjeta de Crédito',
@@ -442,8 +503,11 @@ export const paymentOrderItemSchema = z.object({
   { message: 'Cada item debe tener una factura o un gasto, no ambos', path: ['invoiceId'] }
 );
 
-// Schema para pago de orden (forma de pago) - reutilizamos receiptPaymentSchema ya que es idéntico
-export const paymentOrderPaymentSchema = receiptPaymentSchema;
+// Schema para pago de orden (forma de pago) — mismos campos, pero el cheque emitido es de la
+// propia empresa, por lo que no se exige el emisor (librador)
+export const paymentOrderPaymentSchema = z
+  .object(basePaymentFields)
+  .superRefine((data, ctx) => refineCheckPayment(data, ctx, { requireDrawer: false, allowOwnership: true }));
 
 // Schema para crear orden de pago
 export const createPaymentOrderSchema = z
@@ -530,6 +594,30 @@ export const createCheckSchema = z.object({
   notes: z.string().max(500, 'Las notas no pueden exceder 500 caracteres').optional().nullable(),
 });
 
+// Schema para editar la metadata de un cheque (sólo permitido en cartera/PORTFOLIO)
+export const updateCheckSchema = z.object({
+  checkId: z.string().uuid('Cheque inválido'),
+  checkNumber: z
+    .string()
+    .min(1, 'El número de cheque es requerido')
+    .max(30, 'El número no puede exceder 30 caracteres'),
+  bankName: z
+    .string()
+    .min(1, 'El banco es requerido')
+    .max(100, 'El banco no puede exceder 100 caracteres'),
+  branch: z.string().max(100, 'La sucursal no puede exceder 100 caracteres').optional().nullable(),
+  accountNumber: z.string().max(50, 'La cuenta no puede exceder 50 caracteres').optional().nullable(),
+  issueDate: z.date({ message: 'La fecha de emisión es requerida' }),
+  dueDate: z.date({ message: 'La fecha de vencimiento es requerida' }),
+  drawerName: z
+    .string()
+    .min(1, 'El librador es requerido')
+    .max(200, 'El librador no puede exceder 200 caracteres'),
+  drawerTaxId: z.string().max(13, 'El CUIT no puede exceder 13 caracteres').optional().nullable(),
+  payeeName: z.string().max(200, 'El beneficiario no puede exceder 200 caracteres').optional().nullable(),
+  notes: z.string().max(500, 'Las notas no pueden exceder 500 caracteres').optional().nullable(),
+});
+
 export const depositCheckSchema = z.object({
   checkId: z.string().uuid('Cheque inválido'),
   bankAccountId: z.string().uuid('Cuenta bancaria requerida'),
@@ -552,6 +640,7 @@ export const endorseCheckSchema = z.object({
 // ====================================
 
 export type CreateCheckFormData = z.infer<typeof createCheckSchema>;
+export type UpdateCheckFormData = z.infer<typeof updateCheckSchema>;
 export type DepositCheckFormData = z.infer<typeof depositCheckSchema>;
 export type EndorseCheckFormData = z.infer<typeof endorseCheckSchema>;
 

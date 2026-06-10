@@ -168,6 +168,12 @@ export async function createReceipt(data: CreateReceiptFormData) {
           checkNumber: payment.checkNumber || null,
           cardLast4: payment.cardLast4 || null,
           reference: payment.reference || null,
+          // Metadata del cheque / e-cheq
+          checkBankName: payment.checkBankName || null,
+          checkIssueDate: payment.checkIssueDate || null,
+          checkDueDate: payment.checkDueDate || null,
+          checkDrawerName: payment.checkDrawerName || null,
+          checkDrawerTaxId: payment.checkDrawerTaxId || null,
         })),
       });
 
@@ -320,8 +326,8 @@ export async function confirmReceipt(receiptId: string) {
               },
             },
           });
-        } else if (payment.bankAccountId) {
-          // Movimiento bancario
+        } else if (payment.bankAccountId && payment.paymentMethod !== 'ECHEQ') {
+          // Movimiento bancario (el e-cheq NO acredita el saldo hasta que se cobra/acredita el cheque)
           const bankAccount = await tx.bankAccount.findUnique({
             where: { id: payment.bankAccountId },
             select: { balance: true },
@@ -355,20 +361,25 @@ export async function confirmReceipt(receiptId: string) {
           }
         }
 
-        // 3b. Si el pago es con cheque, crear registro Check como THIRD_PARTY en PORTFOLIO
-        if (payment.paymentMethod === 'CHECK' && payment.checkNumber) {
+        // 3b. Si el pago es con cheque o e-cheq, crear registro Check como THIRD_PARTY en PORTFOLIO
+        if ((payment.paymentMethod === 'CHECK' || payment.paymentMethod === 'ECHEQ') && payment.checkNumber) {
+          const isEcheq = payment.paymentMethod === 'ECHEQ';
           await tx.check.create({
             data: {
               companyId,
               type: 'THIRD_PARTY',
               status: 'PORTFOLIO',
+              isElectronic: isEcheq,
               checkNumber: payment.checkNumber,
-              bankName: payment.reference || 'Sin especificar',
+              bankName: payment.checkBankName || payment.reference || 'Sin especificar',
               amount: payment.amount,
-              issueDate: receipt.date,
-              dueDate: receipt.date,
-              drawerName: 'Cliente',
+              issueDate: payment.checkIssueDate ?? receipt.date,
+              dueDate: payment.checkDueDate ?? receipt.date,
+              drawerName: payment.checkDrawerName || 'Cliente',
+              drawerTaxId: payment.checkDrawerTaxId || null,
               customerId: receipt.customerId,
+              // e-cheq: cuenta bancaria donde ingresó (cuenta de depósito)
+              bankAccountId: isEcheq ? payment.bankAccountId : null,
               receiptPaymentId: payment.id,
               createdBy: userId,
             },
@@ -617,6 +628,11 @@ export async function getReceipt(id: string): Promise<ReceiptWithDetails> {
             checkNumber: true,
             cardLast4: true,
             reference: true,
+            checkBankName: true,
+            checkIssueDate: true,
+            checkDueDate: true,
+            checkDrawerName: true,
+            checkDrawerTaxId: true,
           },
         },
         withholdings: {

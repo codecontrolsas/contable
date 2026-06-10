@@ -102,6 +102,37 @@ export async function getPendingPurchaseInvoices(supplierId: string): Promise<Pe
 }
 
 /**
+ * Obtiene los cheques de terceros en cartera (disponibles para endosar en un pago).
+ * Si se indica isElectronic, filtra por cheques físicos (false) o e-cheq (true).
+ */
+export async function getPortfolioChecks(isElectronic?: boolean) {
+  await checkPermission('commercial.treasury.payment-orders', 'view', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  const checks = await prisma.check.findMany({
+    where: {
+      companyId,
+      type: 'THIRD_PARTY',
+      status: 'PORTFOLIO',
+      ...(isElectronic === undefined ? {} : { isElectronic }),
+    },
+    select: {
+      id: true,
+      checkNumber: true,
+      bankName: true,
+      amount: true,
+      dueDate: true,
+      drawerName: true,
+      isElectronic: true,
+    },
+    orderBy: { dueDate: 'asc' },
+  });
+
+  return checks.map((c) => ({ ...c, amount: Number(c.amount) }));
+}
+
+/**
  * Crea una nueva orden de pago (borrador)
  */
 export async function createPaymentOrder(data: CreatePaymentOrderFormData) {
@@ -164,6 +195,14 @@ export async function createPaymentOrder(data: CreatePaymentOrderFormData) {
           checkNumber: payment.checkNumber || null,
           cardLast4: payment.cardLast4 || null,
           reference: payment.reference || null,
+          // Metadata del cheque / e-cheq
+          checkBankName: payment.checkBankName || null,
+          checkIssueDate: payment.checkIssueDate || null,
+          checkDueDate: payment.checkDueDate || null,
+          checkDrawerName: payment.checkDrawerName || null,
+          checkDrawerTaxId: payment.checkDrawerTaxId || null,
+          // Cheque de tercero a endosar (si checkOwnership === 'THIRD_PARTY')
+          endorsedCheckId: payment.checkOwnership === 'THIRD_PARTY' ? payment.endorsedCheckId || null : null,
         })),
       });
 
@@ -231,6 +270,7 @@ export async function confirmPaymentOrder(paymentOrderId: string) {
         },
         payments: true,
         withholdings: true,
+        supplier: { select: { businessName: true, taxId: true } },
       },
     });
 
@@ -332,8 +372,8 @@ export async function confirmPaymentOrder(paymentOrderId: string) {
               },
             },
           });
-        } else if (payment.bankAccountId) {
-          // Movimiento bancario (WITHDRAWAL)
+        } else if (payment.bankAccountId && payment.paymentMethod !== 'ECHEQ') {
+          // Movimiento bancario (WITHDRAWAL). El e-cheq NO debita el saldo hasta que el cheque se debita/cobra.
           const bankAccount = await tx.bankAccount.findUnique({
             where: { id: payment.bankAccountId },
             select: { balance: true },
@@ -367,24 +407,52 @@ export async function confirmPaymentOrder(paymentOrderId: string) {
           }
         }
 
-        // 3b. Si el pago es con cheque, crear registro Check como OWN en DELIVERED
-        if (payment.paymentMethod === 'CHECK' && payment.checkNumber) {
-          await tx.check.create({
-            data: {
-              companyId,
-              type: 'OWN',
-              status: 'DELIVERED',
-              checkNumber: payment.checkNumber,
-              bankName: payment.reference || 'Sin especificar',
-              amount: payment.amount,
-              issueDate: paymentOrder.date,
-              dueDate: paymentOrder.date,
-              drawerName: 'Empresa',
-              supplierId: paymentOrder.supplierId,
-              paymentOrderPaymentId: payment.id,
-              createdBy: userId,
-            },
-          });
+        // 3b. Cheque o e-cheq como medio de pago
+        if (payment.paymentMethod === 'CHECK' || payment.paymentMethod === 'ECHEQ') {
+          if (payment.endorsedCheckId) {
+            // Cheque/e-cheq DE TERCEROS: se endosa un cheque en cartera al proveedor
+            const endorsed = await tx.check.findFirst({
+              where: { id: payment.endorsedCheckId, companyId, type: 'THIRD_PARTY', status: 'PORTFOLIO' },
+              select: { id: true },
+            });
+            if (!endorsed) {
+              throw new Error('El cheque de tercero seleccionado ya no está disponible en cartera');
+            }
+            await tx.check.update({
+              where: { id: endorsed.id },
+              data: {
+                status: 'ENDORSED',
+                endorsedToName: paymentOrder.supplier?.businessName || 'Proveedor',
+                endorsedToTaxId: paymentOrder.supplier?.taxId || null,
+                endorsedAt: paymentOrder.date,
+                supplierId: paymentOrder.supplierId,
+                paymentOrderPaymentId: payment.id,
+              },
+            });
+          } else if (payment.checkNumber) {
+            // Cheque/e-cheq PROPIO: se emite un cheque nuevo
+            const isEcheq = payment.paymentMethod === 'ECHEQ';
+            await tx.check.create({
+              data: {
+                companyId,
+                type: 'OWN',
+                status: 'DELIVERED',
+                isElectronic: isEcheq,
+                checkNumber: payment.checkNumber,
+                bankName: payment.checkBankName || payment.reference || 'Sin especificar',
+                amount: payment.amount,
+                issueDate: payment.checkIssueDate ?? paymentOrder.date,
+                dueDate: payment.checkDueDate ?? paymentOrder.date,
+                drawerName: payment.checkDrawerName || 'Empresa',
+                drawerTaxId: payment.checkDrawerTaxId || null,
+                supplierId: paymentOrder.supplierId,
+                // e-cheq propio: cuenta bancaria desde la que se emite
+                bankAccountId: isEcheq ? payment.bankAccountId : null,
+                paymentOrderPaymentId: payment.id,
+                createdBy: userId,
+              },
+            });
+          }
         }
       }
 

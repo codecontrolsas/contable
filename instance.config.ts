@@ -90,9 +90,9 @@ export const instanceConfig: InstanceConfig = {
   id: 'nahuel-boxer',
 
   // Branding
-  name: 'Nahuel Boxer',
-  shortName: 'NB',
-  description: 'Sistema de gestión de repuestos - Nahuel Boxer S.A.',
+  name: 'CC Contable',
+  shortName: 'CC',
+  description: 'Sistema contable - Codecontrol',
 
   // Puertos (cambiar si corres múltiples instancias)
   ports: {
