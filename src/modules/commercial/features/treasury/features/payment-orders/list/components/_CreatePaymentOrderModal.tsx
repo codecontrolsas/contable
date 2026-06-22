@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/components/ui/dialog';
@@ -189,6 +189,38 @@ export function CreatePaymentOrderModal({
     queryFn: getActiveCardsForPayment,
     enabled: open,
   });
+
+  // Al abrir el modal, re-inicializar el form con los valores prefijados actuales.
+  // Necesario cuando el modal está montado de forma persistente y la selección de
+  // facturas/gastos cambia antes de abrirse (p.ej. cuenta corriente del proveedor o
+  // botón "Pagar factura" del detalle).
+  const wasOpen = useRef(false);
+  useEffect(() => {
+    if (open && !wasOpen.current) {
+      form.reset({
+        supplierId: prefilledSupplierId ?? null,
+        date: initialDate ?? new Date(),
+        notes: initialNotes ?? null,
+        items: [
+          ...(prefilledInvoices?.map((inv) => ({
+            invoiceId: inv.id,
+            expenseId: null,
+            amount: inv.pendingAmount.toFixed(2),
+          })) ?? []),
+          ...(prefilledExpenses?.map((exp) => ({
+            invoiceId: null,
+            expenseId: exp.id,
+            amount: exp.amount.toFixed(2),
+          })) ?? []),
+        ],
+        payments: initialPayments ?? [],
+        withholdings: initialWithholdings ?? [],
+      });
+      if (prefilledSupplierId) setSelectedSupplierId(prefilledSupplierId);
+    }
+    wasOpen.current = open;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const handleSupplierChange = (supplierId: string) => {
     if (isPrefilled) return;
