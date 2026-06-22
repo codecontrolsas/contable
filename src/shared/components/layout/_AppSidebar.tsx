@@ -246,6 +246,16 @@ const navMain: NavItemWithSub[] = [
             module: 'commercial.treasury.payment-orders',
           },
           {
+            title: 'Socios',
+            href: '/dashboard/commercial/treasury/partners',
+            module: 'commercial.treasury.partners',
+          },
+          {
+            title: 'Tarjetas',
+            href: '/dashboard/commercial/treasury/cards',
+            module: 'commercial.treasury.cards',
+          },
+          {
             title: 'Retenciones',
             href: '/dashboard/commercial/treasury/withholdings',
             module: 'commercial.treasury.receipts',

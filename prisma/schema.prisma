@@ -186,6 +186,12 @@ model Company {
   // Templates de PDF de documentos
   documentTemplates DocumentTemplate[]
 
+  // Socios y tarjetas
+  partners                 Partner[]
+  cards                    Card[]
+  paymentOrderInstallments PaymentOrderInstallment[]
+  partnerAccountMovements  PartnerAccountMovement[]
+
   @@map("companies")
 }
 
@@ -2956,13 +2962,15 @@ model PaymentOrder {
   // Relación con contabilidad
   journalEntryId String? @map("journal_entry_id") @db.Uuid
 
-  company       Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  supplier      Supplier?                 @relation(fields: [supplierId], references: [id])
-  items         PaymentOrderItem[]
-  payments      PaymentOrderPayment[]
-  withholdings  PaymentOrderWithholding[]
-  bankMovements BankMovement[]
-  journalEntry  JournalEntry?             @relation(fields: [journalEntryId], references: [id])
+  company          Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  supplier         Supplier?                 @relation(fields: [supplierId], references: [id])
+  items            PaymentOrderItem[]
+  payments         PaymentOrderPayment[]
+  withholdings     PaymentOrderWithholding[]
+  bankMovements    BankMovement[]
+  journalEntry     JournalEntry?             @relation(fields: [journalEntryId], references: [id])
+  installments     PaymentOrderInstallment[]
+  partnerMovements PartnerAccountMovement[]
 
   createdBy   String    @map("created_by")
   confirmedBy String?   @map("confirmed_by")
@@ -3014,10 +3022,15 @@ model PaymentOrderPayment {
   // método es CHECK/ECHEQ, se crea un cheque propio (OWN).
   endorsedCheckId  String?   @map("endorsed_check_id") @db.Uuid
 
+  // Tarjeta registrada y cuotas (cuando paymentMethod es DEBIT_CARD o CREDIT_CARD)
+  cardId            String? @map("card_id") @db.Uuid
+  installmentsCount Int?    @map("installments_count") // Nº de cuotas (solo crédito)
+
   paymentOrder PaymentOrder  @relation(fields: [paymentOrderId], references: [id], onDelete: Cascade)
   cashRegister CashRegister? @relation(fields: [cashRegisterId], references: [id])
   bankAccount  BankAccount?  @relation(fields: [bankAccountId], references: [id])
   check        Check?
+  card         Card?         @relation(fields: [cardId], references: [id])
 
   @@map("payment_order_payments")
 }
@@ -3783,4 +3796,134 @@ model DocumentTemplate {
   @@unique([companyId, documentType])
   @@index([companyId])
   @@map("document_templates")
+}
+
+// ============================================================
+// Socios y Tarjetas (tarea 307)
+// ============================================================
+
+enum CardType {
+  DEBIT
+  CREDIT
+
+  @@map("card_type")
+}
+
+enum CardOwnerType {
+  COMPANY // Tarjeta de la empresa
+  PARTNER // Tarjeta de un socio
+
+  @@map("card_owner_type")
+}
+
+enum PaymentInstallmentStatus {
+  PENDING
+  PAID
+
+  @@map("payment_installment_status")
+}
+
+enum PartnerMovementType {
+  OWED // La empresa pasa a deberle al socio (pago con su tarjeta)
+  REPAYMENT // La empresa le devuelve dinero al socio
+  ADJUSTMENT // Ajuste manual
+
+  @@map("partner_movement_type")
+}
+
+/// Socio de la empresa. Puede ser titular de tarjetas y tener cuenta corriente.
+model Partner {
+  id        String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId String  @map("company_id") @db.Uuid
+  name      String
+  taxId     String? @map("tax_id") // CUIT/CUIL
+  email     String?
+  phone     String?
+  notes     String?
+  isActive  Boolean @default(true) @map("is_active")
+
+  company   Company                  @relation(fields: [companyId], references: [id])
+  cards     Card[]
+  movements PartnerAccountMovement[]
+
+  createdBy String   @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([companyId])
+  @@map("partners")
+}
+
+/// Tarjeta de débito o crédito. Titular: la empresa o un socio.
+model Card {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId   String        @map("company_id") @db.Uuid
+  name        String // Alias, ej "Visa Galicia Empresa"
+  cardType    CardType      @map("card_type")
+  brand       String? // Visa, Mastercard, Amex, etc.
+  lastFour    String?       @map("last_four")
+  ownerType   CardOwnerType @map("owner_type")
+  partnerId   String?       @map("partner_id") @db.Uuid // requerido si ownerType = PARTNER
+  creditLimit Decimal?      @map("credit_limit") @db.Decimal(15, 2)
+  closingDay  Int?          @map("closing_day") // día de cierre (crédito)
+  dueDay      Int?          @map("due_day") // día de vencimiento (crédito)
+  isActive    Boolean       @default(true) @map("is_active")
+
+  company      Company                   @relation(fields: [companyId], references: [id])
+  partner      Partner?                  @relation(fields: [partnerId], references: [id])
+  payments     PaymentOrderPayment[]
+  installments PaymentOrderInstallment[]
+
+  createdBy String   @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([companyId])
+  @@index([partnerId])
+  @@map("cards")
+}
+
+/// Cuota de una Orden de Pago abonada con tarjeta de crédito.
+model PaymentOrderInstallment {
+  id             String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId      String                   @map("company_id") @db.Uuid
+  paymentOrderId String                   @map("payment_order_id") @db.Uuid
+  cardId         String?                  @map("card_id") @db.Uuid
+  number         Int
+  dueDate        DateTime                 @map("due_date") @db.Date
+  amount         Decimal                  @db.Decimal(15, 2)
+  status         PaymentInstallmentStatus @default(PENDING)
+
+  company      Company      @relation(fields: [companyId], references: [id])
+  paymentOrder PaymentOrder @relation(fields: [paymentOrderId], references: [id], onDelete: Cascade)
+  card         Card?        @relation(fields: [cardId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([companyId])
+  @@index([paymentOrderId])
+  @@map("payment_order_installments")
+}
+
+/// Movimiento de la cuenta corriente de un socio.
+model PartnerAccountMovement {
+  id             String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId      String              @map("company_id") @db.Uuid
+  partnerId      String              @map("partner_id") @db.Uuid
+  date           DateTime            @db.Date
+  type           PartnerMovementType
+  amount         Decimal             @db.Decimal(15, 2) // siempre positivo
+  description    String
+  paymentOrderId String?             @map("payment_order_id") @db.Uuid // origen si surge de pago con tarjeta del socio
+
+  company      Company       @relation(fields: [companyId], references: [id])
+  partner      Partner       @relation(fields: [partnerId], references: [id])
+  paymentOrder PaymentOrder? @relation(fields: [paymentOrderId], references: [id])
+
+  createdBy String   @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([companyId, partnerId])
+  @@map("partner_account_movements")
 }

@@ -349,6 +349,8 @@ export interface PaymentOrderWithDetails extends Record<string, unknown> {
     } | null;
     checkNumber: string | null;
     cardLast4: string | null;
+    cardId: string | null;
+    installmentsCount: number | null;
     reference: string | null;
   }>;
   withholdings: Array<{

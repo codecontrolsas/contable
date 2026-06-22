@@ -18,7 +18,7 @@ import {
 import { Plus, Trash2, ArrowDownToLine } from 'lucide-react';
 import { toast } from 'sonner';
 import { createPaymentOrderSchema, type CreatePaymentOrderFormData, PAYMENT_METHOD_LABELS, WITHHOLDING_TAX_TYPE_LABELS } from '../../../../shared/validators';
-import { createPaymentOrder, getPendingPurchaseInvoices, getPortfolioChecks, updatePaymentOrder } from '../../actions.server';
+import { createPaymentOrder, getActiveCardsForPayment, getPendingPurchaseInvoices, getPortfolioChecks, updatePaymentOrder } from '../../actions.server';
 import { getAvailableCashRegisters, getAvailableBankAccounts } from '../../../receipts/actions.server';
 import { getSuppliersForSelect } from '@/modules/commercial/features/purchases/features/invoices/list/actions.server';
 import { getPendingExpenses } from '@/modules/commercial/features/expenses/actions.server';
@@ -28,6 +28,8 @@ import { Skeleton } from '@/shared/components/ui/skeleton';
 import { Separator } from '@/shared/components/ui/separator';
 import moment from 'moment';
 import { formatCurrency } from '@/shared/utils/formatters';
+
+type ActiveCard = Awaited<ReturnType<typeof getActiveCardsForPayment>>[number];
 
 interface CreatePaymentOrderModalProps {
   onSuccess: () => void;
@@ -181,6 +183,13 @@ export function CreatePaymentOrderModal({
     enabled: open,
   });
 
+  // Tarjetas registradas activas (débito/crédito) para pagos con tarjeta
+  const { data: activeCards = [] } = useQuery({
+    queryKey: ['active-cards'],
+    queryFn: getActiveCardsForPayment,
+    enabled: open,
+  });
+
   const handleSupplierChange = (supplierId: string) => {
     if (isPrefilled) return;
     setSelectedSupplierId(supplierId);
@@ -216,6 +225,8 @@ export function CreatePaymentOrderModal({
       bankAccountId: null,
       checkNumber: null,
       cardLast4: null,
+      cardId: null,
+      installmentsCount: null,
       reference: null,
       // Metadata de cheque/e-cheq: fecha de emisión por defecto = fecha de la OP
       checkBankName: null,
@@ -668,10 +679,52 @@ export function CreatePaymentOrderModal({
                       {(paymentMethod === 'DEBIT_CARD' || paymentMethod === 'CREDIT_CARD') && (
                         <FormField
                           control={form.control}
+                          name={`payments.${index}.cardId`}
+                          render={({ field }) => {
+                            const wantedType = paymentMethod === 'CREDIT_CARD' ? 'CREDIT' : 'DEBIT';
+                            const cardOptions = activeCards.filter(
+                              (c: ActiveCard) => c.cardType === wantedType
+                            );
+                            return (
+                              <FormItem>
+                                <FormLabel className="text-xs">Tarjeta *</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value || undefined}>
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue
+                                        placeholder={
+                                          cardOptions.length
+                                            ? 'Seleccionar tarjeta'
+                                            : 'No hay tarjetas disponibles'
+                                        }
+                                      />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {cardOptions.map((c: ActiveCard) => (
+                                      <SelectItem key={c.id} value={c.id}>
+                                        {`${c.name}${c.brand ? ' · ' + c.brand : ''}${c.lastFour ? ' ••••' + c.lastFour : ''} (${c.ownerName})`}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            );
+                          }}
+                        />
+                      )}
+                    </div>
+
+                    {/* Datos extra de tarjeta — últimos 4 dígitos (opcional) y cuotas */}
+                    {(paymentMethod === 'DEBIT_CARD' || paymentMethod === 'CREDIT_CARD') && (
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        <FormField
+                          control={form.control}
                           name={`payments.${index}.cardLast4`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-xs">Últimos 4 Dígitos</FormLabel>
+                              <FormLabel className="text-xs">Últimos 4 Dígitos (opcional)</FormLabel>
                               <FormControl>
                                 <Input placeholder="1234" maxLength={4} {...field} value={field.value || ''} />
                               </FormControl>
@@ -679,8 +732,32 @@ export function CreatePaymentOrderModal({
                             </FormItem>
                           )}
                         />
-                      )}
-                    </div>
+                        {paymentMethod === 'CREDIT_CARD' && (
+                          <FormField
+                            control={form.control}
+                            name={`payments.${index}.installmentsCount`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-xs">Cuotas *</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    min={1}
+                                    step={1}
+                                    placeholder="1"
+                                    value={field.value ?? ''}
+                                    onChange={(e) =>
+                                      field.onChange(e.target.value === '' ? null : e.target.value)
+                                    }
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
+                      </div>
+                    )}
 
                     {/* Datos del cheque / e-cheq — a ancho completo */}
                     {isCheckMethod && (

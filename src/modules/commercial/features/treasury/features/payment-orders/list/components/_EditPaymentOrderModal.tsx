@@ -107,6 +107,9 @@ export function EditPaymentOrderModal({
     bankAccountId: p.bankAccountId ?? null,
     checkNumber: p.checkNumber,
     cardLast4: p.cardLast4,
+    cardId: 'cardId' in p ? (p.cardId as string | null) ?? null : null,
+    installmentsCount:
+      'installmentsCount' in p ? (p.installmentsCount as number | null) ?? null : null,
     reference: p.reference,
     checkBankName: null,
     checkIssueDate: null,

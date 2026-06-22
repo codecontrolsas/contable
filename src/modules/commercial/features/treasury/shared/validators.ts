@@ -361,6 +361,9 @@ const basePaymentFields = {
     .regex(/^\d{4}$/, 'Solo números')
     .optional()
     .nullable(),
+  // Tarjeta registrada (DEBIT_CARD / CREDIT_CARD) y nº de cuotas (solo crédito)
+  cardId: z.string().uuid('Tarjeta inválida').optional().nullable(),
+  installmentsCount: z.coerce.number().int().min(1, 'Mínimo 1 cuota').max(120, 'Máximo 120 cuotas').optional().nullable(),
   reference: z.string().max(200, 'La referencia no puede exceder 200 caracteres').optional().nullable(),
   // Metadata del cheque / e-cheq (cuando paymentMethod es CHECK o ECHEQ)
   checkBankName: z.string().max(100, 'El banco no puede exceder 100 caracteres').optional().nullable(),
@@ -503,11 +506,29 @@ export const paymentOrderItemSchema = z.object({
   { message: 'Cada item debe tener una factura o un gasto, no ambos', path: ['invoiceId'] }
 );
 
+// Validaciones para tarjeta (débito/crédito) como medio de pago
+function refineCardPayment(
+  data: { paymentMethod: string; cardId?: string | null; installmentsCount?: number | null },
+  ctx: z.RefinementCtx
+) {
+  const isCard = data.paymentMethod === 'DEBIT_CARD' || data.paymentMethod === 'CREDIT_CARD';
+  if (!isCard) return;
+  if (!data.cardId) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['cardId'], message: 'Debe seleccionar una tarjeta' });
+  }
+  if (data.paymentMethod === 'CREDIT_CARD' && (!data.installmentsCount || data.installmentsCount < 1)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['installmentsCount'], message: 'Debe indicar la cantidad de cuotas' });
+  }
+}
+
 // Schema para pago de orden (forma de pago) — mismos campos, pero el cheque emitido es de la
 // propia empresa, por lo que no se exige el emisor (librador)
 export const paymentOrderPaymentSchema = z
   .object(basePaymentFields)
-  .superRefine((data, ctx) => refineCheckPayment(data, ctx, { requireDrawer: false, allowOwnership: true }));
+  .superRefine((data, ctx) => {
+    refineCheckPayment(data, ctx, { requireDrawer: false, allowOwnership: true });
+    refineCardPayment(data, ctx);
+  });
 
 // Schema para crear orden de pago
 export const createPaymentOrderSchema = z

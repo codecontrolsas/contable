@@ -9,6 +9,7 @@ import { Prisma } from '@/generated/prisma/client';
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
 import { buildFiltersWhere, buildDateRangeFiltersWhere, parseSearchParams, stateToPrismaParams } from '@/shared/components/common/DataTable/helpers';
 import { CREDIT_NOTE_TYPES, isCreditNote } from '@/modules/commercial/shared/voucher-utils';
+import moment from 'moment';
 import type { CreatePaymentOrderFormData } from '../../shared/validators';
 import type { PendingPurchaseInvoice, PaymentOrderListItem, PaymentOrderWithDetails } from '../../shared/types';
 import { createJournalEntryForPaymentOrder } from '@/modules/accounting/features/integrations/commercial';
@@ -133,6 +134,39 @@ export async function getPortfolioChecks(isElectronic?: boolean) {
 }
 
 /**
+ * Tarjetas activas de la empresa para el selector de formas de pago.
+ */
+export async function getActiveCardsForPayment() {
+  await checkPermission('commercial.treasury.payment-orders', 'view', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) return [];
+
+  const cards = await prisma.card.findMany({
+    where: { companyId, isActive: true },
+    select: {
+      id: true,
+      name: true,
+      cardType: true,
+      brand: true,
+      lastFour: true,
+      ownerType: true,
+      partner: { select: { name: true } },
+    },
+    orderBy: { name: 'asc' },
+  });
+
+  return cards.map((c) => ({
+    id: c.id,
+    name: c.name,
+    cardType: c.cardType,
+    brand: c.brand,
+    lastFour: c.lastFour,
+    ownerType: c.ownerType,
+    ownerName: c.ownerType === 'PARTNER' ? c.partner?.name ?? 'Socio' : 'Empresa',
+  }));
+}
+
+/**
  * Crea una nueva orden de pago (borrador)
  */
 export async function createPaymentOrder(data: CreatePaymentOrderFormData) {
@@ -194,6 +228,9 @@ export async function createPaymentOrder(data: CreatePaymentOrderFormData) {
           bankAccountId: payment.bankAccountId || null,
           checkNumber: payment.checkNumber || null,
           cardLast4: payment.cardLast4 || null,
+          cardId: payment.cardId || null,
+          installmentsCount:
+            payment.paymentMethod === 'CREDIT_CARD' ? payment.installmentsCount ?? null : null,
           reference: payment.reference || null,
           // Metadata del cheque / e-cheq
           checkBankName: payment.checkBankName || null,
@@ -268,7 +305,7 @@ export async function confirmPaymentOrder(paymentOrderId: string) {
             expense: true,
           },
         },
-        payments: true,
+        payments: { include: { card: { include: { partner: true } } } },
         withholdings: true,
         supplier: { select: { businessName: true, taxId: true } },
       },
@@ -453,6 +490,80 @@ export async function confirmPaymentOrder(paymentOrderId: string) {
               },
             });
           }
+        }
+      }
+
+      // 3c. Tarjetas: cuotas (crédito) + saldo deudor con el socio titular
+      for (const payment of paymentOrder.payments) {
+        const isCard =
+          payment.paymentMethod === 'CREDIT_CARD' || payment.paymentMethod === 'DEBIT_CARD';
+        if (!isCard || !payment.card) continue;
+
+        const card = payment.card;
+        const paymentAmount = Number(payment.amount);
+
+        // Cuotas: solo tarjeta de crédito. Genera cronograma + proyecciones de cashflow.
+        if (payment.paymentMethod === 'CREDIT_CARD') {
+          const installmentsCount = Math.max(1, payment.installmentsCount ?? 1);
+          // Reparto en centavos para que la suma cuadre exactamente con el total
+          const totalCents = Math.round(paymentAmount * 100);
+          const baseCents = Math.floor(totalCents / installmentsCount);
+          const remainderCents = totalCents - baseCents * installmentsCount;
+
+          for (let i = 1; i <= installmentsCount; i++) {
+            const cents = baseCents + (i <= remainderCents ? 1 : 0);
+            const amount = new Prisma.Decimal((cents / 100).toFixed(2));
+
+            // Vencimiento: i meses después de la fecha de la OP; si la tarjeta tiene día de
+            // vencimiento configurado, se ajusta a ese día del mes correspondiente.
+            let dueDate = moment(paymentOrder.date).add(i, 'months');
+            if (card.dueDay) {
+              dueDate = dueDate.date(Math.min(card.dueDay, dueDate.daysInMonth()));
+            }
+
+            await tx.paymentOrderInstallment.create({
+              data: {
+                companyId,
+                paymentOrderId,
+                cardId: card.id,
+                number: i,
+                dueDate: dueDate.toDate(),
+                amount,
+                status: 'PENDING',
+              },
+            });
+
+            // Proyección de cashflow (egreso futuro)
+            await tx.cashflowProjection.create({
+              data: {
+                companyId,
+                type: 'EXPENSE',
+                category: 'OTHER',
+                description: `Cuota ${i}/${installmentsCount} ${paymentOrder.fullNumber} — ${card.name}`,
+                amount,
+                date: dueDate.toDate(),
+                status: 'PENDING',
+                createdBy: userId,
+              },
+            });
+          }
+        }
+
+        // Saldo deudor con el socio: si la tarjeta es de un socio, la empresa pasa a deberle
+        // el importe abonado (aplica tanto a crédito como a débito).
+        if (card.ownerType === 'PARTNER' && card.partnerId) {
+          await tx.partnerAccountMovement.create({
+            data: {
+              companyId,
+              partnerId: card.partnerId,
+              date: paymentOrder.date,
+              type: 'OWED',
+              amount: payment.amount,
+              description: `Pago ${paymentOrder.fullNumber} con tarjeta ${card.name}`,
+              paymentOrderId,
+              createdBy: userId,
+            },
+          });
         }
       }
 
@@ -741,6 +852,8 @@ export async function getPaymentOrder(id: string): Promise<PaymentOrderWithDetai
             },
             checkNumber: true,
             cardLast4: true,
+            cardId: true,
+            installmentsCount: true,
             reference: true,
           },
         },
@@ -928,6 +1041,9 @@ export async function updatePaymentOrder(
             bankAccountId: payment.bankAccountId || null,
             checkNumber: payment.checkNumber || null,
             cardLast4: payment.cardLast4 || null,
+            cardId: payment.cardId || null,
+            installmentsCount:
+              payment.paymentMethod === 'CREDIT_CARD' ? payment.installmentsCount ?? null : null,
             reference: payment.reference || null,
             checkBankName: payment.checkBankName || null,
             checkIssueDate: payment.checkIssueDate || null,

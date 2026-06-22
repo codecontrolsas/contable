@@ -1,0 +1,1 @@
+export { EditPartner } from './EditPartner';
