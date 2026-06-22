@@ -16,7 +16,23 @@ const fmtNum = (value: number, decimals = 2) =>
   value.toLocaleString('es-AR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 
 export function QuoteTemplate({ data }: QuoteTemplateProps) {
-  const { company, quote, recipient, lines, totals, conditions, notes } = data;
+  const {
+    themeConfig,
+    headerText,
+    footerText,
+    notesDefault,
+    showIssuer = true,
+    showReceiver = true,
+    showNotes = true,
+    company,
+    quote,
+    recipient,
+    lines,
+    totals,
+    conditions,
+    notes,
+  } = data;
+  const effectiveNotes = notes || notesDefault;
   const hasAnyDiscount = lines.some(
     (l) => (l.discountPercent && l.discountPercent > 0) || (l.discountAmount && l.discountAmount > 0)
   );
@@ -25,8 +41,17 @@ export function QuoteTemplate({ data }: QuoteTemplateProps) {
     <Document>
       <Page size="A4" style={styles.page}>
         {/* HEADER - Empresa y título */}
-        <View style={styles.header}>
+        <View
+          style={[
+            styles.header,
+            {
+              borderBottomColor: themeConfig.borderColor,
+              borderBottomWidth: themeConfig.headerBorderWidth,
+            },
+          ]}
+        >
           {/* Datos de la empresa */}
+          {showIssuer && (
           <View style={styles.headerLeft}>
             {company.logoDataUri && (
               <Image src={company.logoDataUri} style={styles.logo} />
@@ -40,6 +65,12 @@ export function QuoteTemplate({ data }: QuoteTemplateProps) {
             {company.phone && <Text style={styles.smallText}>Tel: {company.phone}</Text>}
             {company.email && <Text style={styles.smallText}>Email: {company.email}</Text>}
           </View>
+          )}
+          {headerText && (
+            <Text style={{ marginTop: 8, fontSize: 8, fontStyle: 'italic', textAlign: 'center' }}>
+              {headerText}
+            </Text>
+          )}
 
           {/* Datos del presupuesto */}
           <View style={styles.headerRight}>
@@ -70,6 +101,7 @@ export function QuoteTemplate({ data }: QuoteTemplateProps) {
         </View>
 
         {/* DESTINATARIO */}
+        {showReceiver && (
         <View style={styles.recipientSection}>
           <Text style={[styles.sectionTitle, { marginTop: 0 }]}>DATOS DEL DESTINATARIO</Text>
           <View style={styles.infoRow}>
@@ -103,6 +135,7 @@ export function QuoteTemplate({ data }: QuoteTemplateProps) {
             </View>
           )}
         </View>
+        )}
 
         {/* TABLA DE PRODUCTOS */}
         <View style={styles.table}>
@@ -196,15 +229,16 @@ export function QuoteTemplate({ data }: QuoteTemplateProps) {
         )}
 
         {/* OBSERVACIONES */}
-        {notes && (
+        {showNotes && effectiveNotes && (
           <View style={styles.notes}>
             <Text style={styles.notesTitle}>OBSERVACIONES</Text>
-            <Text style={styles.notesText}>{notes}</Text>
+            <Text style={styles.notesText}>{effectiveNotes}</Text>
           </View>
         )}
 
         {/* FOOTER */}
         <View style={styles.footer}>
+          {footerText && <Text style={{ marginBottom: 2 }}>{footerText}</Text>}
           <Text style={[styles.smallText, { textAlign: 'center' }]}>
             Este presupuesto no constituye factura. Los precios pueden estar sujetos a cambios.
           </Text>

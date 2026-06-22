@@ -1,8 +1,17 @@
 /**
  * Tipos para generación de PDFs de Órdenes de Compra
  */
+import type { ThemeConfig } from '@/shared/utils/pdf-themes';
 
 export interface PurchaseOrderPDFData {
+  themeConfig: ThemeConfig;
+  headerText?: string | null;
+  footerText?: string | null;
+  notesDefault?: string | null;
+  showIssuer?: boolean;
+  showReceiver?: boolean;
+  showNotes?: boolean;
+
   // Datos de la empresa
   company: {
     name: string;

@@ -8,60 +8,96 @@ interface Props {
 }
 
 export function DeliveryNoteTemplate({ data }: Props) {
-  const { company, deliveryNote, customer, warehouse, sourceInvoice, lines, notes } = data;
+  const {
+    themeConfig,
+    headerText,
+    footerText,
+    notesDefault,
+    showIssuer = true,
+    showReceiver = true,
+    showNotes = true,
+    company,
+    deliveryNote,
+    customer,
+    warehouse,
+    sourceInvoice,
+    lines,
+    notes,
+  } = data;
+
+  const effectiveNotes = notes || notesDefault;
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         {/* HEADER */}
-        <View style={styles.header}>
+        <View
+          style={[
+            styles.header,
+            {
+              borderBottomColor: themeConfig.borderColor,
+              borderBottomWidth: themeConfig.headerBorderWidth,
+            },
+          ]}
+        >
           <View style={styles.headerTop}>
             {company.logoDataUri && (
               <Image src={company.logoDataUri} style={styles.logo} />
             )}
             <View style={styles.headerText}>
-              <Text style={styles.title}>REMITO DE ENTREGA</Text>
+              <Text style={[styles.title, { color: themeConfig.primaryColor }]}>
+                REMITO DE ENTREGA
+              </Text>
               <Text style={styles.subtitle}>N° {deliveryNote.fullNumber}</Text>
               <Text style={styles.subtitle}>
                 Fecha de Entrega: {moment(deliveryNote.deliveryDate).format('DD/MM/YYYY')}
               </Text>
             </View>
           </View>
-          <View style={styles.companyInfo}>
-            <Text>{company.name}</Text>
-            <Text>CUIT: {company.taxId}</Text>
-            <Text>{company.address}</Text>
-            {company.phone && <Text>Tel: {company.phone}</Text>}
-            {company.email && <Text>Email: {company.email}</Text>}
-          </View>
+          {showIssuer && (
+            <View style={styles.companyInfo}>
+              <Text>{company.name}</Text>
+              <Text>CUIT: {company.taxId}</Text>
+              <Text>{company.address}</Text>
+              {company.phone && <Text>Tel: {company.phone}</Text>}
+              {company.email && <Text>Email: {company.email}</Text>}
+            </View>
+          )}
+          {headerText && (
+            <Text style={{ marginTop: 8, fontSize: 8, fontStyle: 'italic', textAlign: 'center' }}>
+              {headerText}
+            </Text>
+          )}
         </View>
 
         {/* DATOS DEL CLIENTE */}
-        <View>
-          <Text style={styles.sectionTitle}>CLIENTE</Text>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Nombre / Razón Social:</Text>
-            <Text style={styles.infoValue}>{customer.name}</Text>
+        {showReceiver && (
+          <View>
+            <Text style={styles.sectionTitle}>CLIENTE</Text>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Nombre / Razón Social:</Text>
+              <Text style={styles.infoValue}>{customer.name}</Text>
+            </View>
+            {customer.taxId && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>CUIT:</Text>
+                <Text style={styles.infoValue}>{customer.taxId}</Text>
+              </View>
+            )}
+            {customer.address && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Domicilio:</Text>
+                <Text style={styles.infoValue}>{customer.address}</Text>
+              </View>
+            )}
+            {customer.phone && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Teléfono:</Text>
+                <Text style={styles.infoValue}>{customer.phone}</Text>
+              </View>
+            )}
           </View>
-          {customer.taxId && (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>CUIT:</Text>
-              <Text style={styles.infoValue}>{customer.taxId}</Text>
-            </View>
-          )}
-          {customer.address && (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Domicilio:</Text>
-              <Text style={styles.infoValue}>{customer.address}</Text>
-            </View>
-          )}
-          {customer.phone && (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Teléfono:</Text>
-              <Text style={styles.infoValue}>{customer.phone}</Text>
-            </View>
-          )}
-        </View>
+        )}
 
         {/* ENTREGA */}
         <View>
@@ -103,10 +139,10 @@ export function DeliveryNoteTemplate({ data }: Props) {
         </View>
 
         {/* OBSERVACIONES */}
-        {notes && (
+        {showNotes && effectiveNotes && (
           <View style={styles.notes}>
             <Text style={styles.notesTitle}>OBSERVACIONES</Text>
-            <Text style={styles.notesText}>{notes}</Text>
+            <Text style={styles.notesText}>{effectiveNotes}</Text>
           </View>
         )}
 
@@ -122,6 +158,7 @@ export function DeliveryNoteTemplate({ data }: Props) {
 
         {/* FOOTER */}
         <View style={styles.footer}>
+          {footerText && <Text style={{ marginBottom: 2 }}>{footerText}</Text>}
           <Text>
             Documento generado electrónicamente - {moment().format('DD/MM/YYYY HH:mm')}
           </Text>

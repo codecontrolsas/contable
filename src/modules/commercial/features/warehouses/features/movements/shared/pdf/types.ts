@@ -1,4 +1,13 @@
+import type { ThemeConfig } from '@/shared/utils/pdf-themes';
+
 export interface StockTransferPDFData {
+  themeConfig: ThemeConfig;
+  headerText?: string | null;
+  footerText?: string | null;
+  notesDefault?: string | null;
+  showIssuer?: boolean;
+  showNotes?: boolean;
+
   company: {
     name: string;
     taxId: string;

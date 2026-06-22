@@ -9,6 +9,7 @@ import {
 } from '@/modules/commercial/features/warehouses/features/movements/shared/pdf';
 import type { StockTransferPDFData } from '@/modules/commercial/features/warehouses/features/movements/shared/pdf';
 import { getLogoAsDataUri } from '@/shared/utils/logo';
+import { getDocumentTemplateConfig } from '@/shared/utils/document-template';
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -47,12 +48,19 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: 'Empresa no encontrada' }, { status: 400 });
     }
 
+    const templateConfig = await getDocumentTemplateConfig(companyId, 'STOCK_TRANSFER');
     const pdfData: StockTransferPDFData = {
+      themeConfig: templateConfig.themeConfig,
+      headerText: templateConfig.headerText,
+      footerText: templateConfig.footerText,
+      notesDefault: templateConfig.notesDefault,
+      showIssuer: templateConfig.showIssuer,
+      showNotes: templateConfig.showNotes,
       company: {
         name: company.name,
         taxId: company.taxId || '',
         address: company.address || '',
-        logoDataUri: await getLogoAsDataUri(companyId),
+        logoDataUri: (await getLogoAsDataUri(companyId)) ?? undefined,
       },
       transfer: {
         transferNumber: transfer.transferNumber,
@@ -72,7 +80,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     const pdfBuffer = await generateStockTransferPDF(pdfData);
     const fileName = getStockTransferFileName(pdfData);
 
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `inline; filename="${fileName}"`,

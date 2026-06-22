@@ -16,6 +16,7 @@ import {
 } from '@/modules/commercial/features/purchases/features/receiving-notes/shared/pdf';
 import type { LinkedDocumentsData, LinkedDocumentSection } from '@/modules/commercial/shared/pdf/linked-documents-types';
 import { getLogoAsDataUri } from '@/shared/utils/logo';
+import { getDocumentTemplateConfig } from '@/shared/utils/document-template';
 import moment from 'moment';
 
 function parseIncludes(request: NextRequest): Set<string> {
@@ -125,7 +126,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Empresa no encontrada' }, { status: 404 });
     }
 
-    const pdfData = mapReceivingNoteDataForPDF(receivingNote, company, await getLogoAsDataUri(companyId) ?? undefined);
+    const templateConfig = await getDocumentTemplateConfig(companyId, 'RECEIVING_NOTE');
+    const pdfData = mapReceivingNoteDataForPDF(
+      receivingNote,
+      company,
+      await getLogoAsDataUri(companyId) ?? undefined,
+      templateConfig
+    );
 
     // Agregar documentos vinculados
     if (includes.size > 0) {

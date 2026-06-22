@@ -44,6 +44,8 @@ export const MODULES = {
   'commercial.treasury.checks': 'commercial.treasury.checks',
   'commercial.treasury.projections': 'commercial.treasury.projections',
   'commercial.treasury.cashflow': 'commercial.treasury.cashflow',
+  'commercial.treasury.partners': 'commercial.treasury.partners',
+  'commercial.treasury.cards': 'commercial.treasury.cards',
   'commercial.expenses': 'commercial.expenses',
   'commercial.equivalences': 'commercial.equivalences',
 
@@ -138,6 +140,8 @@ export const MODULE_LABELS: Record<Module, string> = {
   'commercial.treasury.checks': 'Cheques',
   'commercial.treasury.projections': 'Proyecciones',
   'commercial.treasury.cashflow': 'Flujo de Caja',
+  'commercial.treasury.partners': 'Socios',
+  'commercial.treasury.cards': 'Tarjetas',
   'commercial.expenses': 'Gastos',
   'commercial.equivalences': 'Equivalencias',
 
@@ -219,6 +223,8 @@ export const MODULE_GROUPS = {
       'commercial.treasury.checks',
       'commercial.treasury.projections',
       'commercial.treasury.cashflow',
+      'commercial.treasury.partners',
+      'commercial.treasury.cards',
       'commercial.expenses',
       'commercial.equivalences',
     ] as Module[],

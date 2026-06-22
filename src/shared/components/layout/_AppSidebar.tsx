@@ -246,6 +246,21 @@ const navMain: NavItemWithSub[] = [
             module: 'commercial.treasury.payment-orders',
           },
           {
+            title: 'Socios',
+            href: '/dashboard/commercial/treasury/partners',
+            module: 'commercial.treasury.partners',
+          },
+          {
+            title: 'Tarjetas',
+            href: '/dashboard/commercial/treasury/cards',
+            module: 'commercial.treasury.cards',
+          },
+          {
+            title: 'Cuotas de Tarjeta',
+            href: '/dashboard/commercial/treasury/card-installments',
+            module: 'commercial.treasury.cards',
+          },
+          {
             title: 'Retenciones',
             href: '/dashboard/commercial/treasury/withholdings',
             module: 'commercial.treasury.receipts',
@@ -368,6 +383,11 @@ const getNavConfig = (isSingleMode: boolean, activeCompanyId?: string): NavItemW
           {
             title: 'Documentos',
             href: '/dashboard/company/documents',
+            module: 'company.documents',
+          },
+          {
+            title: 'Plantillas de PDF',
+            href: '/dashboard/company/documents/templates',
             module: 'company.documents',
           },
           {

@@ -1,8 +1,19 @@
 /**
  * Tipos para generación de PDFs de facturas
  */
+import type { ThemeConfig } from '@/shared/utils/pdf-themes';
 
 export interface InvoicePDFData {
+  // Configuración visual del template
+  themeConfig: ThemeConfig;
+  headerText?: string | null;
+  footerText?: string | null;
+  notesDefault?: string | null;
+  showIssuer?: boolean;
+  showReceiver?: boolean;
+  showNotes?: boolean;
+  showCae?: boolean;
+
   // Datos de la empresa
   company: {
     name: string;

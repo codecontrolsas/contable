@@ -3,6 +3,8 @@
  */
 
 import type { PurchaseOrderPDFData } from './types';
+import type { PdfTemplateConfig } from '@/shared/utils/pdf-themes';
+import { FALLBACK_THEME_CONFIG } from '@/shared/utils/pdf-themes';
 
 type PurchaseOrderData = {
   id: string;
@@ -60,9 +62,17 @@ type CompanyData = {
 export function mapPurchaseOrderDataForPDF(
   order: PurchaseOrderData,
   company: CompanyData,
-  logoDataUri?: string
+  logoDataUri?: string,
+  config?: PdfTemplateConfig
 ): PurchaseOrderPDFData {
   return {
+    themeConfig: config?.themeConfig ?? FALLBACK_THEME_CONFIG,
+    headerText: config?.headerText,
+    footerText: config?.footerText,
+    notesDefault: config?.notesDefault,
+    showIssuer: config?.showIssuer ?? true,
+    showReceiver: config?.showReceiver ?? true,
+    showNotes: config?.showNotes ?? true,
     company: {
       name: company.name,
       taxId: company.taxId || '',
