@@ -75,25 +75,25 @@ enum TaxStatus {
 }
 
 model Company {
-  id              String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name            String
-  slug            String?    @unique
-  taxId           String?    @unique @map("tax_id") // CUIT/RUT/etc
-  taxStatus       TaxStatus? @map("tax_status")
-  description     String?
-  website         String?
-  email           String?
-  phone           String?
-  address         String?
-  country         String?
-  industry        String?
-  logoUrl         String?    @map("logo_url")
-  isActive        Boolean    @default(true) @map("is_active")
-  isSingleCompany Boolean    @default(false) @map("is_single_company") // Modo empresa única - sin selector de empresas
-  onboardingCompleted Boolean @default(false) @map("onboarding_completed")
-  activeModules   String[]   @default([]) @map("active_modules") // Módulos activos (vacío = todos activos)
-  createdAt       DateTime   @default(now()) @map("created_at")
-  updatedAt       DateTime   @updatedAt @map("updated_at")
+  id                  String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                String
+  slug                String?    @unique
+  taxId               String?    @unique @map("tax_id") // CUIT/RUT/etc
+  taxStatus           TaxStatus? @map("tax_status")
+  description         String?
+  website             String?
+  email               String?
+  phone               String?
+  address             String?
+  country             String?
+  industry            String?
+  logoUrl             String?    @map("logo_url")
+  isActive            Boolean    @default(true) @map("is_active")
+  isSingleCompany     Boolean    @default(false) @map("is_single_company") // Modo empresa única - sin selector de empresas
+  onboardingCompleted Boolean    @default(false) @map("onboarding_completed")
+  activeModules       String[]   @default([]) @map("active_modules") // Módulos activos (vacío = todos activos)
+  createdAt           DateTime   @default(now()) @map("created_at")
+  updatedAt           DateTime   @updatedAt @map("updated_at")
 
   // Relaciones geográficas
   provinceId Int?      @map("province_id")
@@ -182,6 +182,9 @@ model Company {
   // Depreciación de equipos
   vehicleDepreciations  VehicleDepreciation[]
   assetValueAdjustments AssetValueAdjustment[]
+
+  // Templates de PDF de documentos
+  documentTemplates DocumentTemplate[]
 
   @@map("companies")
 }
@@ -1796,8 +1799,8 @@ enum ProductType {
 }
 
 enum ProductUsage {
-  PURCHASE      // Solo compra
-  SALE          // Solo venta
+  PURCHASE // Solo compra
+  SALE // Solo venta
   PURCHASE_SALE // Compra y venta
 
   @@map("product_usage")
@@ -1882,8 +1885,8 @@ model Supplier {
   paymentOrders    PaymentOrder[]
   expenses         Expense[]
   checks           Check[]
-  receivingNotes    ReceivingNote[]
-  productSuppliers  ProductSupplier[]
+  receivingNotes   ReceivingNote[]
+  productSuppliers ProductSupplier[]
 
   createdBy String   @map("created_by")
   createdAt DateTime @default(now()) @map("created_at")
@@ -1899,7 +1902,7 @@ model ProductSupplier {
   productId  String @map("product_id") @db.Uuid
   supplierId String @map("supplier_id") @db.Uuid
 
-  supplierCode  String? @map("supplier_code") // Código del producto en el proveedor
+  supplierCode  String?  @map("supplier_code") // Código del producto en el proveedor
   supplierPrice Decimal? @map("supplier_price") @db.Decimal(12, 2) // Precio del proveedor
 
   product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -1934,8 +1937,8 @@ model ProductCategory {
 }
 
 model Product {
-  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  companyId   String      @map("company_id") @db.Uuid
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId   String       @map("company_id") @db.Uuid
   code        String // SKU
   name        String
   description String?
@@ -2914,11 +2917,11 @@ model ReceiptPayment {
   reference      String? // Referencia adicional
 
   // Metadata del cheque/e-cheq (cuando paymentMethod es CHECK o ECHEQ)
-  checkBankName     String?   @map("check_bank_name")
-  checkIssueDate    DateTime? @map("check_issue_date")
-  checkDueDate      DateTime? @map("check_due_date")
-  checkDrawerName   String?   @map("check_drawer_name")
-  checkDrawerTaxId  String?   @map("check_drawer_tax_id")
+  checkBankName    String?   @map("check_bank_name")
+  checkIssueDate   DateTime? @map("check_issue_date")
+  checkDueDate     DateTime? @map("check_due_date")
+  checkDrawerName  String?   @map("check_drawer_name")
+  checkDrawerTaxId String?   @map("check_drawer_tax_id")
 
   receipt      Receipt       @relation(fields: [receiptId], references: [id], onDelete: Cascade)
   cashRegister CashRegister? @relation(fields: [cashRegisterId], references: [id])
@@ -3002,14 +3005,14 @@ model PaymentOrderPayment {
   reference      String? // Referencia adicional
 
   // Metadata del cheque/e-cheq (cuando paymentMethod es CHECK o ECHEQ)
-  checkBankName     String?   @map("check_bank_name")
-  checkIssueDate    DateTime? @map("check_issue_date")
-  checkDueDate      DateTime? @map("check_due_date")
-  checkDrawerName   String?   @map("check_drawer_name")
-  checkDrawerTaxId  String?   @map("check_drawer_tax_id")
+  checkBankName    String?   @map("check_bank_name")
+  checkIssueDate   DateTime? @map("check_issue_date")
+  checkDueDate     DateTime? @map("check_due_date")
+  checkDrawerName  String?   @map("check_drawer_name")
+  checkDrawerTaxId String?   @map("check_drawer_tax_id")
   // Cheque de tercero (en cartera) que se endosa al confirmar la OP. Si está vacío y el
   // método es CHECK/ECHEQ, se crea un cheque propio (OWN).
-  endorsedCheckId   String?   @map("endorsed_check_id") @db.Uuid
+  endorsedCheckId  String?   @map("endorsed_check_id") @db.Uuid
 
   paymentOrder PaymentOrder  @relation(fields: [paymentOrderId], references: [id], onDelete: Cascade)
   cashRegister CashRegister? @relation(fields: [cashRegisterId], references: [id])
@@ -3733,4 +3736,51 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+enum DocumentTemplateType {
+  PAYMENT_ORDER
+  RECEIPT
+  SALES_INVOICE
+  PURCHASE_INVOICE
+  PURCHASE_ORDER
+  DELIVERY_NOTE
+  RECEIVING_NOTE
+  QUOTE
+  STOCK_TRANSFER
+
+  @@map("document_template_type")
+}
+
+enum DocumentTemplateTheme {
+  CLASSIC
+  MODERN
+  MINIMAL
+
+  @@map("document_template_theme")
+}
+
+model DocumentTemplate {
+  id               String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId        String                @map("company_id") @db.Uuid
+  documentType     DocumentTemplateType  @map("document_type")
+  theme            DocumentTemplateTheme @default(CLASSIC)
+  primaryColor     String?               @map("primary_color")
+  headerText       String?               @map("header_text")
+  footerText       String?               @map("footer_text")
+  notesDefault     String?               @map("notes_default")
+  showCae          Boolean               @default(true) @map("show_cae")
+  showNotes        Boolean               @default(true) @map("show_notes")
+  showWithholdings Boolean               @default(true) @map("show_withholdings")
+  showIssuer       Boolean               @default(true) @map("show_issuer")
+  showReceiver     Boolean               @default(true) @map("show_receiver")
+  isActive         Boolean               @default(true) @map("is_active")
+  createdAt        DateTime              @default(now()) @map("created_at")
+  updatedAt        DateTime              @updatedAt @map("updated_at")
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@unique([companyId, documentType])
+  @@index([companyId])
+  @@map("document_templates")
 }

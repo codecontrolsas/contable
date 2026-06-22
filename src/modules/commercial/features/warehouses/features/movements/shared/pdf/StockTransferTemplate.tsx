@@ -12,25 +12,56 @@ interface Props {
 }
 
 export function StockTransferTemplate({ data }: Props) {
-  const { company, transfer, sourceWarehouse, destinationWarehouse, lines } = data;
+  const {
+    themeConfig,
+    headerText,
+    footerText,
+    notesDefault,
+    showIssuer = true,
+    showNotes = true,
+    company,
+    transfer,
+    sourceWarehouse,
+    destinationWarehouse,
+    lines,
+  } = data;
+
+  const effectiveNotes = transfer.notes || notesDefault;
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         {/* Header */}
-        <View style={styles.header}>
+        <View
+          style={[
+            styles.header,
+            {
+              borderBottomColor: themeConfig.borderColor,
+              borderBottomWidth: themeConfig.headerBorderWidth,
+            },
+          ]}
+        >
           <View style={styles.headerTop}>
             {company.logoDataUri && (
               <Image src={company.logoDataUri} style={styles.logo} />
             )}
             <View style={styles.headerText}>
-              <Text style={styles.title}>TRANSFERENCIA ENTRE ALMACENES</Text>
+              <Text style={[styles.title, { color: themeConfig.primaryColor }]}>
+                TRANSFERENCIA ENTRE ALMACENES
+              </Text>
               <Text style={styles.subtitle}>{transfer.transferNumber}</Text>
             </View>
           </View>
-          <Text style={styles.companyInfo}>
-            {company.name} | CUIT: {company.taxId} | {company.address}
-          </Text>
+          {showIssuer && (
+            <Text style={styles.companyInfo}>
+              {company.name} | CUIT: {company.taxId} | {company.address}
+            </Text>
+          )}
+          {headerText && (
+            <Text style={{ marginTop: 8, fontSize: 8, fontStyle: 'italic', textAlign: 'center' }}>
+              {headerText}
+            </Text>
+          )}
         </View>
 
         {/* Info de la transferencia */}
@@ -70,10 +101,10 @@ export function StockTransferTemplate({ data }: Props) {
         </View>
 
         {/* Notas */}
-        {transfer.notes && (
+        {showNotes && effectiveNotes && (
           <View style={styles.notes}>
             <Text style={styles.notesTitle}>Observaciones</Text>
-            <Text style={styles.notesText}>{transfer.notes}</Text>
+            <Text style={styles.notesText}>{effectiveNotes}</Text>
           </View>
         )}
 
@@ -88,9 +119,10 @@ export function StockTransferTemplate({ data }: Props) {
         </View>
 
         {/* Footer */}
-        <Text style={styles.footer}>
-          Generado el {moment().format('DD/MM/YYYY HH:mm')}
-        </Text>
+        <View style={styles.footer}>
+          {footerText && <Text style={{ marginBottom: 2 }}>{footerText}</Text>}
+          <Text>Generado el {moment().format('DD/MM/YYYY HH:mm')}</Text>
+        </View>
       </Page>
     </Document>
   );

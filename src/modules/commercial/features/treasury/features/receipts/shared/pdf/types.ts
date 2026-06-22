@@ -1,8 +1,19 @@
 /**
  * Tipos para generación de PDFs de Recibos de Cobro
  */
+import type { ThemeConfig } from '@/shared/utils/pdf-themes';
 
 export interface ReceiptPDFData {
+  // Configuración visual del template
+  themeConfig: ThemeConfig;
+  headerText?: string | null;
+  footerText?: string | null;
+  notesDefault?: string | null;
+  showIssuer?: boolean;
+  showReceiver?: boolean;
+  showNotes?: boolean;
+  showWithholdings?: boolean;
+
   // Datos de la empresa
   company: {
     name: string;

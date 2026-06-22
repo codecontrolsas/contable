@@ -371,6 +371,11 @@ const getNavConfig = (isSingleMode: boolean, activeCompanyId?: string): NavItemW
             module: 'company.documents',
           },
           {
+            title: 'Plantillas de PDF',
+            href: '/dashboard/company/documents/templates',
+            module: 'company.documents',
+          },
+          {
             title: 'Dashboard',
             href: '/dashboard/company/dashboard-settings',
             module: null, // Siempre visible - cada usuario configura su propio dashboard

@@ -16,6 +16,7 @@ import {
 } from '@/modules/commercial/features/purchases/features/purchase-orders/shared/pdf';
 import type { LinkedDocumentsData, LinkedDocumentSection } from '@/modules/commercial/shared/pdf/linked-documents-types';
 import { getLogoAsDataUri } from '@/shared/utils/logo';
+import { getDocumentTemplateConfig } from '@/shared/utils/document-template';
 import moment from 'moment';
 
 function parseIncludes(request: NextRequest): Set<string> {
@@ -124,7 +125,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Empresa no encontrada' }, { status: 404 });
     }
 
-    const pdfData = mapPurchaseOrderDataForPDF(purchaseOrder as any, company, await getLogoAsDataUri(companyId) ?? undefined);
+    const templateConfig = await getDocumentTemplateConfig(companyId, 'PURCHASE_ORDER');
+    const pdfData = mapPurchaseOrderDataForPDF(
+      purchaseOrder as any,
+      company,
+      await getLogoAsDataUri(companyId) ?? undefined,
+      templateConfig
+    );
 
     // Agregar documentos vinculados
     if (includes.size > 0) {

@@ -15,6 +15,7 @@ import { VOUCHER_TYPE_LABELS, INVOICE_STATUS_LABELS } from '@/modules/commercial
 import type { LinkedDocumentsData, LinkedDocumentSection } from '@/modules/commercial/shared/pdf/linked-documents-types';
 import type { SalesInvoiceStatus } from '@/generated/prisma/enums';
 import { getLogoAsDataUri } from '@/shared/utils/logo';
+import { getDocumentTemplateConfig } from '@/shared/utils/document-template';
 import moment from 'moment';
 
 function parseIncludes(request: NextRequest): Set<string> {
@@ -171,7 +172,13 @@ export async function GET(
     }
 
     // Mapear datos al formato del PDF
-    const pdfData = mapInvoiceDataForPDF(invoice as any, company, await getLogoAsDataUri(companyId) ?? undefined);
+    const templateConfig = await getDocumentTemplateConfig(companyId, 'SALES_INVOICE');
+    const pdfData = mapInvoiceDataForPDF(
+      invoice as any,
+      company,
+      await getLogoAsDataUri(companyId) ?? undefined,
+      templateConfig
+    );
 
     // Agregar documentos vinculados si se solicitaron
     if (includes.size > 0) {

@@ -14,19 +14,47 @@ interface ReceivingNoteTemplateProps {
 }
 
 export function ReceivingNoteTemplate({ data }: ReceivingNoteTemplateProps) {
-  const { company, receivingNote, supplier, warehouse, sourceDocument, lines, notes, linkedDocuments } = data;
+  const {
+    themeConfig,
+    headerText,
+    footerText,
+    notesDefault,
+    showIssuer = true,
+    showReceiver = true,
+    showNotes = true,
+    company,
+    receivingNote,
+    supplier,
+    warehouse,
+    sourceDocument,
+    lines,
+    notes,
+    linkedDocuments,
+  } = data;
+
+  const effectiveNotes = notes || notesDefault;
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         {/* HEADER */}
-        <View style={styles.header}>
+        <View
+          style={[
+            styles.header,
+            {
+              borderBottomColor: themeConfig.borderColor,
+              borderBottomWidth: themeConfig.headerBorderWidth,
+            },
+          ]}
+        >
           <View style={styles.headerTop}>
             {company.logoDataUri && (
               <Image src={company.logoDataUri} style={styles.logo} />
             )}
             <View style={styles.headerText}>
-              <Text style={styles.title}>REMITO DE RECEPCIÓN</Text>
+              <Text style={[styles.title, { color: themeConfig.primaryColor }]}>
+                REMITO DE RECEPCIÓN
+              </Text>
               <Text style={styles.subtitle}>
                 N° {receivingNote.fullNumber}
               </Text>
@@ -35,41 +63,50 @@ export function ReceivingNoteTemplate({ data }: ReceivingNoteTemplateProps) {
               </Text>
             </View>
           </View>
-          <View style={styles.companyInfo}>
-            <Text>{company.name}</Text>
-            <Text>CUIT: {company.taxId}</Text>
-            <Text>{company.address}</Text>
-            {company.phone && <Text>Tel: {company.phone}</Text>}
-            {company.email && <Text>Email: {company.email}</Text>}
-          </View>
+          {showIssuer && (
+            <View style={styles.companyInfo}>
+              <Text>{company.name}</Text>
+              <Text>CUIT: {company.taxId}</Text>
+              <Text>{company.address}</Text>
+              {company.phone && <Text>Tel: {company.phone}</Text>}
+              {company.email && <Text>Email: {company.email}</Text>}
+            </View>
+          )}
+          {headerText && (
+            <Text style={{ marginTop: 8, fontSize: 8, fontStyle: 'italic', textAlign: 'center' }}>
+              {headerText}
+            </Text>
+          )}
         </View>
 
         {/* DATOS DEL PROVEEDOR */}
-        <View>
-          <Text style={styles.sectionTitle}>PROVEEDOR</Text>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Razón Social:</Text>
-            <Text style={styles.infoValue}>
-              {supplier.tradeName || supplier.businessName}
-            </Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>CUIT:</Text>
-            <Text style={styles.infoValue}>{supplier.taxId}</Text>
-          </View>
-          {supplier.address && (
+        {showReceiver && (
+          <View>
+            <Text style={styles.sectionTitle}>PROVEEDOR</Text>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Domicilio:</Text>
-              <Text style={styles.infoValue}>{supplier.address}</Text>
+              <Text style={styles.infoLabel}>Razón Social:</Text>
+              <Text style={styles.infoValue}>
+                {supplier.tradeName || supplier.businessName}
+              </Text>
             </View>
-          )}
-          {supplier.phone && (
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Teléfono:</Text>
-              <Text style={styles.infoValue}>{supplier.phone}</Text>
+              <Text style={styles.infoLabel}>CUIT:</Text>
+              <Text style={styles.infoValue}>{supplier.taxId}</Text>
             </View>
-          )}
-        </View>
+            {supplier.address && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Domicilio:</Text>
+                <Text style={styles.infoValue}>{supplier.address}</Text>
+              </View>
+            )}
+            {supplier.phone && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Teléfono:</Text>
+                <Text style={styles.infoValue}>{supplier.phone}</Text>
+              </View>
+            )}
+          </View>
+        )}
 
         {/* DOCUMENTO ORIGEN Y ALMACÉN */}
         <View>
@@ -120,10 +157,10 @@ export function ReceivingNoteTemplate({ data }: ReceivingNoteTemplateProps) {
         </View>
 
         {/* OBSERVACIONES */}
-        {notes && (
+        {showNotes && effectiveNotes && (
           <View style={styles.notes}>
             <Text style={styles.notesTitle}>OBSERVACIONES</Text>
-            <Text style={styles.notesText}>{notes}</Text>
+            <Text style={styles.notesText}>{effectiveNotes}</Text>
           </View>
         )}
 
@@ -142,6 +179,7 @@ export function ReceivingNoteTemplate({ data }: ReceivingNoteTemplateProps) {
 
         {/* FOOTER */}
         <View style={styles.footer}>
+          {footerText && <Text style={{ marginBottom: 2 }}>{footerText}</Text>}
           <Text>
             Documento generado electrónicamente - {moment().format('DD/MM/YYYY HH:mm')}
           </Text>

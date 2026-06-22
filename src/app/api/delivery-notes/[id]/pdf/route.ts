@@ -9,6 +9,7 @@ import {
 } from '@/modules/commercial/features/sales/features/delivery-notes/shared/pdf';
 import type { DeliveryNotePDFData } from '@/modules/commercial/features/sales/features/delivery-notes/shared/pdf';
 import { getLogoAsDataUri } from '@/shared/utils/logo';
+import { getDocumentTemplateConfig } from '@/shared/utils/document-template';
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -50,14 +51,22 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: 'Empresa no encontrada' }, { status: 400 });
     }
 
+    const templateConfig = await getDocumentTemplateConfig(companyId, 'DELIVERY_NOTE');
     const pdfData: DeliveryNotePDFData = {
+      themeConfig: templateConfig.themeConfig,
+      headerText: templateConfig.headerText,
+      footerText: templateConfig.footerText,
+      notesDefault: templateConfig.notesDefault,
+      showIssuer: templateConfig.showIssuer,
+      showReceiver: templateConfig.showReceiver,
+      showNotes: templateConfig.showNotes,
       company: {
         name: company.name,
         taxId: company.taxId || '',
         address: company.address || '',
         phone: company.phone || undefined,
         email: company.email || undefined,
-        logoDataUri: await getLogoAsDataUri(companyId),
+        logoDataUri: (await getLogoAsDataUri(companyId)) ?? undefined,
       },
       deliveryNote: {
         fullNumber: note.fullNumber,
@@ -88,7 +97,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     const pdfBuffer = await generateDeliveryNotePDF(pdfData);
     const fileName = getDeliveryNoteFileName(pdfData);
 
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `inline; filename="${fileName}"`,

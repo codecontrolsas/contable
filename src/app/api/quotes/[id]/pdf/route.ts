@@ -11,6 +11,7 @@ import { logger } from '@/shared/lib/logger';
 import { generateQuotePDF, getQuoteFileName } from '@/modules/commercial/features/quotes/shared/pdf/generator';
 import { mapQuoteDataForPDF } from '@/modules/commercial/features/quotes/shared/pdf/data-mapper';
 import { getLogoAsDataUri } from '@/shared/utils/logo';
+import { getDocumentTemplateConfig } from '@/shared/utils/document-template';
 
 export async function GET(
   request: NextRequest,
@@ -117,7 +118,13 @@ export async function GET(
     };
 
     // Mapear datos al formato del PDF
-    const pdfData = mapQuoteDataForPDF(quoteForMapper, company, await getLogoAsDataUri(companyId) ?? undefined);
+    const templateConfig = await getDocumentTemplateConfig(companyId, 'QUOTE');
+    const pdfData = mapQuoteDataForPDF(
+      quoteForMapper,
+      company,
+      await getLogoAsDataUri(companyId) ?? undefined,
+      templateConfig
+    );
 
     // Generar PDF
     const pdfBuffer = await generateQuotePDF(pdfData);

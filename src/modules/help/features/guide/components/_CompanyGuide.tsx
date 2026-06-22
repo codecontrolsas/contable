@@ -3,6 +3,7 @@
 import {
   Building2,
   ClipboardList,
+  FileText,
   Info,
   KeyRound,
   ScrollText,
@@ -344,6 +345,78 @@ export function _CompanyGuide() {
           <p className="text-sm text-muted-foreground">
             Cada empresa tiene sus propios datos completamente aislados. Los
             usuarios y roles se gestionan por empresa.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Plantillas de PDF */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Plantillas de PDF de Documentos
+          </CardTitle>
+          <CardDescription>
+            Personaliza la apariencia de los comprobantes que emite tu empresa
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p>
+            Podés configurar cómo se ven los PDF de cada tipo de documento que
+            emite el sistema: Órdenes de Pago, Recibos, Facturas de Venta y
+            Compra, Órdenes de Compra, Remitos de Entrega y Recepción,
+            Presupuestos y Transferencias entre Almacenes.
+          </p>
+          <p>
+            <strong>Configurar una plantilla:</strong>
+          </p>
+          <ol className="list-decimal pl-6 space-y-2 text-muted-foreground">
+            <li>
+              Ve a <strong>Empresa → Plantillas de PDF</strong>
+            </li>
+            <li>
+              Elegí el tipo de documento que querés personalizar
+            </li>
+            <li>
+              Seleccioná uno de los tres temas visuales:
+              <ul className="list-disc pl-6 mt-1 space-y-1">
+                <li>
+                  <strong>Clásico</strong>: negro y grises, líneas marcadas.
+                  Aspecto tradicional de comprobante.
+                </li>
+                <li>
+                  <strong>Moderno</strong>: color de acento y fondo en el
+                  encabezado. Aspecto corporativo.
+                </li>
+                <li>
+                  <strong>Minimalista</strong>: espacios amplios y líneas
+                  suaves. Aspecto limpio.
+                </li>
+              </ul>
+            </li>
+            <li>
+              Opcionalmente podés ajustar:
+              <ul className="list-disc pl-6 mt-1 space-y-1">
+                <li>Color principal de acento (override del tema)</li>
+                <li>Texto de encabezado y de pie de página</li>
+                <li>Notas por defecto</li>
+                <li>
+                  Mostrar u ocultar secciones: CAE, notas, retenciones, datos
+                  del emisor y del receptor
+                </li>
+              </ul>
+            </li>
+            <li>
+              Hacé clic en <strong>Guardar</strong>. El próximo PDF que emitas
+              usará la nueva configuración
+            </li>
+          </ol>
+          <p className="text-sm text-muted-foreground">
+            Si no configurás ninguna plantilla, se usa el tema{' '}
+            <strong>Clásico</strong> por defecto. Podés <strong>restablecer</strong>{' '}
+            una plantilla a los valores por defecto en cualquier momento. El logo
+            de la empresa se incluye automáticamente si lo cargaste en los datos
+            de la empresa.
           </p>
         </CardContent>
       </Card>

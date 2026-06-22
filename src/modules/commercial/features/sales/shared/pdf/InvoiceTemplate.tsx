@@ -18,8 +18,25 @@ const fmtNum = (value: number, decimals = 2) =>
   value.toLocaleString('es-AR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 
 export function InvoiceTemplate({ data }: InvoiceTemplateProps) {
-  const { company, invoice, customer, lines, totals, notes, linkedDocuments } = data;
+  const {
+    themeConfig,
+    headerText,
+    footerText,
+    notesDefault,
+    showIssuer = true,
+    showReceiver = true,
+    showNotes = true,
+    showCae = true,
+    company,
+    invoice,
+    customer,
+    lines,
+    totals,
+    notes,
+    linkedDocuments,
+  } = data;
   const isTypeA = invoice.type === 'A';
+  const effectiveNotes = notes || notesDefault;
   const hasAnyDiscount = lines.some(
     (l) => (l.discountPercent && l.discountPercent > 0) || (l.discountAmount && l.discountAmount > 0)
   );
@@ -28,8 +45,17 @@ export function InvoiceTemplate({ data }: InvoiceTemplateProps) {
     <Document>
       <Page size="A4" style={styles.page}>
         {/* HEADER - Empresa y tipo de factura */}
-        <View style={styles.header}>
+        <View
+          style={[
+            styles.header,
+            {
+              borderBottomColor: themeConfig.borderColor,
+              borderBottomWidth: themeConfig.headerBorderWidth,
+            },
+          ]}
+        >
           {/* Datos de la empresa */}
+          {showIssuer && (
           <View style={styles.headerLeft}>
             {company.logoDataUri && (
               <Image src={company.logoDataUri} style={styles.logo} />
@@ -43,6 +69,12 @@ export function InvoiceTemplate({ data }: InvoiceTemplateProps) {
             {company.phone && <Text style={styles.smallText}>Tel: {company.phone}</Text>}
             {company.email && <Text style={styles.smallText}>Email: {company.email}</Text>}
           </View>
+          )}
+          {headerText && (
+            <Text style={{ marginTop: 8, fontSize: 8, fontStyle: 'italic', textAlign: 'center' }}>
+              {headerText}
+            </Text>
+          )}
 
           {/* Tipo de factura */}
           <View style={styles.headerCenter}>
@@ -83,6 +115,7 @@ export function InvoiceTemplate({ data }: InvoiceTemplateProps) {
         </View>
 
         {/* CLIENTE / RECEPTOR */}
+        {showReceiver && (
         <View style={styles.customerSection}>
           <Text style={[styles.sectionTitle, { marginTop: 0 }]}>DATOS DEL RECEPTOR</Text>
           <View style={styles.infoRow}>
@@ -106,6 +139,7 @@ export function InvoiceTemplate({ data }: InvoiceTemplateProps) {
             </View>
           )}
         </View>
+        )}
 
         {/* TABLA DE PRODUCTOS */}
         <View style={styles.table}>
@@ -204,15 +238,15 @@ export function InvoiceTemplate({ data }: InvoiceTemplateProps) {
         </View>
 
         {/* OBSERVACIONES */}
-        {notes && (
+        {showNotes && effectiveNotes && (
           <View style={styles.notes}>
             <Text style={styles.notesTitle}>OBSERVACIONES</Text>
-            <Text style={styles.notesText}>{notes}</Text>
+            <Text style={styles.notesText}>{effectiveNotes}</Text>
           </View>
         )}
 
         {/* CAE (si existe) */}
-        {invoice.cae && (
+        {showCae && invoice.cae && (
           <View style={styles.caeSection}>
             <Text style={[styles.bold, { marginBottom: 5 }]}>
               Comprobante Autorizado por AFIP
@@ -239,6 +273,7 @@ export function InvoiceTemplate({ data }: InvoiceTemplateProps) {
 
         {/* FOOTER */}
         <View style={styles.footer}>
+          {footerText && <Text style={{ marginBottom: 2 }}>{footerText}</Text>}
           <Text style={[styles.smallText, { textAlign: 'center' }]}>
             Este comprobante es válido como factura electrónica según Resolución General AFIP
             N° 4291/2018

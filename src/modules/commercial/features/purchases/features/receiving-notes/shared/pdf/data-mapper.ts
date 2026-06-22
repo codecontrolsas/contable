@@ -3,6 +3,8 @@
  */
 
 import type { ReceivingNotePDFData } from './types';
+import type { PdfTemplateConfig } from '@/shared/utils/pdf-themes';
+import { FALLBACK_THEME_CONFIG } from '@/shared/utils/pdf-themes';
 
 type ReceivingNoteData = {
   fullNumber: string;
@@ -49,7 +51,8 @@ type CompanyData = {
 export function mapReceivingNoteDataForPDF(
   note: ReceivingNoteData,
   company: CompanyData,
-  logoDataUri?: string
+  logoDataUri?: string,
+  config?: PdfTemplateConfig
 ): ReceivingNotePDFData {
   let sourceDocument: ReceivingNotePDFData['sourceDocument'];
   if (note.purchaseOrder) {
@@ -59,6 +62,13 @@ export function mapReceivingNoteDataForPDF(
   }
 
   return {
+    themeConfig: config?.themeConfig ?? FALLBACK_THEME_CONFIG,
+    headerText: config?.headerText,
+    footerText: config?.footerText,
+    notesDefault: config?.notesDefault,
+    showIssuer: config?.showIssuer ?? true,
+    showReceiver: config?.showReceiver ?? true,
+    showNotes: config?.showNotes ?? true,
     company: {
       name: company.name,
       logoDataUri,

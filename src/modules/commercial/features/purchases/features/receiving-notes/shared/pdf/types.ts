@@ -1,8 +1,17 @@
 /**
  * Tipos para generación de PDFs de Remitos de Recepción
  */
+import type { ThemeConfig } from '@/shared/utils/pdf-themes';
 
 export interface ReceivingNotePDFData {
+  themeConfig: ThemeConfig;
+  headerText?: string | null;
+  footerText?: string | null;
+  notesDefault?: string | null;
+  showIssuer?: boolean;
+  showReceiver?: boolean;
+  showNotes?: boolean;
+
   company: {
     name: string;
     taxId: string;

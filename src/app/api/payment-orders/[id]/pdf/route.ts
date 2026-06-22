@@ -15,6 +15,7 @@ import {
   mapPaymentOrderDataForPDF,
 } from '@/modules/commercial/features/treasury/features/payment-orders/shared/pdf';
 import type { LinkedDocumentsData, LinkedDocumentSection } from '@/modules/commercial/shared/pdf/linked-documents-types';
+import { getDocumentTemplateConfig } from '@/shared/utils/document-template';
 import { getLogoAsDataUri } from '@/shared/utils/logo';
 import moment from 'moment';
 
@@ -140,7 +141,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Empresa no encontrada' }, { status: 404 });
     }
 
-    const pdfData = mapPaymentOrderDataForPDF(paymentOrder as any, company, await getLogoAsDataUri(companyId) ?? undefined);
+    const templateConfig = await getDocumentTemplateConfig(companyId, 'PAYMENT_ORDER');
+    const pdfData = mapPaymentOrderDataForPDF(
+      paymentOrder as any,
+      company,
+      await getLogoAsDataUri(companyId) ?? undefined,
+      templateConfig
+    );
 
     // Agregar documentos vinculados
     if (includes.size > 0) {

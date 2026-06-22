@@ -1,8 +1,18 @@
 /**
  * Tipos para generación de PDFs de facturas de compra
  */
+import type { ThemeConfig } from '@/shared/utils/pdf-themes';
 
 export interface PurchaseInvoicePDFData {
+  themeConfig: ThemeConfig;
+  headerText?: string | null;
+  footerText?: string | null;
+  notesDefault?: string | null;
+  showIssuer?: boolean;
+  showReceiver?: boolean;
+  showNotes?: boolean;
+  showCae?: boolean;
+
   company: {
     name: string;
     taxId: string;

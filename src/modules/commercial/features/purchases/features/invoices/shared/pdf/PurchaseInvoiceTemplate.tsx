@@ -14,14 +14,41 @@ interface PurchaseInvoiceTemplateProps {
 }
 
 export function PurchaseInvoiceTemplate({ data }: PurchaseInvoiceTemplateProps) {
-  const { company, invoice, supplier, lines, totals, purchaseOrder, notes, linkedDocuments } = data;
+  const {
+    themeConfig,
+    headerText,
+    footerText,
+    notesDefault,
+    showIssuer = true,
+    showReceiver = true,
+    showNotes = true,
+    showCae = true,
+    company,
+    invoice,
+    supplier,
+    lines,
+    totals,
+    purchaseOrder,
+    notes,
+    linkedDocuments,
+  } = data;
   const isTypeA = invoice.type === 'A';
+  const effectiveNotes = notes || notesDefault;
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         {/* HEADER */}
-        <View style={styles.header}>
+        <View
+          style={[
+            styles.header,
+            {
+              borderBottomColor: themeConfig.borderColor,
+              borderBottomWidth: themeConfig.headerBorderWidth,
+            },
+          ]}
+        >
+          {showIssuer && (
           <View style={styles.headerLeft}>
             {company.logoDataUri && (
               <Image src={company.logoDataUri} style={styles.logo} />
@@ -34,6 +61,12 @@ export function PurchaseInvoiceTemplate({ data }: PurchaseInvoiceTemplateProps) 
             {company.phone && <Text style={styles.smallText}>Tel: {company.phone}</Text>}
             {company.email && <Text style={styles.smallText}>Email: {company.email}</Text>}
           </View>
+          )}
+          {headerText && (
+            <Text style={{ marginTop: 8, fontSize: 8, fontStyle: 'italic', textAlign: 'center' }}>
+              {headerText}
+            </Text>
+          )}
 
           <View style={styles.headerCenter}>
             <Text style={styles.invoiceType}>{invoice.type}</Text>
@@ -72,6 +105,7 @@ export function PurchaseInvoiceTemplate({ data }: PurchaseInvoiceTemplateProps) 
         </View>
 
         {/* PROVEEDOR */}
+        {showReceiver && (
         <View style={styles.supplierSection}>
           <Text style={[styles.sectionTitle, { marginTop: 0 }]}>DATOS DEL PROVEEDOR</Text>
           <View style={styles.infoRow}>
@@ -97,6 +131,7 @@ export function PurchaseInvoiceTemplate({ data }: PurchaseInvoiceTemplateProps) 
             </View>
           )}
         </View>
+        )}
 
         {/* TABLA DE PRODUCTOS */}
         <View style={styles.table}>
@@ -167,15 +202,15 @@ export function PurchaseInvoiceTemplate({ data }: PurchaseInvoiceTemplateProps) 
         </View>
 
         {/* OBSERVACIONES */}
-        {notes && (
+        {showNotes && effectiveNotes && (
           <View style={styles.notes}>
             <Text style={styles.notesTitle}>OBSERVACIONES</Text>
-            <Text style={styles.notesText}>{notes}</Text>
+            <Text style={styles.notesText}>{effectiveNotes}</Text>
           </View>
         )}
 
         {/* CAE */}
-        {invoice.cae && (
+        {showCae && invoice.cae && (
           <View style={styles.caeSection}>
             <Text style={[styles.bold, { marginBottom: 5 }]}>
               Comprobante Autorizado por AFIP
@@ -194,6 +229,7 @@ export function PurchaseInvoiceTemplate({ data }: PurchaseInvoiceTemplateProps) 
 
         {/* FOOTER */}
         <View style={styles.footer}>
+          {footerText && <Text style={[styles.smallText, { textAlign: 'center', marginBottom: 2 }]}>{footerText}</Text>}
           <Text style={[styles.smallText, { textAlign: 'center' }]}>
             Documento generado electrónicamente - {moment().format('DD/MM/YYYY HH:mm')}
           </Text>
