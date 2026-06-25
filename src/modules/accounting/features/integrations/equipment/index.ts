@@ -87,24 +87,29 @@ async function createJournalEntry(
     );
   }
 
+  // Verificar bloqueo de período
   const settings = await tx.accountingSettings.findUnique({
     where: { companyId },
-    select: { lastEntryNumber: true, lockedUntilDate: true },
+    select: { lockedUntilDate: true },
   });
 
   if (!settings) {
     throw new Error('No se encontró configuración contable');
   }
 
-  // Verificar bloqueo de período
   if (settings.lockedUntilDate && moment(date).isSameOrBefore(moment(settings.lockedUntilDate), 'day')) {
-    logger.warn('Asiento de equipos omitido por período bloqueado', {
-      data: { companyId, date, description, lockedUntil: settings.lockedUntilDate },
-    });
-    return null;
+    throw new Error(
+      `No se puede generar el asiento contable: el período está cerrado para la fecha ${moment(date).format('DD/MM/YYYY')}. Contacte al contador para reabrir el período.`
+    );
   }
 
-  const nextNumber = settings.lastEntryNumber + 1;
+  // Incremento atómico: UPDATE ... RETURNING evita race conditions
+  const [{ last_entry_number: nextNumber }] = await tx.$queryRaw<[{ last_entry_number: number }]>`
+    UPDATE accounting_settings
+    SET last_entry_number = last_entry_number + 1, updated_at = NOW()
+    WHERE company_id = ${companyId}::uuid
+    RETURNING last_entry_number
+  `;
 
   const entry = await tx.journalEntry.create({
     data: {
@@ -122,11 +127,6 @@ async function createJournalEntry(
         })),
       },
     },
-  });
-
-  await tx.accountingSettings.update({
-    where: { companyId },
-    data: { lastEntryNumber: nextNumber },
   });
 
   logger.info('Asiento contable de equipos creado', {

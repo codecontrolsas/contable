@@ -275,7 +275,15 @@ export async function closeFiscalYear(companyId: string) {
 
     // Crear y registrar el asiento de cierre en una transacción
     const result = await prisma.$transaction(async (tx) => {
-      const nextNumber = settings.lastEntryNumber + 1;
+      // Incremento atómico: UPDATE ... RETURNING evita race conditions
+      const [{ last_entry_number: nextNumber }] = await tx.$queryRaw<[{ last_entry_number: number }]>`
+        UPDATE accounting_settings
+        SET last_entry_number = last_entry_number + 1,
+            locked_until_date = ${settings.fiscalYearEnd},
+            updated_at = NOW()
+        WHERE company_id = ${companyId}::uuid
+        RETURNING last_entry_number
+      `;
 
       const entry = await tx.journalEntry.create({
         data: {
@@ -298,14 +306,6 @@ export async function closeFiscalYear(companyId: string) {
         select: {
           id: true,
           number: true,
-        },
-      });
-
-      await tx.accountingSettings.update({
-        where: { companyId },
-        data: {
-          lastEntryNumber: nextNumber,
-          lockedUntilDate: settings.fiscalYearEnd,
         },
       });
 

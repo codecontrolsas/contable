@@ -142,30 +142,29 @@ async function createJournalEntry(
   // Validar balance
   validateBalance(lines);
 
-  // Obtener settings para el siguiente número de asiento y verificar bloqueo
+  // Verificar bloqueo de período
   const settings = await tx.accountingSettings.findUnique({
     where: { companyId },
-    select: { lastEntryNumber: true, lockedUntilDate: true },
+    select: { lockedUntilDate: true },
   });
 
   if (!settings) {
     throw new Error('No se encontró configuración contable');
   }
 
-  // Verificar bloqueo de período
   if (settings.lockedUntilDate && moment(date).isSameOrBefore(moment(settings.lockedUntilDate), 'day')) {
-    logger.warn('Asiento automático omitido por período bloqueado', {
-      data: {
-        companyId,
-        date,
-        description,
-        lockedUntil: settings.lockedUntilDate,
-      },
-    });
-    return null;
+    throw new Error(
+      `No se puede generar el asiento contable: el período está cerrado para la fecha ${moment(date).format('DD/MM/YYYY')}. Contacte al contador para reabrir el período.`
+    );
   }
 
-  const nextNumber = settings.lastEntryNumber + 1;
+  // Incremento atómico: UPDATE ... RETURNING evita race conditions
+  const [{ last_entry_number: nextNumber }] = await tx.$queryRaw<[{ last_entry_number: number }]>`
+    UPDATE accounting_settings
+    SET last_entry_number = last_entry_number + 1, updated_at = NOW()
+    WHERE company_id = ${companyId}::uuid
+    RETURNING last_entry_number
+  `;
 
   // Crear asiento
   const entry = await tx.journalEntry.create({
@@ -174,7 +173,7 @@ async function createJournalEntry(
       number: nextNumber,
       date,
       description,
-      createdBy: 'system', // System-generated entry
+      createdBy: 'system',
       lines: {
         create: lines.map((line) => ({
           accountId: line.accountId,
@@ -184,12 +183,6 @@ async function createJournalEntry(
         })),
       },
     },
-  });
-
-  // Actualizar el último número de asiento
-  await tx.accountingSettings.update({
-    where: { companyId },
-    data: { lastEntryNumber: nextNumber },
   });
 
   logger.info('Asiento contable creado automáticamente', {
@@ -270,7 +263,7 @@ export async function createJournalEntryForSalesInvoice(
     // Solo incluir línea de IVA si hay monto (Facturas tipo C no llevan IVA)
     if (vatAmount > 0) {
       lines.push({
-        accountId: settings.vatDebitAccountId,
+        accountId: settings.vatDebitAccountId!,
         debit: isNC ? vatAmount : 0,
         credit: isNC ? 0 : vatAmount,
         description: `IVA Débito Fiscal - ${invoice.fullNumber}`,
@@ -362,7 +355,7 @@ export async function createJournalEntryForPurchaseInvoice(
     // Solo incluir línea de IVA si hay monto (Facturas tipo C no llevan IVA)
     if (vatAmount > 0) {
       lines.splice(1, 0, {
-        accountId: settings.vatCreditAccountId,
+        accountId: settings.vatCreditAccountId!,
         debit: isNC ? 0 : vatAmount,
         credit: isNC ? vatAmount : 0,
         description: `IVA Crédito Fiscal - ${invoice.fullNumber}`,

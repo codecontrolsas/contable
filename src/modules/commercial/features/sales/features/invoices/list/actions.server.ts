@@ -919,10 +919,13 @@ export async function confirmInvoice(id: string) {
           });
         }
       } catch (error) {
+        // Re-lanzar errores de período bloqueado (el usuario debe saberlo)
+        if (error instanceof Error && error.message.includes('período está cerrado')) {
+          throw error;
+        }
         logger.warn('No se pudo generar asiento contable para factura de venta', {
           data: { invoiceId: id, error },
         });
-        // No lanzar error para no interrumpir la confirmación de la factura
       }
 
       // Auto-compensar NC contra facturas/ND pendientes del mismo cliente

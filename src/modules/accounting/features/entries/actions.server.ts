@@ -19,16 +19,7 @@ export async function createJournalEntry(companyId: string, input: CreateJournal
   await checkPermission('accounting.entries', 'create', { redirect: true });
 
   try {
-    // Obtener el último número de asiento
-    const settings = await prisma.accountingSettings.findUnique({
-      where: { companyId },
-    });
-
-    if (!settings) {
-      throw new Error('La empresa no tiene configuración contable');
-    }
-
-    // Validaciones
+    // Validaciones (fuera de la transacción, son de solo lectura)
     await validateJournalEntryAccounts(companyId, input.lines.map(line => line.accountId));
     await validateJournalEntryDate(companyId, input.date);
     await validateJournalEntryBalance(input.lines);
@@ -37,13 +28,20 @@ export async function createJournalEntry(companyId: string, input: CreateJournal
     // Validación de naturaleza (warnings, no bloquean)
     await validateAccountNatures(companyId, input.lines);
 
-
-    // Crear asiento y actualizar número
+    // Crear asiento y actualizar número atómicamente
     const result = await prisma.$transaction(async (tx) => {
+      // Incremento atómico: UPDATE ... RETURNING evita race conditions
+      const [{ last_entry_number: nextNumber }] = await tx.$queryRaw<[{ last_entry_number: number }]>`
+        UPDATE accounting_settings
+        SET last_entry_number = last_entry_number + 1, updated_at = NOW()
+        WHERE company_id = ${companyId}::uuid
+        RETURNING last_entry_number
+      `;
+
       const entry = await tx.journalEntry.create({
         data: {
           companyId,
-          number: settings.lastEntryNumber + 1,
+          number: nextNumber,
           date: input.date,
           description: input.description,
           createdBy: userId,
@@ -79,11 +77,6 @@ export async function createJournalEntry(companyId: string, input: CreateJournal
             },
           },
         },
-      });
-
-      await tx.accountingSettings.update({
-        where: { companyId },
-        data: { lastEntryNumber: settings.lastEntryNumber + 1 },
       });
 
       return entry;
@@ -249,21 +242,21 @@ export async function reverseJournalEntry(companyId: string, entryId: string) {
       throw new Error('Solo se pueden anular asientos registrados');
     }
 
-    const settings = await prisma.accountingSettings.findUnique({
-      where: { companyId },
-    });
-
-    if (!settings) {
-      throw new Error('La empresa no tiene configuración contable');
-    }
-
     // Crear asiento de reversión
     const result = await prisma.$transaction(async (tx) => {
+      // Incremento atómico: UPDATE ... RETURNING evita race conditions
+      const [{ last_entry_number: nextNumber }] = await tx.$queryRaw<[{ last_entry_number: number }]>`
+        UPDATE accounting_settings
+        SET last_entry_number = last_entry_number + 1, updated_at = NOW()
+        WHERE company_id = ${companyId}::uuid
+        RETURNING last_entry_number
+      `;
+
       // Crear asiento de reversión primero
       const reversalEntry = await tx.journalEntry.create({
         data: {
           companyId,
-          number: settings.lastEntryNumber + 1,
+          number: nextNumber,
           date: new Date(),
           description: `Anulación del asiento N° ${entry.number} - ${entry.description}`,
           status: JournalEntryStatus.POSTED,
@@ -318,11 +311,6 @@ export async function reverseJournalEntry(companyId: string, entryId: string) {
           reversedBy: userId,
           reversedAt: new Date(),
         },
-      });
-
-      await tx.accountingSettings.update({
-        where: { companyId },
-        data: { lastEntryNumber: settings.lastEntryNumber + 1 },
       });
 
       return reversalEntry;

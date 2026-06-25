@@ -12,6 +12,7 @@ import {
   calculateAllAccountBalances,
   verifyAccountingEquation,
 } from '../../shared/utils/balances';
+import { isCreditNote } from '@/modules/commercial/shared/voucher-utils';
 
 interface AccountBalance {
   accountId: string;
@@ -1378,6 +1379,7 @@ export async function getMonthlyVATReport(
         status: { in: ['CONFIRMED', 'PAID', 'PARTIAL_PAID'] },
       },
       select: {
+        voucherType: true,
         subtotal: true,
         vatAmount: true,
         total: true,
@@ -1399,6 +1401,7 @@ export async function getMonthlyVATReport(
         status: { in: ['CONFIRMED', 'PAID', 'PARTIAL_PAID'] },
       },
       select: {
+        voucherType: true,
         subtotal: true,
         vatAmount: true,
         total: true,
@@ -1412,41 +1415,61 @@ export async function getMonthlyVATReport(
       },
     });
 
-    // Calcular totales de ventas
+    // Calcular totales de ventas (NC restan, facturas y ND suman)
     const salesSummary = {
-      subtotal: salesInvoices.reduce((sum, inv) => sum + Number(inv.subtotal), 0),
-      vatAmount: salesInvoices.reduce((sum, inv) => sum + Number(inv.vatAmount), 0),
-      total: salesInvoices.reduce((sum, inv) => sum + Number(inv.total), 0),
+      subtotal: salesInvoices.reduce((sum, inv) => {
+        const sign = isCreditNote(inv.voucherType) ? -1 : 1;
+        return sum + Number(inv.subtotal) * sign;
+      }, 0),
+      vatAmount: salesInvoices.reduce((sum, inv) => {
+        const sign = isCreditNote(inv.voucherType) ? -1 : 1;
+        return sum + Number(inv.vatAmount) * sign;
+      }, 0),
+      total: salesInvoices.reduce((sum, inv) => {
+        const sign = isCreditNote(inv.voucherType) ? -1 : 1;
+        return sum + Number(inv.total) * sign;
+      }, 0),
       invoiceCount: salesInvoices.length,
     };
 
-    // Calcular totales de compras
+    // Calcular totales de compras (NC restan, facturas y ND suman)
     const purchasesSummary = {
-      subtotal: purchaseInvoices.reduce((sum, inv) => sum + Number(inv.subtotal), 0),
-      vatAmount: purchaseInvoices.reduce((sum, inv) => sum + Number(inv.vatAmount), 0),
-      total: purchaseInvoices.reduce((sum, inv) => sum + Number(inv.total), 0),
+      subtotal: purchaseInvoices.reduce((sum, inv) => {
+        const sign = isCreditNote(inv.voucherType) ? -1 : 1;
+        return sum + Number(inv.subtotal) * sign;
+      }, 0),
+      vatAmount: purchaseInvoices.reduce((sum, inv) => {
+        const sign = isCreditNote(inv.voucherType) ? -1 : 1;
+        return sum + Number(inv.vatAmount) * sign;
+      }, 0),
+      total: purchaseInvoices.reduce((sum, inv) => {
+        const sign = isCreditNote(inv.voucherType) ? -1 : 1;
+        return sum + Number(inv.total) * sign;
+      }, 0),
       invoiceCount: purchaseInvoices.length,
     };
 
-    // Agrupar IVA por alícuota
+    // Agrupar IVA por alícuota (con signo para NC)
     const rateMap = new Map<number, { salesBase: number; salesVAT: number; purchasesBase: number; purchasesVAT: number }>();
 
     for (const inv of salesInvoices) {
+      const sign = isCreditNote(inv.voucherType) ? -1 : 1;
       for (const line of inv.lines) {
         const rate = Number(line.vatRate);
         const existing = rateMap.get(rate) || { salesBase: 0, salesVAT: 0, purchasesBase: 0, purchasesVAT: 0 };
-        existing.salesBase += Number(line.subtotal);
-        existing.salesVAT += Number(line.vatAmount);
+        existing.salesBase += Number(line.subtotal) * sign;
+        existing.salesVAT += Number(line.vatAmount) * sign;
         rateMap.set(rate, existing);
       }
     }
 
     for (const inv of purchaseInvoices) {
+      const sign = isCreditNote(inv.voucherType) ? -1 : 1;
       for (const line of inv.lines) {
         const rate = Number(line.vatRate);
         const existing = rateMap.get(rate) || { salesBase: 0, salesVAT: 0, purchasesBase: 0, purchasesVAT: 0 };
-        existing.purchasesBase += Number(line.subtotal);
-        existing.purchasesVAT += Number(line.vatAmount);
+        existing.purchasesBase += Number(line.subtotal) * sign;
+        existing.purchasesVAT += Number(line.vatAmount) * sign;
         rateMap.set(rate, existing);
       }
     }
