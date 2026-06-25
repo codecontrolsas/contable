@@ -97,10 +97,17 @@ export function _BalanceSheetReport({ companyId }: BalanceSheetReportProps) {
         balance: account.balance,
       });
     });
+    if (data.periodResult !== 0) {
+      flatData.push({
+        code: '',
+        name: 'Resultado del ejercicio en curso',
+        balance: data.periodResult,
+      });
+    }
     flatData.push({
       code: '',
       name: 'Total Patrimonio Neto',
-      balance: data.equity.total,
+      balance: data.equity.total + data.periodResult,
     });
 
     const columns: ExcelColumn[] = [
@@ -262,12 +269,23 @@ export function _BalanceSheetReport({ companyId }: BalanceSheetReportProps) {
                       </td>
                     </tr>
                   ))}
+                  {data.periodResult !== 0 && (
+                    <tr className="border-b bg-blue-50 dark:bg-blue-950/30">
+                      <td className="py-2 pl-4 italic" colSpan={2}>
+                        Resultado del ejercicio en curso
+                      </td>
+                      <td className="py-2 pr-4 text-right italic">
+                        {formatAmount(data.periodResult)}
+                      </td>
+                    </tr>
+                  )}
                   <tr className="border-t bg-muted/30 font-medium">
                     <td className="py-3 pl-4" colSpan={2}>
                       Total Patrimonio Neto
+                      {data.periodResult !== 0 ? ' (inc. resultado del ejercicio)' : ''}
                     </td>
                     <td className="py-3 pr-4 text-right">
-                      {formatAmount(data.equity.total)}
+                      {formatAmount(data.equity.total + data.periodResult)}
                     </td>
                   </tr>
                 </tbody>

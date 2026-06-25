@@ -814,7 +814,7 @@ for (const invoice of salesInvoices) {
 
 ## Bloque 7 — Cierre de ejercicio completo
 
-`[ESTADO: PENDIENTE]`
+`[ESTADO: COMPLETADO]`
 
 **Depende de**: Bloque 1 (modelo de ejercicio/período).
 
@@ -896,7 +896,7 @@ Eliminar la detección por `description.startsWith('Cierre de ejercicio')`.
 
 ## Bloque 8 — Reportes: correcciones y mejoras
 
-`[ESTADO: PENDIENTE]`
+`[ESTADO: COMPLETADO]`
 
 ### 8.1 Libro Mayor: saldo anterior
 

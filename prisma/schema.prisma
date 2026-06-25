@@ -355,15 +355,17 @@ model JournalEntry {
   reversedBy      String?   @map("reversed_by")
   reversedAt      DateTime? @map("reversed_at")
 
-  company          Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  fiscalYear       FiscalYear?        @relation(fields: [fiscalYearId], references: [id])
-  period           AccountingPeriod?  @relation(fields: [periodId], references: [id])
-  lines            JournalEntryLine[]
-  salesInvoices    SalesInvoice[]
-  purchaseInvoices PurchaseInvoice[]
-  receipts         Receipt[]
-  paymentOrders    PaymentOrder[]
-  expenses         Expense[]
+  company                    Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  fiscalYear                 FiscalYear?        @relation(fields: [fiscalYearId], references: [id])
+  period                     AccountingPeriod?  @relation(fields: [periodId], references: [id])
+  lines                      JournalEntryLine[]
+  salesInvoices              SalesInvoice[]
+  purchaseInvoices           PurchaseInvoice[]
+  receipts                   Receipt[]
+  paymentOrders              PaymentOrder[]
+  expenses                   Expense[]
+  fiscalYearAsClosingEntry   FiscalYear?        @relation("FiscalYearClosingEntry")
+  fiscalYearAsOpeningEntry   FiscalYear?        @relation("FiscalYearOpeningEntry")
   createdBy        String             @map("created_by") // userId
   createdAt        DateTime           @default(now()) @map("created_at")
   updatedAt        DateTime           @updatedAt @map("updated_at")
@@ -604,9 +606,14 @@ model FiscalYear {
   closedAt  DateTime? @map("closed_at")
   closedBy  String?  @map("closed_by")
 
-  company   Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  periods   AccountingPeriod[]
-  entries   JournalEntry[]
+  closingEntryId String? @unique @map("closing_entry_id") @db.Uuid
+  openingEntryId String? @unique @map("opening_entry_id") @db.Uuid
+
+  company       Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  closingEntry  JournalEntry?      @relation("FiscalYearClosingEntry", fields: [closingEntryId], references: [id])
+  openingEntry  JournalEntry?      @relation("FiscalYearOpeningEntry", fields: [openingEntryId], references: [id])
+  periods       AccountingPeriod[]
+  entries       JournalEntry[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
