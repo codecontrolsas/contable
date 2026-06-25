@@ -200,6 +200,9 @@ model Company {
   // Multi-moneda
   exchangeRates ExchangeRate[]
 
+  // Ajuste por inflación
+  inflationIndices InflationIndex[]
+
   // ARCA (AFIP)
   arcaCredentials ArcaCredential[]
   arcaRequests    ArcaRequest[]
@@ -301,8 +304,9 @@ model Account {
   children      Account[]          @relation("AccountHierarchy")
   currency          String          @default("ARS") @db.Char(3)
   isActive          Boolean         @default(true) @map("is_active")
-  isLeaf            Boolean         @default(true) @map("is_leaf")
-  requiresAuxiliary AuxiliaryType?  @map("requires_auxiliary")
+  isLeaf                Boolean        @default(true) @map("is_leaf")
+  adjustableByInflation Boolean        @default(false) @map("adjustable_by_inflation")
+  requiresAuxiliary     AuxiliaryType? @map("requires_auxiliary")
   createdAt         DateTime        @default(now()) @map("created_at")
   updatedAt         DateTime        @updatedAt @map("updated_at")
   company           Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -345,6 +349,7 @@ model Account {
   settingsAsChecksRejected      AccountingSettings[] @relation("ChecksRejectedAccount")
   settingsAsVatPayable          AccountingSettings[] @relation("VatPayableAccount")
   settingsAsVatBalance          AccountingSettings[] @relation("VatBalanceAccount")
+  settingsAsRecpam              AccountingSettings[] @relation("RecpamAccount")
   vatAccountMappings            AccountingVatAccount[]
   recurringEntryLines           RecurringEntryLine[]
   budgets                       Budget[]
@@ -585,6 +590,11 @@ model AccountingSettings {
 
   vatPayableAccount Account? @relation("VatPayableAccount", fields: [vatPayableAccountId], references: [id])
   vatBalanceAccount Account? @relation("VatBalanceAccount", fields: [vatBalanceAccountId], references: [id])
+
+  // Cuenta RECPAM (ajuste por inflación)
+  recpamAccountId String? @map("recpam_account_id") @db.Uuid
+
+  recpamAccount Account? @relation("RecpamAccount", fields: [recpamAccountId], references: [id])
 
   // Cuentas de IVA por alícuota (overrides opcionales)
   vatAccounts AccountingVatAccount[]
@@ -4239,6 +4249,26 @@ model PartnerAccountMovement {
 
   @@index([companyId, partnerId])
   @@map("partner_account_movements")
+}
+
+// ============================================
+// AJUSTE POR INFLACIÓN
+// ============================================
+
+model InflationIndex {
+  id        String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId String  @map("company_id") @db.Uuid
+  year      Int
+  month     Int
+  index     Decimal @db.Decimal(18, 6)
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([companyId, year, month])
+  @@map("inflation_indices")
 }
 
 // ============================================

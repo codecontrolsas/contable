@@ -1423,7 +1423,7 @@ src/modules/commercial/features/fiscal-exports/
 
 ## Bloque 14 — Ajuste por inflación (RECPAM)
 
-`[ESTADO: PENDIENTE]`
+`[ESTADO: COMPLETADO]`
 
 **Depende de**: Bloques 1 y 2 (ejercicios/períodos, campo `adjustableByInflation` en cuentas).
 
