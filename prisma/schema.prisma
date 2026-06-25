@@ -193,6 +193,13 @@ model Company {
   paymentOrderInstallments PaymentOrderInstallment[]
   partnerAccountMovements  PartnerAccountMovement[]
 
+  // Retenciones y padrones
+  withholdingRegimes WithholdingRegime[]
+  taxRatePadrons     TaxRatePadron[]
+
+  // Multi-moneda
+  exchangeRates ExchangeRate[]
+
   @@map("companies")
 }
 
@@ -288,6 +295,7 @@ model Account {
   parentId      String?            @map("parent_id") @db.Uuid
   parent        Account?           @relation("AccountHierarchy", fields: [parentId], references: [id])
   children      Account[]          @relation("AccountHierarchy")
+  currency          String          @default("ARS") @db.Char(3)
   isActive          Boolean         @default(true) @map("is_active")
   isLeaf            Boolean         @default(true) @map("is_leaf")
   requiresAuxiliary AuxiliaryType?  @map("requires_auxiliary")
@@ -327,9 +335,16 @@ model Account {
   settingsAsPercIibbCollected   AccountingSettings[] @relation("PercIibbCollectedAccount")
   settingsAsPercIvaSuffered     AccountingSettings[] @relation("PercIvaSufferedAccount")
   settingsAsPercIibbSuffered    AccountingSettings[] @relation("PercIibbSufferedAccount")
+  settingsAsCogs                AccountingSettings[] @relation("CogsAccount")
+  settingsAsInventory           AccountingSettings[] @relation("InventoryAccount")
+  settingsAsChecksReceived      AccountingSettings[] @relation("ChecksReceivedAccount")
+  settingsAsChecksRejected      AccountingSettings[] @relation("ChecksRejectedAccount")
+  settingsAsVatPayable          AccountingSettings[] @relation("VatPayableAccount")
+  settingsAsVatBalance          AccountingSettings[] @relation("VatBalanceAccount")
   vatAccountMappings            AccountingVatAccount[]
   recurringEntryLines           RecurringEntryLine[]
   budgets                       Budget[]
+  withholdingRegimes            WithholdingRegime[]
 
   @@unique([companyId, code])
   @@map("accounts")
@@ -392,6 +407,11 @@ model JournalEntryLine {
   description String?
   debit       Decimal      @default(0) @db.Decimal(12, 2)
   credit      Decimal      @default(0) @db.Decimal(12, 2)
+
+  // Multi-moneda
+  currency       String   @default("ARS") @db.Char(3)
+  originalAmount Decimal? @map("original_amount") @db.Decimal(18, 2)
+  exchangeRate   Decimal? @map("exchange_rate") @db.Decimal(18, 6)
 
   // Auxiliares contables
   customerId   String? @map("customer_id") @db.Uuid
@@ -540,6 +560,27 @@ model AccountingSettings {
   perceptionIibbCollectedAccount Account? @relation("PercIibbCollectedAccount", fields: [perceptionIibbCollectedAccountId], references: [id])
   perceptionIvaSufferedAccount   Account? @relation("PercIvaSufferedAccount", fields: [perceptionIvaSufferedAccountId], references: [id])
   perceptionIibbSufferedAccount  Account? @relation("PercIibbSufferedAccount", fields: [perceptionIibbSufferedAccountId], references: [id])
+
+  // Cuentas de CMV e Inventario
+  cogsAccountId      String? @map("cogs_account_id") @db.Uuid
+  inventoryAccountId String? @map("inventory_account_id") @db.Uuid
+
+  cogsAccount      Account? @relation("CogsAccount", fields: [cogsAccountId], references: [id])
+  inventoryAccount Account? @relation("InventoryAccount", fields: [inventoryAccountId], references: [id])
+
+  // Cuentas de Cheques
+  checksReceivedAccountId String? @map("checks_received_account_id") @db.Uuid
+  checksRejectedAccountId String? @map("checks_rejected_account_id") @db.Uuid
+
+  checksReceivedAccount Account? @relation("ChecksReceivedAccount", fields: [checksReceivedAccountId], references: [id])
+  checksRejectedAccount Account? @relation("ChecksRejectedAccount", fields: [checksRejectedAccountId], references: [id])
+
+  // Cuentas de Liquidación IVA
+  vatPayableAccountId String? @map("vat_payable_account_id") @db.Uuid
+  vatBalanceAccountId String? @map("vat_balance_account_id") @db.Uuid
+
+  vatPayableAccount Account? @relation("VatPayableAccount", fields: [vatPayableAccountId], references: [id])
+  vatBalanceAccount Account? @relation("VatBalanceAccount", fields: [vatBalanceAccountId], references: [id])
 
   // Cuentas de IVA por alícuota (overrides opcionales)
   vatAccounts AccountingVatAccount[]
@@ -2043,8 +2084,13 @@ model Supplier {
   paymentTermDays Int      @default(0) @map("payment_term_days")
   creditLimit     Decimal? @map("credit_limit") @db.Decimal(12, 2)
 
-  // Datos contables (para integración futura)
+  // Datos contables
   defaultAccountId String? @map("default_account_id") @db.Uuid
+
+  // Datos fiscales para retenciones
+  incomeTaxCondition String? @map("income_tax_condition")
+  iibbCondition      String? @map("iibb_condition")
+  iibbJurisdiction   String? @map("iibb_jurisdiction")
 
   // Contactos
   contactName  String? @map("contact_name")
@@ -3251,6 +3297,70 @@ model PaymentOrderWithholding {
   paymentOrder PaymentOrder @relation(fields: [paymentOrderId], references: [id], onDelete: Cascade)
 
   @@map("payment_order_withholdings")
+}
+
+// ============================================
+// REGÍMENES DE RETENCIÓN Y PADRONES
+// ============================================
+
+model WithholdingRegime {
+  id              String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId       String             @map("company_id") @db.Uuid
+  tax             WithholdingTaxType
+  jurisdiction    String?
+  regimeCode      String?            @map("regime_code")
+  name            String
+  accountId       String             @map("account_id") @db.Uuid
+  baseCalculation String             @default("NET") @map("base_calculation") // NET | TOTAL
+  defaultRate     Decimal            @map("default_rate") @db.Decimal(6, 3)
+  minimumNotSubject Decimal          @default(0) @map("minimum_not_subject") @db.Decimal(12, 2)
+  minimumRetention  Decimal          @default(0) @map("minimum_retention") @db.Decimal(12, 2)
+  isActive        Boolean            @default(true) @map("is_active")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  account Account @relation(fields: [accountId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("withholding_regimes")
+}
+
+model TaxRatePadron {
+  id             String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId      String             @map("company_id") @db.Uuid
+  taxId          String             @map("tax_id") // CUIT del sujeto
+  tax            WithholdingTaxType
+  jurisdiction   String?
+  perceptionRate Decimal?           @map("perception_rate") @db.Decimal(6, 3)
+  retentionRate  Decimal?           @map("retention_rate") @db.Decimal(6, 3)
+  validFrom      DateTime           @map("valid_from")
+  validTo        DateTime           @map("valid_to")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, taxId, tax, jurisdiction, validFrom])
+  @@index([companyId, taxId, tax])
+  @@map("tax_rate_padrons")
+}
+
+// ============================================
+// MULTI-MONEDA
+// ============================================
+
+model ExchangeRate {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId String   @map("company_id") @db.Uuid
+  currency  String   @db.Char(3) // USD, EUR, BRL, etc.
+  date      DateTime @db.Date
+  buyRate   Decimal  @map("buy_rate") @db.Decimal(18, 6)
+  sellRate  Decimal  @map("sell_rate") @db.Decimal(18, 6)
+  source    String?  // BNA, BCRA, MANUAL
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, currency, date])
+  @@map("exchange_rates")
 }
 
 // ============================================

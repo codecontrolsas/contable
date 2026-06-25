@@ -990,7 +990,7 @@ export async function getVATReconciliation(companyId: string, year: number, mont
 
 ## Bloque 9 — Retenciones: cálculo automático y certificados
 
-`[ESTADO: PENDIENTE]`
+`[ESTADO: COMPLETADO]`
 
 **Depende de**: Bloque 5 (para percepciones completas, aunque retenciones se pueden hacer independientemente).
 
@@ -1107,7 +1107,7 @@ model Supplier {
 
 ## Bloque 10 — Multi-moneda
 
-`[ESTADO: PENDIENTE]`
+`[ESTADO: COMPLETADO]`
 
 **Problema**: No hay soporte de moneda extranjera en asientos. Las facturas en USD se contabilizan sin tipo de cambio ni diferencia de cambio.
 
@@ -1187,7 +1187,7 @@ Proceso periódico (mensual): para cada cuenta en moneda extranjera con saldo, r
 
 ## Bloque 11 — Puente contable: cruces faltantes
 
-`[ESTADO: PENDIENTE]`
+`[ESTADO: COMPLETADO]`
 
 **Depende de**: Bloques 1-4 (modelo de períodos, auxiliares, IVA por alícuota).
 
@@ -1534,10 +1534,10 @@ Bloque 12 (ARCA/WSFE)               ← Independiente, alta prioridad de negocio
 | **Sprint 2** | B1, B2 | Fundaciones: ejercicios/períodos y cuentas imputables. Todo lo posterior depende de esto. |
 | **Sprint 3** | B4, B5 | IVA discriminado y percepciones. Necesarios para cumplimiento fiscal. |
 | **Sprint 4** | B7, B8 | Cierre completo y reportes corregidos. Aprovechan los modelos de Sprint 2. |
-| **Sprint 5** | B9, B11 | Retenciones automáticas y cruces faltantes (CMV, cheques, transferencias, liquidación IVA). |
+| **Sprint 5** | B9, B10, B11 | Retenciones automáticas, multi-moneda y cruces faltantes (CMV, cheques, transferencias, liquidación IVA). |
 | **Sprint 6** | B12 | Integración ARCA. Alto valor de negocio, independiente de los anteriores. |
 | **Sprint 7** | B13 | Archivos fiscales. Depende de B4, B5, B9. |
-| **Sprint 8** | B10, B14 | Multi-moneda y RECPAM. Baja urgencia, alta complejidad. |
+| **Sprint 8** | B14 | RECPAM (ajuste por inflación). Baja urgencia, alta complejidad. |
 
 ---
 

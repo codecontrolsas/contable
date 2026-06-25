@@ -52,6 +52,9 @@ interface JournalEntryLineInput {
   customerId?: string;
   supplierId?: string;
   costCenterId?: string;
+  currency?: string;
+  originalAmount?: number;
+  exchangeRate?: number;
 }
 
 interface CreateJournalEntryInput {
@@ -239,6 +242,9 @@ async function createJournalEntry(
           customerId: line.customerId,
           supplierId: line.supplierId,
           costCenterId: line.costCenterId,
+          currency: line.currency ?? 'ARS',
+          originalAmount: line.originalAmount != null ? new Prisma.Decimal(line.originalAmount) : null,
+          exchangeRate: line.exchangeRate != null ? new Prisma.Decimal(line.exchangeRate) : null,
         })),
       },
     },
@@ -1034,6 +1040,85 @@ export async function checkBudgetForExpense(
     // No bloquear la operación por errores en la validación presupuestaria
     logger.error('Error en validación presupuestaria para gasto', {
       data: { error, accountId, amount, companyId },
+    });
+    return null;
+  }
+}
+
+// ============================================
+// INTEGRACIÓN: CMV (Costo de Mercadería Vendida)
+// ============================================
+
+export async function createJournalEntryForCOGS(
+  invoiceId: string,
+  companyId: string,
+  tx: PrismaTransactionClient
+): Promise<string | null> {
+  try {
+    const settings = await getAccountingSettings(companyId, tx);
+
+    if (!settings.cogsAccountId || !settings.inventoryAccountId) {
+      return null;
+    }
+
+    const invoice = await tx.salesInvoice.findUnique({
+      where: { id: invoiceId },
+      select: {
+        fullNumber: true,
+        voucherType: true,
+        issueDate: true,
+        lines: {
+          select: {
+            quantity: true,
+            product: {
+              select: { trackStock: true, costPrice: true, name: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!invoice) return null;
+
+    const isNC = isCreditNote(invoice.voucherType);
+
+    let totalCost = 0;
+    for (const line of invoice.lines) {
+      if (!line.product?.trackStock || !line.product.costPrice) continue;
+      totalCost += Number(line.quantity) * Number(line.product.costPrice);
+    }
+
+    if (totalCost <= 0) return null;
+
+    const docLabel = isNC ? 'NC' : 'FC';
+
+    const lines: JournalEntryLineInput[] = [
+      {
+        accountId: settings.cogsAccountId,
+        debit: isNC ? 0 : totalCost,
+        credit: isNC ? totalCost : 0,
+        description: `CMV - ${docLabel} ${invoice.fullNumber}`,
+      },
+      {
+        accountId: settings.inventoryAccountId,
+        debit: isNC ? totalCost : 0,
+        credit: isNC ? 0 : totalCost,
+        description: `Mercadería - ${docLabel} ${invoice.fullNumber}`,
+      },
+    ];
+
+    return createJournalEntry(
+      {
+        companyId,
+        date: invoice.issueDate,
+        description: `CMV - ${docLabel} ${invoice.fullNumber}`,
+        lines,
+      },
+      tx
+    );
+  } catch (error) {
+    logger.error('Error al crear asiento de CMV', {
+      data: { error, invoiceId, companyId },
     });
     return null;
   }
