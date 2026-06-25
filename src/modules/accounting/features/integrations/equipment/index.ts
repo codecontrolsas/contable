@@ -103,6 +103,26 @@ async function createJournalEntry(
     );
   }
 
+  // Resolver ejercicio y período
+  const fiscalYear = await tx.fiscalYear.findFirst({
+    where: { companyId, startDate: { lte: date }, endDate: { gte: date } },
+    select: { id: true },
+  });
+  let periodId: string | undefined;
+  if (fiscalYear) {
+    const entryMoment = moment(date);
+    const period = await tx.accountingPeriod.findFirst({
+      where: {
+        fiscalYearId: fiscalYear.id,
+        year: entryMoment.year(),
+        month: entryMoment.month() + 1,
+        type: 'MONTHLY',
+      },
+      select: { id: true },
+    });
+    periodId = period?.id;
+  }
+
   // Incremento atómico: UPDATE ... RETURNING evita race conditions
   const [{ last_entry_number: nextNumber }] = await tx.$queryRaw<[{ last_entry_number: number }]>`
     UPDATE accounting_settings
@@ -118,6 +138,8 @@ async function createJournalEntry(
       date,
       description,
       createdBy: 'system',
+      fiscalYearId: fiscalYear?.id,
+      periodId,
       lines: {
         create: lines.map((line) => ({
           accountId: line.accountId,

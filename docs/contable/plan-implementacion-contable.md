@@ -29,7 +29,7 @@
 
 ## Bloque 0 — Constraints de DB y seguridad de datos
 
-`[ESTADO: PENDIENTE]`
+`[ESTADO: COMPLETADO]`
 
 **Problema**: Todas las validaciones contables (partida doble, inmutabilidad, montos no negativos) solo existen en la capa de aplicación. Una query directa, un script de migración o un bug en otro módulo podrían violar la integridad contable.
 
@@ -124,7 +124,7 @@ Evaluar si es necesario migrar los campos `Decimal(12,2)` a `Decimal(18,2)` para
 
 ## Bloque 1 — Modelo de Ejercicio y Período contable
 
-`[ESTADO: PENDIENTE]`
+`[ESTADO: COMPLETADO]`
 
 **Problema**: No existe tabla de ejercicios ni de períodos. El ejercicio fiscal es un par de campos en `AccountingSettings`. No se pueden cerrar meses individualmente ni llevar historial de ejercicios.
 
@@ -260,7 +260,7 @@ Los campos `fiscalYearStart`, `fiscalYearEnd` y `lockedUntilDate` en `Accounting
 
 ## Bloque 2 — Campo `imputable` en cuentas y auxiliares en asientos
 
-`[ESTADO: PENDIENTE]`
+`[ESTADO: COMPLETADO]`
 
 **Problema**: No hay campo `imputable` en `Account`, permitiendo imputar a cuentas padre. No hay auxiliares (cliente/proveedor) en `JournalEntryLine`, impidiendo generar cuentas corrientes desde el mayor.
 
@@ -409,7 +409,7 @@ Nueva vista/reporte en `src/modules/accounting/features/reports/`:
 
 ## Bloque 3 — Numeración atómica de asientos
 
-`[ESTADO: PENDIENTE]`
+`[ESTADO: COMPLETADO]`
 
 **Problema**: `lastEntryNumber` se lee fuera de la transacción y se incrementa dentro. Bajo concurrencia, dos asientos pueden recibir el mismo número. El unique index lo detecta pero produce un error feo.
 
@@ -714,7 +714,7 @@ Agregar columnas de percepciones discriminadas por tipo al reporte.
 
 ## Bloque 6 — Puente contable: correcciones críticas
 
-`[ESTADO: PENDIENTE]`
+`[ESTADO: COMPLETADO]`
 
 **Problema**: El puente contable tiene 3 bugs/gaps críticos: (1) período bloqueado retorna `null` silenciosamente, (2) no usa cuenta corriente individual por entidad, y (3) las notas de crédito se incluyen como positivas en el reporte IVA mensual.
 

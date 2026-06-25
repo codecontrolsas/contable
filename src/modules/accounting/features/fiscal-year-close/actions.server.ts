@@ -275,6 +275,25 @@ export async function closeFiscalYear(companyId: string) {
 
     // Crear y registrar el asiento de cierre en una transacción
     const result = await prisma.$transaction(async (tx) => {
+      // Resolver ejercicio y período de cierre
+      const fiscalYear = await tx.fiscalYear.findFirst({
+        where: {
+          companyId,
+          startDate: { lte: settings.fiscalYearEnd },
+          endDate: { gte: settings.fiscalYearEnd },
+        },
+        select: { id: true },
+      });
+
+      let closingPeriodId: string | undefined;
+      if (fiscalYear) {
+        const closingPeriod = await tx.accountingPeriod.findFirst({
+          where: { fiscalYearId: fiscalYear.id, type: 'CLOSING' },
+          select: { id: true },
+        });
+        closingPeriodId = closingPeriod?.id;
+      }
+
       // Incremento atómico: UPDATE ... RETURNING evita race conditions
       const [{ last_entry_number: nextNumber }] = await tx.$queryRaw<[{ last_entry_number: number }]>`
         UPDATE accounting_settings
@@ -294,6 +313,8 @@ export async function closeFiscalYear(companyId: string) {
           createdBy: userId,
           status: JournalEntryStatus.POSTED,
           postDate: new Date(),
+          fiscalYearId: fiscalYear?.id,
+          periodId: closingPeriodId,
           lines: {
             create: preview.lines.map((line) => ({
               accountId: line.accountId,
@@ -308,6 +329,14 @@ export async function closeFiscalYear(companyId: string) {
           number: true,
         },
       });
+
+      // Marcar ejercicio como cerrado
+      if (fiscalYear) {
+        await tx.fiscalYear.update({
+          where: { id: fiscalYear.id },
+          data: { isClosed: true, closedAt: new Date(), closedBy: userId },
+        });
+      }
 
       return entry;
     });

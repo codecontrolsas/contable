@@ -1,5 +1,6 @@
 ﻿'use server';
 
+import moment from 'moment';
 import { Prisma } from '@/generated/prisma/client';
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
@@ -19,6 +20,30 @@ import {
   type DepreciationConfigInput,
   type ValueAdjustmentInput,
 } from './validators';
+
+type PrismaTransactionClient = Omit<
+  typeof prisma,
+  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+>;
+
+async function resolveFiscalPeriodTx(companyId: string, date: Date, tx: PrismaTransactionClient) {
+  const fiscalYear = await tx.fiscalYear.findFirst({
+    where: { companyId, startDate: { lte: date }, endDate: { gte: date } },
+    select: { id: true },
+  });
+  if (!fiscalYear) return { fiscalYearId: undefined, periodId: undefined };
+  const entryMoment = moment(date);
+  const period = await tx.accountingPeriod.findFirst({
+    where: {
+      fiscalYearId: fiscalYear.id,
+      year: entryMoment.year(),
+      month: entryMoment.month() + 1,
+      type: 'MONTHLY',
+    },
+    select: { id: true },
+  });
+  return { fiscalYearId: fiscalYear.id, periodId: period?.id };
+}
 
 // ============================================
 // CONSULTAS
@@ -469,7 +494,6 @@ export async function postDepreciationEntry(scheduleEntryId: string) {
 
     // Verificar bloqueo de período
     if (settings.lockedUntilDate) {
-      const moment = require('moment');
       if (moment(entry.scheduledDate).isSameOrBefore(moment(settings.lockedUntilDate), 'day')) {
         throw new Error(
           `No se puede contabilizar la depreciación. El período ${moment(entry.scheduledDate).format('MM/YYYY')} está bloqueado.`,
@@ -483,6 +507,8 @@ export async function postDepreciationEntry(scheduleEntryId: string) {
 
     // Crear asiento en transacción
     const result = await prisma.$transaction(async (tx) => {
+      const fiscal = await resolveFiscalPeriodTx(companyId, entry.scheduledDate, tx);
+
       // Incremento atómico: UPDATE ... RETURNING evita race conditions
       const [{ last_entry_number: nextNumber }] = await tx.$queryRaw<[{ last_entry_number: number }]>`
         UPDATE accounting_settings
@@ -498,6 +524,8 @@ export async function postDepreciationEntry(scheduleEntryId: string) {
           date: entry.scheduledDate,
           description: `Depreciación período ${entry.periodNumber}: Equipo ${vehicleLabel}`,
           createdBy: 'system',
+          fiscalYearId: fiscal.fiscalYearId,
+          periodId: fiscal.periodId,
           lines: {
             create: [
               {
@@ -654,6 +682,8 @@ export async function postAllPendingDepreciations(upToDate: Date) {
           const vehicleLabel = vehicle.internNumber || vehicle.domain || vehicle.id.slice(0, 8);
           const amount = Number(entry.amount);
 
+          const fiscal = await resolveFiscalPeriodTx(companyId, entry.scheduledDate, tx);
+
           // Incremento atómico por cada asiento
           const [{ last_entry_number: nextNumber }] = await tx.$queryRaw<[{ last_entry_number: number }]>`
             UPDATE accounting_settings
@@ -669,6 +699,8 @@ export async function postAllPendingDepreciations(upToDate: Date) {
               date: entry.scheduledDate,
               description: `Depreciación período ${entry.periodNumber}: Equipo ${vehicleLabel}`,
               createdBy: 'system',
+              fiscalYearId: fiscal.fiscalYearId,
+              periodId: fiscal.periodId,
               lines: {
                 create: [
                   {
@@ -813,6 +845,8 @@ export async function createValueAdjustment(vehicleId: string, input: ValueAdjus
         settings?.accumulatedDepreciationAccountId &&
         settings?.assetDisposalGainLossAccountId
       ) {
+        const fiscal = await resolveFiscalPeriodTx(companyId, data.date, tx);
+
         // Incremento atómico: UPDATE ... RETURNING evita race conditions
         const [{ last_entry_number: nextNumber }] = await tx.$queryRaw<[{ last_entry_number: number }]>`
           UPDATE accounting_settings
@@ -826,7 +860,6 @@ export async function createValueAdjustment(vehicleId: string, input: ValueAdjus
         const lines =
           differenceAmount > 0
             ? [
-                // Aumento de valor: Debe Bien de Uso, Haber Resultado
                 {
                   accountId: settings.fixedAssetAccountId,
                   debit: new Prisma.Decimal(absAmount),
@@ -841,7 +874,6 @@ export async function createValueAdjustment(vehicleId: string, input: ValueAdjus
                 },
               ]
             : [
-                // Disminución de valor: Debe Resultado, Haber Dep. Acumulada
                 {
                   accountId: settings.assetDisposalGainLossAccountId,
                   debit: new Prisma.Decimal(absAmount),
@@ -863,6 +895,8 @@ export async function createValueAdjustment(vehicleId: string, input: ValueAdjus
             date: data.date,
             description: `Ajuste de valor equipo ${vehicleLabel}: ${data.reason}`,
             createdBy: 'system',
+            fiscalYearId: fiscal.fiscalYearId,
+            periodId: fiscal.periodId,
             lines: { create: lines },
           },
         });

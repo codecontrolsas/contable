@@ -19,6 +19,9 @@ export const journalEntryLineSchema = z.object({
   description: z.string().optional(),
   debit: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Debe ser un número con máximo 2 decimales'),
   credit: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Debe ser un número con máximo 2 decimales'),
+  customerId: z.string().uuid().optional(),
+  supplierId: z.string().uuid().optional(),
+  costCenterId: z.string().uuid().optional(),
 });
 
 export const journalEntrySchema = z.object({

@@ -49,6 +49,9 @@ interface JournalEntryLineInput {
   debit: number;
   credit: number;
   description: string;
+  customerId?: string;
+  supplierId?: string;
+  costCenterId?: string;
 }
 
 interface CreateJournalEntryInput {
@@ -158,6 +161,26 @@ async function createJournalEntry(
     );
   }
 
+  // Resolver ejercicio y período
+  const fiscalYear = await tx.fiscalYear.findFirst({
+    where: { companyId, startDate: { lte: date }, endDate: { gte: date } },
+    select: { id: true },
+  });
+  let periodId: string | undefined;
+  if (fiscalYear) {
+    const entryMoment = moment(date);
+    const period = await tx.accountingPeriod.findFirst({
+      where: {
+        fiscalYearId: fiscalYear.id,
+        year: entryMoment.year(),
+        month: entryMoment.month() + 1,
+        type: 'MONTHLY',
+      },
+      select: { id: true },
+    });
+    periodId = period?.id;
+  }
+
   // Incremento atómico: UPDATE ... RETURNING evita race conditions
   const [{ last_entry_number: nextNumber }] = await tx.$queryRaw<[{ last_entry_number: number }]>`
     UPDATE accounting_settings
@@ -174,12 +197,17 @@ async function createJournalEntry(
       date,
       description,
       createdBy: 'system',
+      fiscalYearId: fiscalYear?.id,
+      periodId,
       lines: {
         create: lines.map((line) => ({
           accountId: line.accountId,
           debit: new Prisma.Decimal(line.debit),
           credit: new Prisma.Decimal(line.credit),
           description: line.description,
+          customerId: line.customerId,
+          supplierId: line.supplierId,
+          costCenterId: line.costCenterId,
         })),
       },
     },
@@ -213,6 +241,7 @@ export async function createJournalEntryForSalesInvoice(
     const invoice = await tx.salesInvoice.findUnique({
       where: { id: invoiceId },
       select: {
+        customerId: true,
         fullNumber: true,
         voucherType: true,
         issueDate: true,
@@ -251,6 +280,7 @@ export async function createJournalEntryForSalesInvoice(
         debit: isNC ? 0 : total,
         credit: isNC ? total : 0,
         description: `${docLabel} ${invoice.fullNumber} - ${invoice.customer.name}`,
+        customerId: invoice.customerId,
       },
       {
         accountId: settings.salesAccountId,
@@ -305,6 +335,7 @@ export async function createJournalEntryForPurchaseInvoice(
     const invoice = await tx.purchaseInvoice.findUnique({
       where: { id: invoiceId },
       select: {
+        supplierId: true,
         fullNumber: true,
         voucherType: true,
         issueDate: true,
@@ -349,6 +380,7 @@ export async function createJournalEntryForPurchaseInvoice(
         debit: isNC ? total : 0,
         credit: isNC ? 0 : total,
         description: `${docLabel} ${invoice.fullNumber} - ${invoice.supplier.businessName}`,
+        supplierId: invoice.supplierId,
       },
     ];
 
@@ -405,6 +437,7 @@ export async function createJournalEntryForReceipt(
     const receipt = await tx.receipt.findUnique({
       where: { id: receiptId },
       select: {
+        customerId: true,
         fullNumber: true,
         date: true,
         totalAmount: true,
@@ -440,6 +473,7 @@ export async function createJournalEntryForReceipt(
       debit: 0,
       credit: total,
       description: `Recibo de cobro ${receipt.fullNumber} - ${receipt.customer.name}`,
+      customerId: receipt.customerId,
     });
 
     // Debe: Caja/Banco (activo aumenta)
@@ -544,6 +578,7 @@ export async function createJournalEntryForPaymentOrder(
     const paymentOrder = await tx.paymentOrder.findUnique({
       where: { id: paymentOrderId },
       select: {
+        supplierId: true,
         fullNumber: true,
         date: true,
         totalAmount: true,
@@ -584,6 +619,7 @@ export async function createJournalEntryForPaymentOrder(
       debit: total,
       credit: 0,
       description: `Orden de pago ${paymentOrder.fullNumber}${paymentOrder.supplier ? ` - ${paymentOrder.supplier.tradeName || paymentOrder.supplier.businessName}` : ''}`,
+      supplierId: paymentOrder.supplierId ?? undefined,
     });
 
     // Haber: Caja/Banco (activo disminuye)
@@ -688,6 +724,7 @@ export async function createJournalEntryForExpense(
     const expense = await tx.expense.findUnique({
       where: { id: expenseId },
       select: {
+        supplierId: true,
         fullNumber: true,
         description: true,
         date: true,
@@ -715,6 +752,7 @@ export async function createJournalEntryForExpense(
         debit: 0,
         credit: amount,
         description: `Gasto ${expense.fullNumber}${supplierName ? ` - ${supplierName}` : ''}`,
+        supplierId: expense.supplierId ?? undefined,
       },
     ];
 

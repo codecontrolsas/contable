@@ -158,6 +158,7 @@ model Company {
   accounts                       Account[]
   journalEntries                 JournalEntry[]
   accountingSettings             AccountingSettings?
+  fiscalYears                    FiscalYear[]
   budgets                        Budget[]
   recurringEntries               RecurringEntry[]
   salesCreditNoteApplications    SalesCreditNoteApplication[]
@@ -227,6 +228,25 @@ enum JournalEntryStatus {
   @@map("journal_entry_status")
 }
 
+// Tipo de Período Contable
+enum AccountingPeriodType {
+  MONTHLY // Mes calendario
+  OPENING // Asiento de apertura
+  CLOSING // Asiento de cierre/refundición
+  ADJUSTMENT // Asiento de ajuste (inflación, etc.)
+
+  @@map("accounting_period_type")
+}
+
+// Tipo de Auxiliar requerido por una cuenta
+enum AuxiliaryType {
+  CUSTOMER
+  SUPPLIER
+  COST_CENTER
+
+  @@map("auxiliary_type")
+}
+
 // Frecuencia de Asientos Recurrentes
 enum RecurringFrequency {
   MONTHLY // Mensual
@@ -250,11 +270,13 @@ model Account {
   parentId      String?            @map("parent_id") @db.Uuid
   parent        Account?           @relation("AccountHierarchy", fields: [parentId], references: [id])
   children      Account[]          @relation("AccountHierarchy")
-  isActive      Boolean            @default(true) @map("is_active")
-  createdAt     DateTime           @default(now()) @map("created_at")
-  updatedAt     DateTime           @updatedAt @map("updated_at")
-  company       Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  entries       JournalEntryLine[]
+  isActive          Boolean         @default(true) @map("is_active")
+  isLeaf            Boolean         @default(true) @map("is_leaf")
+  requiresAuxiliary AuxiliaryType?  @map("requires_auxiliary")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+  company           Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  entries           JournalEntryLine[]
   suppliers     Supplier[] // Relación con proveedores (para cuentas predeterminadas)
   contractors   Contractor[] // Relación con clientes/contratistas (para cuentas predeterminadas)
   bankAccounts  BankAccount[] // Relación con cuentas bancarias (para cuentas contables)
@@ -300,6 +322,10 @@ model JournalEntry {
   status      JournalEntryStatus @default(DRAFT)
   postDate    DateTime?          @map("post_date")
 
+  // Ejercicio y período contable
+  fiscalYearId String? @map("fiscal_year_id") @db.Uuid
+  periodId     String? @map("period_id") @db.Uuid
+
   // Campos de auditoría para reversiones
   originalEntryId String?   @map("original_entry_id") @db.Uuid
   reversalEntryId String?   @map("reversal_entry_id") @db.Uuid
@@ -307,6 +333,8 @@ model JournalEntry {
   reversedAt      DateTime? @map("reversed_at")
 
   company          Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  fiscalYear       FiscalYear?        @relation(fields: [fiscalYearId], references: [id])
+  period           AccountingPeriod?  @relation(fields: [periodId], references: [id])
   lines            JournalEntryLine[]
   salesInvoices    SalesInvoice[]
   purchaseInvoices PurchaseInvoice[]
@@ -339,8 +367,17 @@ model JournalEntryLine {
   description String?
   debit       Decimal      @default(0) @db.Decimal(12, 2)
   credit      Decimal      @default(0) @db.Decimal(12, 2)
+
+  // Auxiliares contables
+  customerId   String? @map("customer_id") @db.Uuid
+  supplierId   String? @map("supplier_id") @db.Uuid
+  costCenterId String? @map("cost_center_id") @db.Uuid
+
   entry       JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
   account     Account      @relation(fields: [accountId], references: [id])
+  customer    Contractor?  @relation(fields: [customerId], references: [id])
+  supplier    Supplier?    @relation(fields: [supplierId], references: [id])
+  costCenter  CostCenter?  @relation(fields: [costCenterId], references: [id])
 
   @@map("journal_entry_lines")
 }
@@ -471,6 +508,49 @@ model AccountingSettings {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("accounting_settings")
+}
+
+// Ejercicio Fiscal
+model FiscalYear {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId String   @map("company_id") @db.Uuid
+  number    Int
+  startDate DateTime @map("start_date")
+  endDate   DateTime @map("end_date")
+  isClosed  Boolean  @default(false) @map("is_closed")
+  closedAt  DateTime? @map("closed_at")
+  closedBy  String?  @map("closed_by")
+
+  company   Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  periods   AccountingPeriod[]
+  entries   JournalEntry[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([companyId, number])
+  @@map("fiscal_years")
+}
+
+// Período Contable
+model AccountingPeriod {
+  id           String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  fiscalYearId String               @map("fiscal_year_id") @db.Uuid
+  year         Int
+  month        Int
+  type         AccountingPeriodType @default(MONTHLY)
+  isClosed     Boolean              @default(false) @map("is_closed")
+  closedAt     DateTime?            @map("closed_at")
+  closedBy     String?              @map("closed_by")
+
+  fiscalYear   FiscalYear     @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  entries      JournalEntry[]
+
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@unique([fiscalYearId, year, month, type])
+  @@map("accounting_periods")
 }
 
 model CompanyMember {
@@ -769,8 +849,9 @@ model CostCenter {
   companyId String  @map("company_id") @db.Uuid
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  employees Employee[]
-  vehicles  Vehicle[]
+  employees         Employee[]
+  vehicles          Vehicle[]
+  journalEntryLines JournalEntryLine[]
 
   @@unique([companyId, name])
   @@map("cost_centers")
@@ -971,6 +1052,7 @@ model Contractor {
   receipts            Receipt[]
   checks              Check[]
   deliveryNotes       DeliveryNote[]
+  journalEntryLines   JournalEntryLine[]
 
   @@unique([companyId, name])
   @@unique([companyId, taxId])
@@ -1891,8 +1973,9 @@ model Supplier {
   paymentOrders    PaymentOrder[]
   expenses         Expense[]
   checks           Check[]
-  receivingNotes   ReceivingNote[]
-  productSuppliers ProductSupplier[]
+  receivingNotes    ReceivingNote[]
+  productSuppliers  ProductSupplier[]
+  journalEntryLines JournalEntryLine[]
 
   createdBy String   @map("created_by")
   createdAt DateTime @default(now()) @map("created_at")
