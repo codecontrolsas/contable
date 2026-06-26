@@ -1,5 +1,6 @@
 ﻿'use server';
 
+import moment from 'moment';
 import { Prisma } from '@/generated/prisma/client';
 import { getActiveCompanyId } from '@/shared/lib/company';
 import { logger } from '@/shared/lib/logger';
@@ -19,6 +20,30 @@ import {
   type DepreciationConfigInput,
   type ValueAdjustmentInput,
 } from './validators';
+
+type PrismaTransactionClient = Omit<
+  typeof prisma,
+  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+>;
+
+async function resolveFiscalPeriodTx(companyId: string, date: Date, tx: PrismaTransactionClient) {
+  const fiscalYear = await tx.fiscalYear.findFirst({
+    where: { companyId, startDate: { lte: date }, endDate: { gte: date } },
+    select: { id: true },
+  });
+  if (!fiscalYear) return { fiscalYearId: undefined, periodId: undefined };
+  const entryMoment = moment(date);
+  const period = await tx.accountingPeriod.findFirst({
+    where: {
+      fiscalYearId: fiscalYear.id,
+      year: entryMoment.year(),
+      month: entryMoment.month() + 1,
+      type: 'MONTHLY',
+    },
+    select: { id: true },
+  });
+  return { fiscalYearId: fiscalYear.id, periodId: period?.id };
+}
 
 // ============================================
 // CONSULTAS
@@ -451,13 +476,12 @@ export async function postDepreciationEntry(scheduleEntryId: string) {
       }
     }
 
-    // Obtener cuentas contables
+    // Obtener cuentas contables (solo lectura, fuera de la transacción)
     const settings = await prisma.accountingSettings.findUnique({
       where: { companyId },
       select: {
         depreciationExpenseAccountId: true,
         accumulatedDepreciationAccountId: true,
-        lastEntryNumber: true,
         lockedUntilDate: true,
       },
     });
@@ -470,7 +494,6 @@ export async function postDepreciationEntry(scheduleEntryId: string) {
 
     // Verificar bloqueo de período
     if (settings.lockedUntilDate) {
-      const moment = require('moment');
       if (moment(entry.scheduledDate).isSameOrBefore(moment(settings.lockedUntilDate), 'day')) {
         throw new Error(
           `No se puede contabilizar la depreciación. El período ${moment(entry.scheduledDate).format('MM/YYYY')} está bloqueado.`,
@@ -484,7 +507,15 @@ export async function postDepreciationEntry(scheduleEntryId: string) {
 
     // Crear asiento en transacción
     const result = await prisma.$transaction(async (tx) => {
-      const nextNumber = settings.lastEntryNumber + 1;
+      const fiscal = await resolveFiscalPeriodTx(companyId, entry.scheduledDate, tx);
+
+      // Incremento atómico: UPDATE ... RETURNING evita race conditions
+      const [{ last_entry_number: nextNumber }] = await tx.$queryRaw<[{ last_entry_number: number }]>`
+        UPDATE accounting_settings
+        SET last_entry_number = last_entry_number + 1, updated_at = NOW()
+        WHERE company_id = ${companyId}::uuid
+        RETURNING last_entry_number
+      `;
 
       const journalEntry = await tx.journalEntry.create({
         data: {
@@ -493,6 +524,8 @@ export async function postDepreciationEntry(scheduleEntryId: string) {
           date: entry.scheduledDate,
           description: `Depreciación período ${entry.periodNumber}: Equipo ${vehicleLabel}`,
           createdBy: 'system',
+          fiscalYearId: fiscal.fiscalYearId,
+          periodId: fiscal.periodId,
           lines: {
             create: [
               {
@@ -510,11 +543,6 @@ export async function postDepreciationEntry(scheduleEntryId: string) {
             ],
           },
         },
-      });
-
-      await tx.accountingSettings.update({
-        where: { companyId },
-        data: { lastEntryNumber: nextNumber },
       });
 
       // Marcar período como contabilizado
@@ -578,13 +606,12 @@ export async function postAllPendingDepreciations(upToDate: Date) {
   if (!userId) throw new Error('No autenticado');
 
   try {
-    // Obtener cuentas contables
+    // Obtener cuentas contables (solo lectura, fuera de la transacción)
     const settings = await prisma.accountingSettings.findUnique({
       where: { companyId },
       select: {
         depreciationExpenseAccountId: true,
         accumulatedDepreciationAccountId: true,
-        lastEntryNumber: true,
         lockedUntilDate: true,
       },
     });
@@ -629,8 +656,6 @@ export async function postAllPendingDepreciations(upToDate: Date) {
 
     // Procesar en transacción
     await prisma.$transaction(async (tx) => {
-      let currentEntryNumber = settings.lastEntryNumber;
-
       for (const entry of pendingEntries) {
         try {
           // Verificar secuencia
@@ -657,15 +682,25 @@ export async function postAllPendingDepreciations(upToDate: Date) {
           const vehicleLabel = vehicle.internNumber || vehicle.domain || vehicle.id.slice(0, 8);
           const amount = Number(entry.amount);
 
-          currentEntryNumber++;
+          const fiscal = await resolveFiscalPeriodTx(companyId, entry.scheduledDate, tx);
+
+          // Incremento atómico por cada asiento
+          const [{ last_entry_number: nextNumber }] = await tx.$queryRaw<[{ last_entry_number: number }]>`
+            UPDATE accounting_settings
+            SET last_entry_number = last_entry_number + 1, updated_at = NOW()
+            WHERE company_id = ${companyId}::uuid
+            RETURNING last_entry_number
+          `;
 
           const journalEntry = await tx.journalEntry.create({
             data: {
               companyId,
-              number: currentEntryNumber,
+              number: nextNumber,
               date: entry.scheduledDate,
               description: `Depreciación período ${entry.periodNumber}: Equipo ${vehicleLabel}`,
               createdBy: 'system',
+              fiscalYearId: fiscal.fiscalYearId,
+              periodId: fiscal.periodId,
               lines: {
                 create: [
                   {
@@ -725,14 +760,6 @@ export async function postAllPendingDepreciations(upToDate: Date) {
             'desconocido';
           errors.push(`Equipo ${vehicleLabel}: ${entryError instanceof Error ? entryError.message : 'Error desconocido'}`);
         }
-      }
-
-      // Actualizar último número de asiento
-      if (posted > 0) {
-        await tx.accountingSettings.update({
-          where: { companyId },
-          data: { lastEntryNumber: currentEntryNumber },
-        });
       }
     });
 
@@ -795,14 +822,13 @@ export async function createValueAdjustment(vehicleId: string, input: ValueAdjus
     const previousValue = Number(depreciation.currentBookValue);
     const differenceAmount = data.newValue - previousValue;
 
-    // Obtener cuentas contables
+    // Obtener cuentas contables (solo lectura, fuera de la transacción)
     const settings = await prisma.accountingSettings.findUnique({
       where: { companyId },
       select: {
         fixedAssetAccountId: true,
         accumulatedDepreciationAccountId: true,
         assetDisposalGainLossAccountId: true,
-        lastEntryNumber: true,
       },
     });
 
@@ -819,13 +845,21 @@ export async function createValueAdjustment(vehicleId: string, input: ValueAdjus
         settings?.accumulatedDepreciationAccountId &&
         settings?.assetDisposalGainLossAccountId
       ) {
-        const nextNumber = (settings.lastEntryNumber ?? 0) + 1;
+        const fiscal = await resolveFiscalPeriodTx(companyId, data.date, tx);
+
+        // Incremento atómico: UPDATE ... RETURNING evita race conditions
+        const [{ last_entry_number: nextNumber }] = await tx.$queryRaw<[{ last_entry_number: number }]>`
+          UPDATE accounting_settings
+          SET last_entry_number = last_entry_number + 1, updated_at = NOW()
+          WHERE company_id = ${companyId}::uuid
+          RETURNING last_entry_number
+        `;
+
         const absAmount = Math.abs(differenceAmount);
 
         const lines =
           differenceAmount > 0
             ? [
-                // Aumento de valor: Debe Bien de Uso, Haber Resultado
                 {
                   accountId: settings.fixedAssetAccountId,
                   debit: new Prisma.Decimal(absAmount),
@@ -840,7 +874,6 @@ export async function createValueAdjustment(vehicleId: string, input: ValueAdjus
                 },
               ]
             : [
-                // Disminución de valor: Debe Resultado, Haber Dep. Acumulada
                 {
                   accountId: settings.assetDisposalGainLossAccountId,
                   debit: new Prisma.Decimal(absAmount),
@@ -862,13 +895,10 @@ export async function createValueAdjustment(vehicleId: string, input: ValueAdjus
             date: data.date,
             description: `Ajuste de valor equipo ${vehicleLabel}: ${data.reason}`,
             createdBy: 'system',
+            fiscalYearId: fiscal.fiscalYearId,
+            periodId: fiscal.periodId,
             lines: { create: lines },
           },
-        });
-
-        await tx.accountingSettings.update({
-          where: { companyId },
-          data: { lastEntryNumber: nextNumber },
         });
 
         journalEntryId = journalEntry.id;

@@ -59,23 +59,50 @@ export async function calculateAccountBalance(
 }
 
 /**
- * Calcula saldos de todas las cuentas de una empresa
+ * Calcula saldos de todas las cuentas de una empresa (query única optimizada)
  */
 export async function calculateAllAccountBalances(
   companyId: string,
   upToDate?: Date
 ): Promise<Map<string, { debit: number; credit: number; balance: number }>> {
   try {
-    const accounts = await prisma.account.findMany({
-      where: { companyId, isActive: true },
-      select: { id: true },
-    });
+    const rows = upToDate
+      ? await prisma.$queryRaw<{ account_id: string; total_debit: number; total_credit: number }[]>`
+          SELECT jel.account_id,
+                 COALESCE(SUM(jel.debit), 0)::float AS total_debit,
+                 COALESCE(SUM(jel.credit), 0)::float AS total_credit
+          FROM journal_entry_lines jel
+          JOIN journal_entries je ON je.id = jel.entry_id
+          JOIN accounts a ON a.id = jel.account_id
+          WHERE je.company_id = ${companyId}::uuid
+            AND je.status = 'POSTED'
+            AND je.date <= ${upToDate}
+            AND a.company_id = ${companyId}::uuid
+            AND a.is_active = true
+          GROUP BY jel.account_id
+        `
+      : await prisma.$queryRaw<{ account_id: string; total_debit: number; total_credit: number }[]>`
+          SELECT jel.account_id,
+                 COALESCE(SUM(jel.debit), 0)::float AS total_debit,
+                 COALESCE(SUM(jel.credit), 0)::float AS total_credit
+          FROM journal_entry_lines jel
+          JOIN journal_entries je ON je.id = jel.entry_id
+          JOIN accounts a ON a.id = jel.account_id
+          WHERE je.company_id = ${companyId}::uuid
+            AND je.status = 'POSTED'
+            AND a.company_id = ${companyId}::uuid
+            AND a.is_active = true
+          GROUP BY jel.account_id
+        `;
 
     const balances = new Map<string, { debit: number; credit: number; balance: number }>();
 
-    for (const account of accounts) {
-      const balance = await calculateAccountBalance(account.id, companyId, upToDate);
-      balances.set(account.id, balance);
+    for (const row of rows) {
+      balances.set(row.account_id, {
+        debit: row.total_debit,
+        credit: row.total_credit,
+        balance: row.total_debit - row.total_credit,
+      });
     }
 
     return balances;
@@ -88,17 +115,39 @@ export async function calculateAllAccountBalances(
 }
 
 /**
- * Calcula balance por tipo de cuenta (Asset, Liability, etc.)
+ * Calcula balance por tipo de cuenta (query única optimizada)
  */
 export async function calculateBalanceByType(
   companyId: string,
   upToDate?: Date
 ): Promise<Record<string, number>> {
   try {
-    const accounts = await prisma.account.findMany({
-      where: { companyId, isActive: true },
-      select: { id: true, type: true },
-    });
+    const rows = upToDate
+      ? await prisma.$queryRaw<{ account_type: string; total_balance: number }[]>`
+          SELECT a.type AS account_type,
+                 COALESCE(SUM(jel.debit) - SUM(jel.credit), 0)::float AS total_balance
+          FROM accounts a
+          JOIN journal_entry_lines jel ON jel.account_id = a.id
+          JOIN journal_entries je ON je.id = jel.entry_id
+          WHERE a.company_id = ${companyId}::uuid
+            AND a.is_active = true
+            AND je.company_id = ${companyId}::uuid
+            AND je.status = 'POSTED'
+            AND je.date <= ${upToDate}
+          GROUP BY a.type
+        `
+      : await prisma.$queryRaw<{ account_type: string; total_balance: number }[]>`
+          SELECT a.type AS account_type,
+                 COALESCE(SUM(jel.debit) - SUM(jel.credit), 0)::float AS total_balance
+          FROM accounts a
+          JOIN journal_entry_lines jel ON jel.account_id = a.id
+          JOIN journal_entries je ON je.id = jel.entry_id
+          WHERE a.company_id = ${companyId}::uuid
+            AND a.is_active = true
+            AND je.company_id = ${companyId}::uuid
+            AND je.status = 'POSTED'
+          GROUP BY a.type
+        `;
 
     const balancesByType: Record<string, number> = {
       ASSET: 0,
@@ -108,9 +157,8 @@ export async function calculateBalanceByType(
       EXPENSE: 0,
     };
 
-    for (const account of accounts) {
-      const balance = await calculateAccountBalance(account.id, companyId, upToDate);
-      balancesByType[account.type] += balance.balance;
+    for (const row of rows) {
+      balancesByType[row.account_type] = row.total_balance;
     }
 
     return balancesByType;

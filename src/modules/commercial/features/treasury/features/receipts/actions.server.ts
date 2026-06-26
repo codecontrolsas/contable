@@ -403,10 +403,13 @@ export async function confirmReceipt(receiptId: string) {
           });
         }
       } catch (error) {
+        // Re-lanzar errores de período bloqueado (el usuario debe saberlo)
+        if (error instanceof Error && error.message.includes('período está cerrado')) {
+          throw error;
+        }
         logger.warn('No se pudo generar asiento contable para recibo', {
           data: { receiptId, error },
         });
-        // No lanzar error para no interrumpir la confirmación del recibo
       }
     });
 

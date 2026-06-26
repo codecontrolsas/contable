@@ -20,6 +20,9 @@ interface FiscalYearStatusProps {
     isClosed: boolean;
     closingEntryId: string | null;
     closingEntryNumber: number | null;
+    openingEntryId: string | null;
+    openingEntryNumber: number | null;
+    nextFiscalYearId: string | null;
   };
 }
 
@@ -55,10 +58,15 @@ export function _FiscalYearStatus({ companyId, status }: FiscalYearStatusProps) 
         </CardHeader>
         <CardContent className="space-y-4">
           {status.isClosed ? (
-            <div className="rounded-md border bg-muted/50 p-4">
+            <div className="rounded-md border bg-muted/50 p-4 space-y-2">
               <p className="text-sm">
-                El ejercicio fiscal fue cerrado con el asiento N° <strong>{status.closingEntryNumber}</strong>.
+                Ejercicio cerrado — Asiento de refundición N° <strong>{status.closingEntryNumber}</strong>
               </p>
+              {status.openingEntryNumber && (
+                <p className="text-sm">
+                  Asiento de apertura N° <strong>{status.openingEntryNumber}</strong> generado en el nuevo ejercicio
+                </p>
+              )}
               <Link
                 href="/dashboard/company/accounting/entries"
                 className="text-sm text-primary hover:underline mt-1 inline-block"

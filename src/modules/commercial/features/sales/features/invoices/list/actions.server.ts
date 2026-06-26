@@ -685,6 +685,9 @@ export async function createInvoice(data: unknown) {
           issueDate: validatedData.issueDate,
           dueDate: validatedData.dueDate,
           subtotal: new Prisma.Decimal(invoiceSubtotal),
+          netTaxed: new Prisma.Decimal(invoiceSubtotal),
+          netNonTaxed: new Prisma.Decimal(0),
+          netExempt: new Prisma.Decimal(0),
           vatAmount: new Prisma.Decimal(invoiceVatAmount),
           otherTaxes: new Prisma.Decimal(0),
           total: new Prisma.Decimal(invoiceTotal),
@@ -919,10 +922,13 @@ export async function confirmInvoice(id: string) {
           });
         }
       } catch (error) {
+        // Re-lanzar errores de período bloqueado (el usuario debe saberlo)
+        if (error instanceof Error && error.message.includes('período está cerrado')) {
+          throw error;
+        }
         logger.warn('No se pudo generar asiento contable para factura de venta', {
           data: { invoiceId: id, error },
         });
-        // No lanzar error para no interrumpir la confirmación de la factura
       }
 
       // Auto-compensar NC contra facturas/ND pendientes del mismo cliente
@@ -1095,6 +1101,9 @@ export async function updateInvoice(id: string, data: unknown) {
           issueDate: validatedData.issueDate,
           dueDate: validatedData.dueDate,
           subtotal: new Prisma.Decimal(invoiceSubtotal),
+          netTaxed: new Prisma.Decimal(invoiceSubtotal),
+          netNonTaxed: new Prisma.Decimal(0),
+          netExempt: new Prisma.Decimal(0),
           vatAmount: new Prisma.Decimal(invoiceVatAmount),
           total: new Prisma.Decimal(invoiceTotal),
           globalDiscountPercent: validatedData.globalDiscountPercent != null ? new Prisma.Decimal(validatedData.globalDiscountPercent) : null,

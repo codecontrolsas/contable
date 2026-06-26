@@ -60,8 +60,10 @@ export function _ClosePreviewDialog({
   const handleClose = async () => {
     setIsClosing(true);
     try {
-      await closeFiscalYear(companyId);
-      toast.success('Ejercicio fiscal cerrado correctamente');
+      const result = await closeFiscalYear(companyId);
+      toast.success(
+        `Ejercicio fiscal cerrado. Nuevo ejercicio N° ${result.newFiscalYear} creado.`
+      );
       router.refresh();
       onClose();
     } catch (err) {
@@ -154,9 +156,43 @@ export function _ClosePreviewDialog({
               </table>
             </div>
 
+            {/* Preview asiento de apertura */}
+            {preview.openingLines.length > 0 && (
+              <details className="rounded-md border">
+                <summary className="cursor-pointer px-3 py-2 text-sm font-medium hover:bg-muted/50">
+                  Asiento de apertura ({preview.openingLines.length} líneas)
+                </summary>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/50">
+                      <th className="py-2 pl-3 text-left">Cuenta</th>
+                      <th className="py-2 text-right">Debe</th>
+                      <th className="py-2 pr-3 text-right">Haber</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {preview.openingLines.map((line, idx) => (
+                      <tr key={idx} className="border-b">
+                        <td className="py-1.5 pl-3">
+                          <span className="font-mono text-xs">{line.accountCode}</span>{' '}
+                          {line.accountName}
+                        </td>
+                        <td className="py-1.5 text-right font-mono">
+                          {line.debit > 0 ? formatAmount(line.debit) : ''}
+                        </td>
+                        <td className="py-1.5 pr-3 text-right font-mono">
+                          {line.credit > 0 ? formatAmount(line.credit) : ''}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </details>
+            )}
+
             <p className="text-xs text-muted-foreground">
-              Este asiento cancelará los saldos de las cuentas de resultado y registrará
-              la ganancia o pérdida en la cuenta de Resultado del Ejercicio.
+              Al confirmar se generará: (1) asiento de refundición de resultados, (2) nuevo ejercicio fiscal
+              con sus períodos, (3) asiento de apertura en el nuevo ejercicio.
               Una vez cerrado, no se puede revertir automáticamente.
             </p>
           </div>
