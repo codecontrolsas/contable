@@ -545,6 +545,8 @@ async function main() {
       'company.type-operatives',
       'company.contractors',
       'company.document-types',
+      'workspace.gestion',
+      'workspace.contable',
     ];
 
     const actionSlugs = ['view', 'create', 'update', 'delete'];
