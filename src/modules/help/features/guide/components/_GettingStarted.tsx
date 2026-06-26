@@ -311,8 +311,10 @@ export function _GettingStarted() {
           </ol>
           <p className="text-sm text-muted-foreground">
             El selector solo es visible cuando tu rol tiene acceso a ambos
-            espacios. Si solo ves los módulos de Gestión o solo los de
-            Contable, consulta con el administrador los permisos de tu rol.
+            espacios (también verás ambos espacios si tu rol todavía no tiene
+            ningún permiso de espacio configurado). Si solo ves los módulos de
+            Gestión o solo los de Contable, consulta con el administrador los
+            permisos de tu rol.
           </p>
         </CardContent>
       </Card>

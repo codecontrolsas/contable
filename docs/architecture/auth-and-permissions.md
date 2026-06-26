@@ -216,7 +216,7 @@ El sidebar aplica 4 capas en orden:
 3. **Modulos activos** — Activacion por empresa (`activeModules`)
 4. **Espacio de trabajo** — Derivado de la URL via `usePathname` en `_AppSidebar.tsx`
 
-La capa 4 usa `resolveEffectiveWorkspace(pathname, accessibleWorkspaces, saved)` para determinar el espacio efectivo y filtra cada `NavItem` con `getWorkspaceForModule(item.module) !== effectiveWorkspace`.
+La capa 4 usa `resolveEffectiveWorkspace(pathname, accessibleWorkspaces, saved)` para determinar el espacio efectivo y **oculta** cada `NavItem` donde `getWorkspaceForModule(item.module) !== effectiveWorkspace`.
 
 ### Persistencia
 
@@ -228,6 +228,8 @@ import { getActiveWorkspace, setActiveWorkspace } from '@/shared/lib/workspace';
 
 Al guardar, `setActiveWorkspace` valida que el usuario tenga acceso al espacio destino antes de persistir.
 
+**Navegación al cambiar de espacio:** al conmutar, el usuario es redirigido al inicio del espacio destino — Gestión ⇒ `/dashboard`, Contable ⇒ `/dashboard/accounting` (definido en `WORKSPACES[id].landing`).
+
 ### Backward-Compatibility
 
 Un usuario **sin ningun permiso** `workspace.*` asignado (por ejemplo, empresas anteriores al sprint que no configuraron roles para esto) ve **ambos** espacios. La funcion `resolveAccessibleWorkspaces` aplica esta logica:
@@ -237,7 +239,7 @@ Un usuario **sin ningun permiso** `workspace.*` asignado (por ejemplo, empresas 
 if (!input.gestion && !input.contable) return [...WORKSPACE_IDS];
 ```
 
-Los roles privilegiados (`owner`, `developer`, `isOwner`) siempre ven ambos espacios.
+Los propietarios de la empresa (`CompanyMember.isOwner`) y los roles de sistema `owner` y `developer` ven siempre ambos espacios (short-circuit en `getAccessibleWorkspaces`), independientemente de los permisos `workspace.*`.
 
 ### Sin Aislamiento Estricto de Rutas
 
