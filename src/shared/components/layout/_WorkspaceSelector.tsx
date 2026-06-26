@@ -43,9 +43,12 @@ export function _WorkspaceSelector({
 
     startTransition(async () => {
       try {
+        // Persistir primero para que el push fetchee el RSC con el nuevo estado.
         await setActiveWorkspace(target);
+        // Solo push: la UI (sidebar y selector) deriva su estado de usePathname,
+        // así que cambiar la ruta basta. Un router.refresh() aquí revalida la ruta
+        // de origen y aborta la navegación del push (la URL no cambiaría).
         router.push(WORKSPACES[target].landing);
-        router.refresh();
       } catch {
         toast.error('Error al cambiar de espacio de trabajo');
       }
