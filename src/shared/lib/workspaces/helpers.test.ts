@@ -73,4 +73,8 @@ describe('resolveEffectiveWorkspace', () => {
   it('cae al primer accesible si no hay guardado válido', () => {
     expect(resolveEffectiveWorkspace('/dashboard/employees', ['contable'], null)).toBe('contable');
   });
+
+  it('cae al primer accesible cuando ni la ruta ni el guardado son accesibles', () => {
+    expect(resolveEffectiveWorkspace('/dashboard/accounting', ['gestion'], 'contable')).toBe('gestion');
+  });
 });

@@ -316,6 +316,11 @@ export function _GettingStarted() {
             Gestión o solo los de Contable, consulta con el administrador los
             permisos de tu rol.
           </p>
+          <p className="text-sm text-muted-foreground">
+            <strong>Importante:</strong> el espacio de trabajo organiza lo que
+            ves en el menú; lo que podés abrir y editar depende de los permisos
+            de tu rol en cada módulo.
+          </p>
         </CardContent>
       </Card>
 

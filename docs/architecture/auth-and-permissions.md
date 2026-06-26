@@ -241,6 +241,18 @@ if (!input.gestion && !input.contable) return [...WORKSPACE_IDS];
 
 Los propietarios de la empresa (`CompanyMember.isOwner`) y los roles de sistema `owner` y `developer` ven siempre ambos espacios (short-circuit en `getAccessibleWorkspaces`), independientemente de los permisos `workspace.*`.
 
+### Visibilidad vs. Seguridad (importante)
+
+Los permisos `workspace.gestion` y `workspace.contable` controlan **únicamente la visibilidad**: qué espacios aparecen en el selector del header y qué ítems se muestran en el sidebar. **No son un límite de seguridad sobre los datos.**
+
+El acceso real a los datos de cada módulo lo controla el RBAC del módulo correspondiente (por ejemplo, `accounting.entries`). Esto significa que:
+
+- Un usuario con permiso `accounting.entries` pero **sin** permiso `workspace.contable` **no verá** el espacio Contable en el sidebar ni en el selector.
+- Sin embargo, si ese usuario accede directamente a `/dashboard/accounting/entries` por URL, la página lo permitirá, porque el guard de la página verifica `accounting.entries`, no `workspace.contable`.
+- Por el contrario, un usuario con `workspace.contable` pero **sin** `accounting.entries` verá el espacio Contable en el menú, pero las páginas del módulo le denegarán el acceso.
+
+Este diseño es **intencional** (ver spec: "Sin aislamiento estricto de rutas"). Los permisos de espacio son una herramienta de UX/organización, no una barrera de autorización.
+
 ### Sin Aislamiento Estricto de Rutas
 
 No existe un guard de ruta que redirija al usuario si accede por URL directa a un modulo del otro espacio. En cambio, al navegar a una URL, el selector del header y el sidebar se auto-ajustan para reflejar el espacio de esa ruta (la capa 4 usa `usePathname`).
