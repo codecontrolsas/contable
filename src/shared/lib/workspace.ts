@@ -10,6 +10,10 @@ import {
   type WorkspaceId,
 } from '@/shared/lib/workspaces';
 
+function isWorkspaceId(value: string | null | undefined): value is WorkspaceId {
+  return !!value && value in WORKSPACES;
+}
+
 /**
  * Espacios de trabajo a los que el usuario tiene acceso.
  * Owners y roles de sistema ven ambos. Backward-compat: sin permisos workspace.* ⇒ ambos.
@@ -38,8 +42,7 @@ export async function getAccessibleWorkspaces(): Promise<WorkspaceId[]> {
  * accesible y lo persiste de forma lazy (igual que getActiveCompanyId).
  */
 export async function getActiveWorkspace(): Promise<WorkspaceId> {
-  const accessible = await getAccessibleWorkspaces();
-  const userId = await getCurrentUserId();
+  const [accessible, userId] = await Promise.all([getAccessibleWorkspaces(), getCurrentUserId()]);
   if (!userId) return accessible[0] ?? 'gestion';
 
   try {
@@ -48,7 +51,7 @@ export async function getActiveWorkspace(): Promise<WorkspaceId> {
       select: { activeWorkspaceId: true },
     });
 
-    const saved = prefs?.activeWorkspaceId as WorkspaceId | null | undefined;
+    const saved = isWorkspaceId(prefs?.activeWorkspaceId) ? prefs.activeWorkspaceId : null;
     if (saved && accessible.includes(saved)) return saved;
 
     const fallback = accessible[0] ?? 'gestion';
@@ -67,7 +70,7 @@ export async function getActiveWorkspace(): Promise<WorkspaceId> {
 /**
  * Cambia el espacio activo del usuario. Valida que tenga acceso al espacio destino.
  */
-export async function setActiveWorkspace(workspaceId: WorkspaceId) {
+export async function setActiveWorkspace(workspaceId: WorkspaceId): Promise<{ success: true }> {
   const userId = await getCurrentUserId();
   if (!userId) throw new Error('No autenticado');
 
