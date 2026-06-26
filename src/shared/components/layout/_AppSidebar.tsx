@@ -49,6 +49,7 @@ import {
 } from '@/shared/components/ui/sidebar';
 import type { Module } from '@/shared/lib/permissions';
 import type { WorkspaceId } from '@/shared/lib/workspaces';
+import { getWorkspaceForModule, resolveEffectiveWorkspace } from '@/shared/lib/workspaces';
 import { _CompanyDisplay } from './_CompanyDisplay';
 import { _CompanySelector } from './_CompanySelector';
 import { _NavUser } from './nav/_NavUser';
@@ -524,11 +525,16 @@ export function _AppSidebar({
   activeCompany,
   isSingleMode = false,
   permissions,
-  activeWorkspace: _activeWorkspace,
-  accessibleWorkspaces: _accessibleWorkspaces,
+  activeWorkspace,
+  accessibleWorkspaces,
   ...props
 }: AppSidebarProps) {
   const pathname = usePathname();
+  const effectiveWorkspace = resolveEffectiveWorkspace(
+    pathname,
+    accessibleWorkspaces,
+    activeWorkspace,
+  );
   const navConfig = getNavConfig(isSingleMode, activeCompany.id);
 
   const isActive = (href: string) => {
@@ -557,11 +563,11 @@ export function _AppSidebar({
   // Funciones de filtrado por permisos
   // ========================================
 
-  // Verificar si puede ver un item
+  // Verificar si puede ver un item (permiso RBAC + espacio de trabajo)
   const canViewItem = (item: NavItem): boolean => {
-    // Items sin módulo (null o undefined) son siempre visibles
+    // Items sin módulo (transversales) ⇒ espacio Gestión.
+    if (getWorkspaceForModule(item.module) !== effectiveWorkspace) return false;
     if (item.module === null || item.module === undefined) return true;
-    // Verificar permiso en el mapa
     return permissions[item.module] === true;
   };
 
