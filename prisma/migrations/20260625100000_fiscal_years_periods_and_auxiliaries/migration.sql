@@ -202,6 +202,12 @@ FROM "fiscal_years" fy;
 --    a journal_entries existentes
 -- ============================================
 
+-- El trigger trg_journal_entry_immutable (migración 20260624100000) impide
+-- modificar asientos POSTED. Este backfill solo setea columnas de SISTEMA
+-- (fiscal_year_id/period_id), no toca el contenido contable, así que lo
+-- deshabilitamos temporalmente. Se reactiva al final, en la misma transacción.
+ALTER TABLE "journal_entries" DISABLE TRIGGER "trg_journal_entry_immutable";
+
 UPDATE "journal_entries" je
 SET
   "fiscal_year_id" = fy."id",
@@ -218,3 +224,6 @@ FROM "fiscal_years" fy
 WHERE fy."company_id" = je."company_id"
   AND je."date" >= fy."start_date"
   AND je."date" <= fy."end_date";
+
+-- Reactivar el trigger de inmutabilidad de asientos.
+ALTER TABLE "journal_entries" ENABLE TRIGGER "trg_journal_entry_immutable";
