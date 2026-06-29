@@ -21,6 +21,7 @@
 #   docker-compose --profile storage up -d
 # Para Bajar
 # docker-compose --profile storage down
+# corrección
 
 name: nahuel-boxer
 
