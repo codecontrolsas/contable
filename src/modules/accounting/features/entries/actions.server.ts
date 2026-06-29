@@ -6,7 +6,7 @@ import { logger } from '@/shared/lib/logger';
 import { checkPermission } from '@/shared/lib/permissions';
 import { revalidateAccountingRoutes } from '../../shared/utils';
 import { type CreateJournalEntryInput } from '../../shared/types';
-import { validateJournalEntryAccounts, validateJournalEntryBalance, validateJournalEntryDate, validateJournalEntryAmounts, validateAccountNatures, validatePeriodLock } from './validators';
+import { validateJournalEntryAccounts, validateJournalEntryBalance, validateJournalEntryDate, validateJournalEntryAmounts, validateAccountNatures, validatePeriodLock, validateAuxiliaries, resolveFiscalPeriod } from './validators';
 
 import { JournalEntryStatus } from '@/generated/prisma/enums';
 
@@ -19,36 +19,48 @@ export async function createJournalEntry(companyId: string, input: CreateJournal
   await checkPermission('accounting.entries', 'create', { redirect: true });
 
   try {
-    // Obtener el último número de asiento
-    const settings = await prisma.accountingSettings.findUnique({
-      where: { companyId },
-    });
-
-    if (!settings) {
-      throw new Error('La empresa no tiene configuración contable');
-    }
-
-    // Validaciones
-    await validateJournalEntryAccounts(companyId, input.lines.map(line => line.accountId));
+    // Validaciones (fuera de la transacción, son de solo lectura)
+    const accounts = await validateJournalEntryAccounts(companyId, input.lines.map(line => line.accountId));
     await validateJournalEntryDate(companyId, input.date);
     await validateJournalEntryBalance(input.lines);
     await validateJournalEntryAmounts(input.lines);
+    await validateAuxiliaries(companyId, input.lines, accounts);
 
     // Validación de naturaleza (warnings, no bloquean)
     await validateAccountNatures(companyId, input.lines);
 
+    // Resolver ejercicio y período
+    const fiscal = await resolveFiscalPeriod(companyId, input.date);
 
-    // Crear asiento y actualizar número
+    // Crear asiento y actualizar número atómicamente
     const result = await prisma.$transaction(async (tx) => {
+      // Incremento atómico: UPDATE ... RETURNING evita race conditions
+      const [{ last_entry_number: nextNumber }] = await tx.$queryRaw<[{ last_entry_number: number }]>`
+        UPDATE accounting_settings
+        SET last_entry_number = last_entry_number + 1, updated_at = NOW()
+        WHERE company_id = ${companyId}::uuid
+        RETURNING last_entry_number
+      `;
+
       const entry = await tx.journalEntry.create({
         data: {
           companyId,
-          number: settings.lastEntryNumber + 1,
+          number: nextNumber,
           date: input.date,
           description: input.description,
           createdBy: userId,
+          fiscalYearId: fiscal?.fiscalYearId,
+          periodId: fiscal?.periodId,
           lines: {
-            create: input.lines,
+            create: input.lines.map(line => ({
+              accountId: line.accountId,
+              description: line.description,
+              debit: line.debit,
+              credit: line.credit,
+              customerId: line.customerId,
+              supplierId: line.supplierId,
+              costCenterId: line.costCenterId,
+            })),
           },
         },
         select: {
@@ -79,11 +91,6 @@ export async function createJournalEntry(companyId: string, input: CreateJournal
             },
           },
         },
-      });
-
-      await tx.accountingSettings.update({
-        where: { companyId },
-        data: { lastEntryNumber: settings.lastEntryNumber + 1 },
       });
 
       return entry;
@@ -249,32 +256,37 @@ export async function reverseJournalEntry(companyId: string, entryId: string) {
       throw new Error('Solo se pueden anular asientos registrados');
     }
 
-    const settings = await prisma.accountingSettings.findUnique({
-      where: { companyId },
-    });
-
-    if (!settings) {
-      throw new Error('La empresa no tiene configuración contable');
-    }
+    // Resolver período para la fecha actual (la reversión se registra hoy)
+    const fiscal = await resolveFiscalPeriod(companyId, new Date());
 
     // Crear asiento de reversión
     const result = await prisma.$transaction(async (tx) => {
+      // Incremento atómico: UPDATE ... RETURNING evita race conditions
+      const [{ last_entry_number: nextNumber }] = await tx.$queryRaw<[{ last_entry_number: number }]>`
+        UPDATE accounting_settings
+        SET last_entry_number = last_entry_number + 1, updated_at = NOW()
+        WHERE company_id = ${companyId}::uuid
+        RETURNING last_entry_number
+      `;
+
       // Crear asiento de reversión primero
       const reversalEntry = await tx.journalEntry.create({
         data: {
           companyId,
-          number: settings.lastEntryNumber + 1,
+          number: nextNumber,
           date: new Date(),
           description: `Anulación del asiento N° ${entry.number} - ${entry.description}`,
           status: JournalEntryStatus.POSTED,
           postDate: new Date(),
           createdBy: userId,
-          originalEntryId: entryId, // Link al asiento original
+          originalEntryId: entryId,
+          fiscalYearId: fiscal?.fiscalYearId,
+          periodId: fiscal?.periodId,
           lines: {
             create: entry.lines.map(line => ({
               accountId: line.accountId,
               description: line.description,
-              debit: line.credit, // Invertir débito y crédito
+              debit: line.credit,
               credit: line.debit,
             })),
           },
@@ -318,11 +330,6 @@ export async function reverseJournalEntry(companyId: string, entryId: string) {
           reversedBy: userId,
           reversedAt: new Date(),
         },
-      });
-
-      await tx.accountingSettings.update({
-        where: { companyId },
-        data: { lastEntryNumber: settings.lastEntryNumber + 1 },
       });
 
       return reversalEntry;

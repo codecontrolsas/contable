@@ -57,21 +57,47 @@ export function _GeneralLedgerReport({ companyId }: GeneralLedgerReportProps) {
     if (!data || data.length === 0) return;
 
     const flatData = data.flatMap((account) => {
-      const rows = account.entries.map((entry) => ({
-        accountCode: account.code,
-        accountName: account.name,
-        date: entry.date,
-        entryNumber: entry.entryNumber,
-        description: entry.description || '',
-        debit: entry.debit,
-        credit: entry.credit,
-        balance: entry.balance,
-      }));
+      const rows: {
+        accountCode: string;
+        accountName: string;
+        date: Date | null;
+        entryNumber: number;
+        description: string;
+        debit: number;
+        credit: number;
+        balance: number;
+      }[] = [];
+
+      if (account.openingBalance !== 0) {
+        rows.push({
+          accountCode: account.code,
+          accountName: account.name,
+          date: null,
+          entryNumber: 0,
+          description: 'Saldo anterior',
+          debit: 0,
+          credit: 0,
+          balance: account.openingBalance,
+        });
+      }
+
+      for (const entry of account.entries) {
+        rows.push({
+          accountCode: account.code,
+          accountName: account.name,
+          date: entry.date,
+          entryNumber: entry.entryNumber,
+          description: entry.description || '',
+          debit: entry.debit,
+          credit: entry.credit,
+          balance: entry.balance,
+        });
+      }
 
       rows.push({
         accountCode: account.code,
         accountName: 'TOTAL',
-        date: null as unknown as Date,
+        date: null,
         entryNumber: 0,
         description: '',
         debit: account.totalDebit,
@@ -242,6 +268,18 @@ export function _GeneralLedgerReport({ companyId }: GeneralLedgerReportProps) {
                             <td className="py-2 text-right">Haber</td>
                             <td className="py-2 pr-4 text-right">Saldo</td>
                           </tr>
+                          {account.openingBalance !== 0 && (
+                            <tr className="bg-blue-50/50 dark:bg-blue-950/20">
+                              <td className="py-2 pl-12 italic text-muted-foreground" colSpan={3}>
+                                Saldo anterior
+                              </td>
+                              <td className="text-right" />
+                              <td className="text-right" />
+                              <td className="py-2 pr-4 text-right italic">
+                                {formatAmount(account.openingBalance)}
+                              </td>
+                            </tr>
+                          )}
                           {account.entries.map((entry) => (
                             <tr key={`${account.id}-${entry.entryNumber}`} className="bg-muted/30">
                               <td className="py-2 pl-12" colSpan={3}>

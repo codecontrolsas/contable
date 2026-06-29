@@ -862,6 +862,9 @@ export async function createPurchaseInvoice(input: PurchaseInvoiceFormInput) {
         purchaseOrderId: input.purchaseOrderId || null,
         validated: false,
         subtotal,
+        netTaxed: subtotal,
+        netNonTaxed: 0,
+        netExempt: 0,
         vatAmount,
         otherTaxes: 0,
         total,
@@ -1007,6 +1010,9 @@ export async function updatePurchaseInvoice(id: string, input: PurchaseInvoiceFo
           cae: input.cae || null,
           purchaseOrderId: input.purchaseOrderId || null,
           subtotal,
+          netTaxed: subtotal,
+          netNonTaxed: 0,
+          netExempt: 0,
           vatAmount,
           otherTaxes: 0,
           total,
@@ -1205,10 +1211,13 @@ export async function confirmPurchaseInvoice(id: string) {
           });
         }
       } catch (error) {
+        // Re-lanzar errores de período bloqueado (el usuario debe saberlo)
+        if (error instanceof Error && error.message.includes('período está cerrado')) {
+          throw error;
+        }
         logger.warn('No se pudo generar asiento contable para factura de compra', {
           data: { invoiceId: id, error },
         });
-        // No lanzar error para no interrumpir la confirmación de la factura
       }
 
       // Auto-compensar NC contra facturas/ND pendientes del mismo proveedor

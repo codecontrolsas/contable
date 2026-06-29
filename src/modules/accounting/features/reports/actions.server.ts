@@ -8,10 +8,10 @@ import { checkPermission } from '@/shared/lib/permissions';
 import { AccountNature, AccountType, BudgetStatus, JournalEntryStatus } from '@/generated/prisma/enums';
 import moment from 'moment';
 import {
-  calculateAccountBalance,
   calculateAllAccountBalances,
   verifyAccountingEquation,
 } from '../../shared/utils/balances';
+import { isCreditNote } from '@/modules/commercial/shared/voucher-utils';
 
 interface AccountBalance {
   accountId: string;
@@ -62,6 +62,7 @@ interface GeneralLedgerAccount {
   name: string;
   type: AccountType;
   nature: AccountNature;
+  openingBalance: number;
   entries: {
     date: Date;
     description: string | null;
@@ -101,28 +102,21 @@ export async function getTrialBalance(companyId: string, fromDate: Date, toDate:
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.reports', 'view', { redirect: true });
 
-  // Ajustar fechas para incluir todo el rango
   const from = startOfDay(fromDate);
   const to = endOfDay(toDate);
 
   try {
     logger.info('Obteniendo balance de sumas y saldos', { data: { companyId, from, to } });
 
-    // Obtener todas las cuentas activas
     const accounts = await prisma.account.findMany({
-      where: {
-        companyId,
-        isActive: true,
-      },
+      where: { companyId, isActive: true },
       orderBy: { code: 'asc' },
     });
 
-    // Usar la función de balances.ts para calcular saldos hasta la fecha final
     const balancesMap = await calculateAllAccountBalances(companyId, to);
 
-    // Convertir a array y agregar información de cuentas
     const balances: AccountBalance[] = accounts
-      .map(account => {
+      .map((account) => {
         const balance = balancesMap.get(account.id) || { debit: 0, credit: 0, balance: 0 };
 
         return {
@@ -136,14 +130,11 @@ export async function getTrialBalance(companyId: string, fromDate: Date, toDate:
           balance: balance.balance,
         };
       })
-      // Filtrar cuentas sin movimientos
-      .filter(account => account.debitTotal !== 0 || account.creditTotal !== 0);
+      .filter((account) => account.debitTotal !== 0 || account.creditTotal !== 0);
 
-    // Calcular totales
     const totalDebit = balances.reduce((sum, account) => sum + account.debitTotal, 0);
     const totalCredit = balances.reduce((sum, account) => sum + account.creditTotal, 0);
 
-    // Verificar ecuación contable
     const equation = await verifyAccountingEquation(companyId, to);
 
     const result = {
@@ -159,7 +150,7 @@ export async function getTrialBalance(companyId: string, fromDate: Date, toDate:
         totalDebit,
         totalCredit,
         equationBalanced: equation.isBalanced,
-      }
+      },
     });
 
     if (!equation.isBalanced) {
@@ -169,13 +160,15 @@ export async function getTrialBalance(companyId: string, fromDate: Date, toDate:
           assets: equation.assets,
           liabilities: equation.liabilities,
           equity: equation.equity,
-        }
+        },
       });
     }
 
     return result;
   } catch (error) {
-    logger.error('Error al obtener balance de sumas y saldos', { data: { error, companyId, userId } });
+    logger.error('Error al obtener balance de sumas y saldos', {
+      data: { error, companyId, userId },
+    });
     throw error;
   }
 }
@@ -235,60 +228,74 @@ export async function getGeneralLedger(companyId: string, fromDate: Date, toDate
   if (!userId) throw new Error('No autenticado');
   await checkPermission('accounting.reports', 'view', { redirect: true });
 
-  // Ajustar fechas para incluir todo el rango
   const from = startOfDay(fromDate);
   const to = endOfDay(toDate);
 
   try {
-    // Obtener todas las cuentas activas
     const accounts = await prisma.account.findMany({
-      where: {
-        companyId,
-        isActive: true,
-      },
+      where: { companyId, isActive: true },
       orderBy: { code: 'asc' },
     });
 
-    // Obtener todos los asientos registrados en el período
+    // Saldo anterior: query única para todos los saldos previos al período
+    const beforePeriod = new Date(from);
+    beforePeriod.setDate(beforePeriod.getDate() - 1);
+    beforePeriod.setHours(23, 59, 59, 999);
+
+    const priorBalances = await prisma.$queryRaw<
+      { account_id: string; total_debit: number; total_credit: number }[]
+    >`
+      SELECT jel.account_id,
+             COALESCE(SUM(jel.debit), 0)::float AS total_debit,
+             COALESCE(SUM(jel.credit), 0)::float AS total_credit
+      FROM journal_entry_lines jel
+      JOIN journal_entries je ON je.id = jel.entry_id
+      WHERE je.company_id = ${companyId}::uuid
+        AND je.status = 'POSTED'
+        AND je.date <= ${beforePeriod}
+      GROUP BY jel.account_id
+    `;
+
+    const priorMap = new Map<string, number>();
+    for (const row of priorBalances) {
+      priorMap.set(row.account_id, row.total_debit - row.total_credit);
+    }
+
+    // Movimientos del período
     const entries = await prisma.journalEntry.findMany({
       where: {
         companyId,
         status: JournalEntryStatus.POSTED,
-        date: {
-          gte: from,
-          lte: to,
-        },
+        date: { gte: from, lte: to },
       },
-      orderBy: [
-        { date: 'asc' },
-        { number: 'asc' },
-      ],
-      include: {
-        lines: true,
-      },
+      orderBy: [{ date: 'asc' }, { number: 'asc' }],
+      include: { lines: true },
     });
 
-    // Procesar cada cuenta
-    const ledger: GeneralLedgerAccount[] = accounts.map(account => {
-      const movements = entries
-        .filter(entry => entry.lines.some(line => line.accountId === account.id))
-        .map(entry => {
-          const line = entry.lines.find(line => line.accountId === account.id)!;
-          return {
-            date: entry.date,
-            description: entry.description,
-            entryNumber: entry.number,
-            debit: line.debit,
-            credit: line.credit,
-          };
-        });
+    const ledger: GeneralLedgerAccount[] = accounts.map((account) => {
+      const priorRawBalance = priorMap.get(account.id) ?? 0;
+      const openingBalance =
+        account.nature === AccountNature.DEBIT ? priorRawBalance : -priorRawBalance;
 
-      let balance = 0;
-      const processedMovements = movements.map(movement => {
+      const movements = entries
+        .filter((entry) => entry.lines.some((line) => line.accountId === account.id))
+        .flatMap((entry) =>
+          entry.lines
+            .filter((line) => line.accountId === account.id)
+            .map((line) => ({
+              date: entry.date,
+              description: entry.description,
+              entryNumber: entry.number,
+              debit: line.debit,
+              credit: line.credit,
+            }))
+        );
+
+      let balance = openingBalance;
+      const processedMovements = movements.map((movement) => {
         const debit = Number(movement.debit);
         const credit = Number(movement.credit);
-        
-        // Actualizar balance según naturaleza de la cuenta
+
         if (account.nature === AccountNature.DEBIT) {
           balance += debit - credit;
         } else {
@@ -305,11 +312,8 @@ export async function getGeneralLedger(companyId: string, fromDate: Date, toDate
         };
       });
 
-      const totalDebit = movements.reduce((sum, movement) => sum + Number(movement.debit), 0);
-      const totalCredit = movements.reduce((sum, movement) => sum + Number(movement.credit), 0);
-      const finalBalance = account.nature === AccountNature.DEBIT
-        ? totalDebit - totalCredit
-        : totalCredit - totalDebit;
+      const totalDebit = movements.reduce((sum, m) => sum + Number(m.debit), 0);
+      const totalCredit = movements.reduce((sum, m) => sum + Number(m.credit), 0);
 
       return {
         id: account.id,
@@ -317,10 +321,11 @@ export async function getGeneralLedger(companyId: string, fromDate: Date, toDate
         name: account.name,
         type: account.type,
         nature: account.nature,
+        openingBalance,
         entries: processedMovements,
         totalDebit,
         totalCredit,
-        balance: finalBalance,
+        balance,
       };
     });
 
@@ -350,6 +355,7 @@ interface BalanceSheetResult {
   assets: BalanceSheetSection;
   liabilities: BalanceSheetSection;
   equity: BalanceSheetSection;
+  periodResult: number;
   totalAssets: number;
   totalLiabilitiesAndEquity: number;
   isBalanced: boolean;
@@ -370,22 +376,18 @@ export async function getBalanceSheet(companyId: string, asOfDate: Date) {
   try {
     logger.info('Generando Balance General', { data: { companyId, date } });
 
-    // Obtener todas las cuentas activas
     const accounts = await prisma.account.findMany({
-      where: {
-        companyId,
-        isActive: true,
-      },
+      where: { companyId, isActive: true },
       orderBy: { code: 'asc' },
     });
 
-    // Calcular saldos hasta la fecha
     const balancesMap = await calculateAllAccountBalances(companyId, date);
 
-    // Agrupar por tipo
     const assets: BalanceSheetAccount[] = [];
     const liabilities: BalanceSheetAccount[] = [];
     const equity: BalanceSheetAccount[] = [];
+    let revenueTotal = 0;
+    let expenseTotal = 0;
 
     for (const account of accounts) {
       const balance = balancesMap.get(account.id);
@@ -407,15 +409,23 @@ export async function getBalanceSheet(companyId: string, asOfDate: Date) {
         case AccountType.EQUITY:
           equity.push(accountData);
           break;
-        // REVENUE y EXPENSE no van en el Balance General
+        case AccountType.REVENUE:
+          // balance = debit - credit; revenue normal es negativo (más créditos)
+          revenueTotal += Math.abs(balance.balance);
+          break;
+        case AccountType.EXPENSE:
+          expenseTotal += balance.balance;
+          break;
       }
     }
 
-    // Calcular totales
+    // Resultado del ejercicio en curso (ingresos - gastos)
+    const periodResult = revenueTotal - expenseTotal;
+
     const totalAssets = assets.reduce((sum, acc) => sum + acc.balance, 0);
     const totalLiabilities = liabilities.reduce((sum, acc) => sum + acc.balance, 0);
     const totalEquity = equity.reduce((sum, acc) => sum + acc.balance, 0);
-    const totalLiabilitiesAndEquity = totalLiabilities + totalEquity;
+    const totalLiabilitiesAndEquity = totalLiabilities + totalEquity + periodResult;
 
     const result: BalanceSheetResult = {
       assets: {
@@ -433,6 +443,7 @@ export async function getBalanceSheet(companyId: string, asOfDate: Date) {
         accounts: equity,
         total: totalEquity,
       },
+      periodResult,
       totalAssets,
       totalLiabilitiesAndEquity,
       isBalanced: Math.abs(totalAssets - totalLiabilitiesAndEquity) < 0.01,
@@ -443,13 +454,14 @@ export async function getBalanceSheet(companyId: string, asOfDate: Date) {
       data: {
         totalAssets,
         totalLiabilitiesAndEquity,
+        periodResult,
         isBalanced: result.isBalanced,
-      }
+      },
     });
 
     if (!result.isBalanced) {
       logger.warn('Balance General desbalanceado', {
-        data: { difference: result.difference }
+        data: { difference: result.difference },
       });
     }
 
@@ -1378,6 +1390,7 @@ export async function getMonthlyVATReport(
         status: { in: ['CONFIRMED', 'PAID', 'PARTIAL_PAID'] },
       },
       select: {
+        voucherType: true,
         subtotal: true,
         vatAmount: true,
         total: true,
@@ -1399,6 +1412,7 @@ export async function getMonthlyVATReport(
         status: { in: ['CONFIRMED', 'PAID', 'PARTIAL_PAID'] },
       },
       select: {
+        voucherType: true,
         subtotal: true,
         vatAmount: true,
         total: true,
@@ -1412,41 +1426,61 @@ export async function getMonthlyVATReport(
       },
     });
 
-    // Calcular totales de ventas
+    // Calcular totales de ventas (NC restan, facturas y ND suman)
     const salesSummary = {
-      subtotal: salesInvoices.reduce((sum, inv) => sum + Number(inv.subtotal), 0),
-      vatAmount: salesInvoices.reduce((sum, inv) => sum + Number(inv.vatAmount), 0),
-      total: salesInvoices.reduce((sum, inv) => sum + Number(inv.total), 0),
+      subtotal: salesInvoices.reduce((sum, inv) => {
+        const sign = isCreditNote(inv.voucherType) ? -1 : 1;
+        return sum + Number(inv.subtotal) * sign;
+      }, 0),
+      vatAmount: salesInvoices.reduce((sum, inv) => {
+        const sign = isCreditNote(inv.voucherType) ? -1 : 1;
+        return sum + Number(inv.vatAmount) * sign;
+      }, 0),
+      total: salesInvoices.reduce((sum, inv) => {
+        const sign = isCreditNote(inv.voucherType) ? -1 : 1;
+        return sum + Number(inv.total) * sign;
+      }, 0),
       invoiceCount: salesInvoices.length,
     };
 
-    // Calcular totales de compras
+    // Calcular totales de compras (NC restan, facturas y ND suman)
     const purchasesSummary = {
-      subtotal: purchaseInvoices.reduce((sum, inv) => sum + Number(inv.subtotal), 0),
-      vatAmount: purchaseInvoices.reduce((sum, inv) => sum + Number(inv.vatAmount), 0),
-      total: purchaseInvoices.reduce((sum, inv) => sum + Number(inv.total), 0),
+      subtotal: purchaseInvoices.reduce((sum, inv) => {
+        const sign = isCreditNote(inv.voucherType) ? -1 : 1;
+        return sum + Number(inv.subtotal) * sign;
+      }, 0),
+      vatAmount: purchaseInvoices.reduce((sum, inv) => {
+        const sign = isCreditNote(inv.voucherType) ? -1 : 1;
+        return sum + Number(inv.vatAmount) * sign;
+      }, 0),
+      total: purchaseInvoices.reduce((sum, inv) => {
+        const sign = isCreditNote(inv.voucherType) ? -1 : 1;
+        return sum + Number(inv.total) * sign;
+      }, 0),
       invoiceCount: purchaseInvoices.length,
     };
 
-    // Agrupar IVA por alícuota
+    // Agrupar IVA por alícuota (con signo para NC)
     const rateMap = new Map<number, { salesBase: number; salesVAT: number; purchasesBase: number; purchasesVAT: number }>();
 
     for (const inv of salesInvoices) {
+      const sign = isCreditNote(inv.voucherType) ? -1 : 1;
       for (const line of inv.lines) {
         const rate = Number(line.vatRate);
         const existing = rateMap.get(rate) || { salesBase: 0, salesVAT: 0, purchasesBase: 0, purchasesVAT: 0 };
-        existing.salesBase += Number(line.subtotal);
-        existing.salesVAT += Number(line.vatAmount);
+        existing.salesBase += Number(line.subtotal) * sign;
+        existing.salesVAT += Number(line.vatAmount) * sign;
         rateMap.set(rate, existing);
       }
     }
 
     for (const inv of purchaseInvoices) {
+      const sign = isCreditNote(inv.voucherType) ? -1 : 1;
       for (const line of inv.lines) {
         const rate = Number(line.vatRate);
         const existing = rateMap.get(rate) || { salesBase: 0, salesVAT: 0, purchasesBase: 0, purchasesVAT: 0 };
-        existing.purchasesBase += Number(line.subtotal);
-        existing.purchasesVAT += Number(line.vatAmount);
+        existing.purchasesBase += Number(line.subtotal) * sign;
+        existing.purchasesVAT += Number(line.vatAmount) * sign;
         rateMap.set(rate, existing);
       }
     }

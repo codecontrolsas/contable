@@ -1,15 +1,19 @@
 'use server';
 
-import { type JournalEntryLine } from '@/generated/prisma/client';
 import { type CreateJournalEntryInput } from '../../../shared/types';
-import { type AccountWithChildren } from '../../../shared/types';
 import { prisma } from '@/shared/lib/prisma';
-import { toNumber, sum } from '../../../shared/utils/decimal';
+import { toNumber } from '../../../shared/utils/decimal';
+
+interface LineWithAmounts {
+  accountId: string;
+  debit: unknown;
+  credit: unknown;
+}
 
 /**
  * Valida que el asiento esté balanceado (Debe = Haber)
  */
-export async function validateJournalEntryBalance(lines: JournalEntryLine[] | CreateJournalEntryInput['lines']) {
+export async function validateJournalEntryBalance(lines: LineWithAmounts[]) {
   let totalDebit = 0;
   let totalCredit = 0;
 
@@ -48,7 +52,7 @@ export async function validateJournalEntryBalance(lines: JournalEntryLine[] | Cr
 }
 
 /**
- * Valida que las cuentas existan y pertenezcan a la empresa
+ * Valida que las cuentas existan, pertenezcan a la empresa y sean imputables (hojas)
  */
 export async function validateJournalEntryAccounts(companyId: string, accountIds: string[]) {
   const accounts = await prisma.account.findMany({
@@ -56,19 +60,68 @@ export async function validateJournalEntryAccounts(companyId: string, accountIds
       id: { in: accountIds },
       companyId,
       isActive: true
-    }
+    },
+    select: {
+      id: true,
+      code: true,
+      name: true,
+      nature: true,
+      isLeaf: true,
+      requiresAuxiliary: true,
+    },
   });
 
   if (accounts.length !== accountIds.length) {
     throw new Error('Una o más cuentas no existen o no pertenecen a la empresa');
   }
 
+  const nonLeafAccounts = accounts.filter(a => !a.isLeaf);
+  if (nonLeafAccounts.length > 0) {
+    throw new Error(
+      `Las siguientes cuentas no son imputables (tienen subcuentas): ${nonLeafAccounts.map(a => a.code).join(', ')}`
+    );
+  }
+
   return accounts;
 }
 
 /**
+ * Valida auxiliares requeridos en las líneas del asiento.
+ * Debe llamarse DESPUÉS de validateJournalEntryAccounts para tener las cuentas cargadas.
+ */
+export async function validateAuxiliaries(
+  companyId: string,
+  lines: CreateJournalEntryInput['lines'],
+  accounts: { id: string; code: string; requiresAuxiliary: string | null }[]
+) {
+  for (const line of lines) {
+    const account = accounts.find(a => a.id === line.accountId);
+    if (!account?.requiresAuxiliary) continue;
+
+    const lineRef = `cuenta ${account.code}`;
+    switch (account.requiresAuxiliary) {
+      case 'CUSTOMER':
+        if (!line.customerId) {
+          throw new Error(`La ${lineRef} requiere un cliente como auxiliar`);
+        }
+        break;
+      case 'SUPPLIER':
+        if (!line.supplierId) {
+          throw new Error(`La ${lineRef} requiere un proveedor como auxiliar`);
+        }
+        break;
+      case 'COST_CENTER':
+        if (!line.costCenterId) {
+          throw new Error(`La ${lineRef} requiere un centro de costo como auxiliar`);
+        }
+        break;
+    }
+  }
+}
+
+/**
  * Valida que la fecha no esté en un período bloqueado.
- * Puede recibir settings ya cargados para evitar query duplicada.
+ * Usa el modelo AccountingPeriod si hay períodos creados; fallback a lockedUntilDate.
  */
 export async function validatePeriodLock(
   companyId: string,
@@ -76,14 +129,35 @@ export async function validatePeriodLock(
   settings?: { lockedUntilDate: Date | null } | null
 ) {
   const moment = require('moment');
+  const entryDate = moment(date);
 
+  const period = await prisma.accountingPeriod.findFirst({
+    where: {
+      fiscalYear: { companyId },
+      year: entryDate.year(),
+      month: entryDate.month() + 1,
+      type: 'MONTHLY',
+    },
+    select: { isClosed: true },
+  });
+
+  if (period) {
+    if (period.isClosed) {
+      throw new Error(
+        `No se puede operar en el período ${entryDate.format('MM/YYYY')}. ` +
+        `El período está cerrado.`
+      );
+    }
+    return;
+  }
+
+  // Fallback: lockedUntilDate (backward compat)
   const lockSettings = settings ?? await prisma.accountingSettings.findUnique({
     where: { companyId },
     select: { lockedUntilDate: true },
   });
 
   if (lockSettings?.lockedUntilDate) {
-    const entryDate = moment(date);
     const lockDate = moment(lockSettings.lockedUntilDate);
 
     if (entryDate.isSameOrBefore(lockDate, 'day')) {
@@ -96,12 +170,34 @@ export async function validatePeriodLock(
 }
 
 /**
- * Valida que la fecha del asiento esté dentro del ejercicio fiscal
+ * Valida que la fecha del asiento esté dentro de un ejercicio fiscal abierto.
+ * Usa FiscalYear si existe; fallback a AccountingSettings.
  */
 export async function validateJournalEntryDate(companyId: string, date: Date) {
   const moment = require('moment');
   const { logger } = require('@/shared/lib/logger');
+  const entryDate = moment(date);
 
+  const fiscalYear = await prisma.fiscalYear.findFirst({
+    where: {
+      companyId,
+      startDate: { lte: date },
+      endDate: { gte: date },
+    },
+    select: { id: true, isClosed: true, startDate: true, endDate: true },
+  });
+
+  if (fiscalYear) {
+    if (fiscalYear.isClosed) {
+      throw new Error(
+        `El ejercicio fiscal (${moment(fiscalYear.startDate).format('DD/MM/YYYY')} - ${moment(fiscalYear.endDate).format('DD/MM/YYYY')}) está cerrado`
+      );
+    }
+    await validatePeriodLock(companyId, date);
+    return;
+  }
+
+  // Fallback: usar AccountingSettings
   const settings = await prisma.accountingSettings.findUnique({
     where: { companyId }
   });
@@ -110,7 +206,6 @@ export async function validateJournalEntryDate(companyId: string, date: Date) {
     throw new Error('No se encontró configuración contable para la empresa');
   }
 
-  const entryDate = moment(date);
   const fiscalStart = moment(settings.fiscalYearStart);
   const fiscalEnd = moment(settings.fiscalYearEnd);
 
@@ -121,10 +216,8 @@ export async function validateJournalEntryDate(companyId: string, date: Date) {
     );
   }
 
-  // Validar bloqueo de período
   await validatePeriodLock(companyId, date, settings);
 
-  // Advertir si la fecha es muy antigua (más de 6 meses)
   if (entryDate.isBefore(moment().subtract(6, 'months'))) {
     logger.warn('Asiento con fecha antigua', {
       data: {
@@ -139,7 +232,7 @@ export async function validateJournalEntryDate(companyId: string, date: Date) {
 /**
  * Valida que los montos sean positivos
  */
-export async function validateJournalEntryAmounts(lines: JournalEntryLine[] | CreateJournalEntryInput['lines']) {
+export async function validateJournalEntryAmounts(lines: LineWithAmounts[]) {
   for (const line of lines) {
     if (toNumber(line.debit) < 0 || toNumber(line.credit) < 0) {
       throw new Error('Los montos deben ser positivos');
@@ -161,7 +254,7 @@ export async function validateJournalEntryAmounts(lines: JournalEntryLine[] | Cr
  */
 export async function validateAccountNatures(
   companyId: string,
-  lines: JournalEntryLine[] | CreateJournalEntryInput['lines']
+  lines: LineWithAmounts[]
 ) {
   const { logger } = require('@/shared/lib/logger');
 
@@ -183,7 +276,6 @@ export async function validateAccountNatures(
     const debit = toNumber(line.debit);
     const credit = toNumber(line.credit);
 
-    // Cuenta de naturaleza DEBIT con más crédito que débito
     if (account.nature === 'DEBIT' && credit > debit) {
       warnings.push(
         `Cuenta "${account.code} - ${account.name}" tiene naturaleza deudora ` +
@@ -191,7 +283,6 @@ export async function validateAccountNatures(
       );
     }
 
-    // Cuenta de naturaleza CREDIT con más débito que crédito
     if (account.nature === 'CREDIT' && debit > credit) {
       warnings.push(
         `Cuenta "${account.code} - ${account.name}" tiene naturaleza acreedora ` +
@@ -207,4 +298,39 @@ export async function validateAccountNatures(
   }
 
   return warnings;
+}
+
+/**
+ * Resuelve el fiscalYearId y periodId para una fecha dada.
+ * Retorna null si no se encuentra ejercicio (no bloquea, el asiento queda sin período).
+ */
+export async function resolveFiscalPeriod(companyId: string, date: Date) {
+  const moment = require('moment');
+  const entryDate = moment(date);
+
+  const fiscalYear = await prisma.fiscalYear.findFirst({
+    where: {
+      companyId,
+      startDate: { lte: date },
+      endDate: { gte: date },
+    },
+    select: { id: true },
+  });
+
+  if (!fiscalYear) return null;
+
+  const period = await prisma.accountingPeriod.findFirst({
+    where: {
+      fiscalYearId: fiscalYear.id,
+      year: entryDate.year(),
+      month: entryDate.month() + 1,
+      type: 'MONTHLY',
+    },
+    select: { id: true },
+  });
+
+  return {
+    fiscalYearId: fiscalYear.id,
+    periodId: period?.id ?? null,
+  };
 }

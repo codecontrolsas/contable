@@ -539,6 +539,10 @@ export async function confirmExpense(id: string): Promise<{
           });
         }
       } catch (error) {
+        // Re-lanzar errores de período bloqueado (el usuario debe saberlo)
+        if (error instanceof Error && error.message.includes('período está cerrado')) {
+          throw error;
+        }
         logger.warn('No se pudo crear asiento contable para gasto', {
           data: { expenseId: id, error },
         });
