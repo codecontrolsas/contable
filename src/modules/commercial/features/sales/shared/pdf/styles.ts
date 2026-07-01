@@ -164,6 +164,14 @@ export const styles = StyleSheet.create({
     fontSize: 11,
   },
 
+  // Régimen de Transparencia Fiscal (Ley 27.743) - Factura B
+  taxTransparency: {
+    marginTop: 8,
+    paddingTop: 6,
+    borderTopWidth: 0.5,
+    borderTopColor: '#999',
+  },
+
   // Footer con CAE
   footer: {
     marginTop: 30,

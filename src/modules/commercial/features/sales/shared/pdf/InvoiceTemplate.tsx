@@ -36,10 +36,17 @@ export function InvoiceTemplate({ data }: InvoiceTemplateProps) {
     linkedDocuments,
   } = data;
   const isTypeA = invoice.type === 'A';
+  const isTypeB = invoice.type === 'B';
   const effectiveNotes = notes || notesDefault;
   const hasAnyDiscount = lines.some(
     (l) => (l.discountPercent && l.discountPercent > 0) || (l.discountAmount && l.discountAmount > 0)
   );
+  // Factura B: los importes se muestran con IVA incluido (Régimen de
+  // Transparencia Fiscal al Consumidor - Ley 27.743). El "IVA Contenido" es el
+  // IVA ya incluido en el precio final (totals.vatAmount).
+  const grossUnitPrice = (unitPrice: number, vatRate: number) =>
+    Math.round(unitPrice * (1 + vatRate / 100) * 100) / 100;
+  const grossSubtotal = totals.subtotal + totals.vatAmount;
 
   return (
     <Document>
@@ -151,8 +158,8 @@ export function InvoiceTemplate({ data }: InvoiceTemplateProps) {
             <Text style={styles.col5}>P. Unit.</Text>
             {hasAnyDiscount && <Text style={styles.colDto}>Dto.</Text>}
             {isTypeA && <Text style={styles.col6}>IVA %</Text>}
-            <Text style={styles.col7}>Subtotal</Text>
-            <Text style={styles.col8}>Total</Text>
+            {isTypeA && <Text style={styles.col7}>Subtotal</Text>}
+            <Text style={styles.col8}>Subtotal</Text>
           </View>
 
           {lines.map((line, index) => (
@@ -161,7 +168,9 @@ export function InvoiceTemplate({ data }: InvoiceTemplateProps) {
               <Text style={styles.col2}>{line.description}</Text>
               <Text style={styles.col3}>{fmtNum(line.quantity, 3)}</Text>
               <Text style={styles.col4}>{line.unitOfMeasure}</Text>
-              <Text style={styles.col5}>${fmtNum(line.unitPrice)}</Text>
+              <Text style={styles.col5}>
+                ${fmtNum(isTypeB ? grossUnitPrice(line.unitPrice, line.vatRate) : line.unitPrice)}
+              </Text>
               {hasAnyDiscount && (
                 <Text style={styles.colDto}>
                   {line.discountPercent && line.discountPercent > 0
@@ -172,7 +181,8 @@ export function InvoiceTemplate({ data }: InvoiceTemplateProps) {
                 </Text>
               )}
               {isTypeA && <Text style={styles.col6}>{fmtNum(line.vatRate)}%</Text>}
-              <Text style={styles.col7}>${fmtNum(line.subtotal)}</Text>
+              {isTypeA && <Text style={styles.col7}>${fmtNum(line.subtotal)}</Text>}
+              {/* Tipo B: importe con IVA incluido; tipo C: importe sin IVA */}
               <Text style={styles.col8}>${fmtNum(line.total)}</Text>
             </View>
           ))}
@@ -180,7 +190,7 @@ export function InvoiceTemplate({ data }: InvoiceTemplateProps) {
 
         {/* TOTALES */}
         <View style={styles.totalsSection}>
-          {totals.discountTotal != null && totals.discountTotal > 0 && (
+          {!isTypeB && totals.discountTotal != null && totals.discountTotal > 0 && (
             <>
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>Subtotal (antes dto):</Text>
@@ -194,6 +204,26 @@ export function InvoiceTemplate({ data }: InvoiceTemplateProps) {
                   -${totals.discountTotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                 </Text>
               </View>
+            </>
+          )}
+
+          {/* Factura B: subtotal con IVA incluido */}
+          {isTypeB && (
+            <>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Subtotal:</Text>
+                <Text style={styles.totalValue}>
+                  ${grossSubtotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                </Text>
+              </View>
+              {totals.otherTaxes > 0 && (
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>Importe Otros Tributos:</Text>
+                  <Text style={styles.totalValue}>
+                    ${totals.otherTaxes.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                  </Text>
+                </View>
+              )}
             </>
           )}
 
@@ -235,6 +265,21 @@ export function InvoiceTemplate({ data }: InvoiceTemplateProps) {
             <Text>TOTAL:</Text>
             <Text>${totals.total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</Text>
           </View>
+
+          {/* Régimen de Transparencia Fiscal al Consumidor (Ley 27.743) */}
+          {isTypeB && (
+            <View style={styles.taxTransparency}>
+              <Text style={[styles.bold, { fontSize: 8, fontStyle: 'italic', marginBottom: 3 }]}>
+                Régimen de Transparencia Fiscal al Consumidor (Ley 27.743)
+              </Text>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>IVA Contenido:</Text>
+                <Text style={styles.totalValue}>
+                  ${totals.vatAmount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                </Text>
+              </View>
+            </View>
+          )}
         </View>
 
         {/* OBSERVACIONES */}

@@ -293,6 +293,16 @@ export function _CommercialGuide() {
             campo <strong>Factura original</strong> que vincula ambos
             comprobantes.
           </p>
+
+          <p className="mt-3 text-sm text-muted-foreground">
+            <strong>Factura B (Régimen de Transparencia Fiscal - Ley 27.743):</strong>{' '}
+            en las facturas tipo B los importes se muestran con el{' '}
+            <strong>IVA incluido</strong> (como los ve el consumidor) y el sistema
+            informa por separado el <strong>IVA Contenido</strong> en el precio,
+            tanto en el detalle de la factura como en el PDF. Al cargar las líneas
+            seguís ingresando el <strong>precio sin IVA</strong>; el sistema calcula
+            el IVA contenido automáticamente.
+          </p>
         </CardContent>
       </Card>
 

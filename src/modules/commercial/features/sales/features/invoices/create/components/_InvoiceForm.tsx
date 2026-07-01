@@ -653,6 +653,8 @@ export function InvoiceForm({ customers, pointsOfSale, products, mode = 'create'
 
   // Facturas tipo C no llevan IVA — forzar 0% en todas las líneas
   const isTypeC = watchedVoucherType?.endsWith('_C') || false;
+  // Factura B: importes con IVA incluido (Régimen de Transparencia Fiscal - Ley 27.743)
+  const isTypeB = watchedVoucherType?.endsWith('_B') || false;
 
   useEffect(() => {
     if (!isTypeC) return;
@@ -1102,19 +1104,41 @@ export function InvoiceForm({ customers, pointsOfSale, products, mode = 'create'
                   )}
                 </>
               )}
-              <div className="flex justify-between">
-                <span>Base Imponible:</span>
-                <span className="font-mono">{formatCurrency(totals.subtotal)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>IVA:</span>
-                <span className="font-mono">{formatCurrency(totals.vatAmount)}</span>
-              </div>
+              {isTypeB ? (
+                <div className="flex justify-between">
+                  <span>Subtotal:</span>
+                  <span className="font-mono">
+                    {formatCurrency(totals.subtotal + totals.vatAmount)}
+                  </span>
+                </div>
+              ) : (
+                <>
+                  <div className="flex justify-between">
+                    <span>Base Imponible:</span>
+                    <span className="font-mono">{formatCurrency(totals.subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>IVA:</span>
+                    <span className="font-mono">{formatCurrency(totals.vatAmount)}</span>
+                  </div>
+                </>
+              )}
               <Separator />
               <div className="flex justify-between text-lg font-semibold">
                 <span>Total:</span>
                 <span className="font-mono">{formatCurrency(totals.total)}</span>
               </div>
+              {isTypeB && (
+                <div className="mt-2 border-t pt-2">
+                  <p className="text-xs italic text-muted-foreground">
+                    Régimen de Transparencia Fiscal al Consumidor (Ley 27.743)
+                  </p>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">IVA Contenido:</span>
+                    <span className="font-mono">{formatCurrency(totals.vatAmount)}</span>
+                  </div>
+                </div>
+              )}
             </div>
           </Card>
         )}
