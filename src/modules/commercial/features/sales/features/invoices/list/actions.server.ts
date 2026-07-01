@@ -435,6 +435,10 @@ function calculateLineAmounts(
   vatRate: number,
   discountPercent: number | null,
   discountAmount: number | null,
+  // Factura B (Régimen de Transparencia Fiscal - Ley 27.743): el precio ingresado
+  // ya incluye el IVA. El total del ítem = precio, y el IVA "contenido" se extrae
+  // del total (total - total/(1+alícuota)).
+  vatIncluded = false,
 ): {
   baseAmount: number;
   discountValue: number;
@@ -449,6 +453,19 @@ function calculateLineAmounts(
     discountValue = baseAmount * (discountPercent / 100);
   } else if (discountAmount != null && discountAmount > 0) {
     discountValue = Math.min(discountAmount, baseAmount);
+  }
+
+  if (vatIncluded) {
+    const total = Math.round((baseAmount - discountValue) * 100) / 100;
+    const subtotal = Math.round((total / (1 + vatRate / 100)) * 100) / 100;
+    const vatAmount = Math.round((total - subtotal) * 100) / 100;
+    return {
+      baseAmount: Math.round(baseAmount * 100) / 100,
+      discountValue: Math.round(discountValue * 100) / 100,
+      subtotal,
+      vatAmount,
+      total,
+    };
   }
 
   const subtotal = baseAmount - discountValue;
@@ -479,9 +496,39 @@ function calculateGlobalDiscount(
 }
 
 function calculateInvoiceTotalsWithGlobalDiscount(
-  linesData: Array<{ subtotal: number; vatRate: number }>,
+  linesData: Array<{ subtotal: number; vatRate: number; total: number }>,
   globalDiscount: number,
+  // Factura B: los importes de línea vienen con IVA incluido (total = gross);
+  // el descuento global se aplica sobre el gross y el neto/IVA se re-extrae.
+  vatIncluded = false,
 ): { invoiceSubtotal: number; invoiceVatAmount: number } {
+  if (vatIncluded) {
+    const sumLineGross = linesData.reduce((acc, l) => acc + l.total, 0);
+
+    if (globalDiscount <= 0 || sumLineGross <= 0) {
+      return {
+        invoiceSubtotal: Math.round(linesData.reduce((acc, l) => acc + l.subtotal, 0) * 100) / 100,
+        invoiceVatAmount:
+          Math.round(linesData.reduce((acc, l) => acc + (l.total - l.subtotal), 0) * 100) / 100,
+      };
+    }
+
+    let invoiceSubtotal = 0;
+    let invoiceVatAmount = 0;
+    for (const line of linesData) {
+      const weight = line.total / sumLineGross;
+      const grossAfterDiscount = line.total - globalDiscount * weight;
+      const net = grossAfterDiscount / (1 + line.vatRate / 100);
+      invoiceSubtotal += net;
+      invoiceVatAmount += grossAfterDiscount - net;
+    }
+
+    return {
+      invoiceSubtotal: Math.round(invoiceSubtotal * 100) / 100,
+      invoiceVatAmount: Math.round(invoiceVatAmount * 100) / 100,
+    };
+  }
+
   const sumLineSubtotals = linesData.reduce((acc, l) => acc + l.subtotal, 0);
 
   if (globalDiscount <= 0 || sumLineSubtotals <= 0) {
@@ -624,6 +671,8 @@ export async function createInvoice(data: unknown) {
     const fullNumber = `${pointOfSale.number.toString().padStart(4, '0')}-${nextNumber.toString().padStart(8, '0')}`;
 
     // Calcular totales
+    // Factura B: el precio ingresado incluye IVA (Régimen de Transparencia Fiscal - Ley 27.743)
+    const vatIncluded = validatedData.voucherType.includes('_B');
     let totalLineDiscounts = 0;
 
     const linesData = validatedData.lines.map((line) => {
@@ -633,6 +682,7 @@ export async function createInvoice(data: unknown) {
         line.vatRate,
         line.discountPercent,
         line.discountAmount,
+        vatIncluded,
       );
 
       totalLineDiscounts += amounts.discountValue;
@@ -652,9 +702,12 @@ export async function createInvoice(data: unknown) {
     });
 
     const sumLineSubtotals = linesData.reduce((acc, l) => acc + Number(l.subtotal), 0);
+    const sumLineGross = linesData.reduce((acc, l) => acc + Number(l.total), 0);
+    // El descuento global se aplica sobre el neto (A/C) o sobre el gross (B)
+    const discountBase = vatIncluded ? sumLineGross : sumLineSubtotals;
 
     const globalDiscount = calculateGlobalDiscount(
-      sumLineSubtotals,
+      discountBase,
       validatedData.globalDiscountPercent,
       validatedData.globalDiscountAmount,
     );
@@ -663,12 +716,14 @@ export async function createInvoice(data: unknown) {
       validatedData.lines.map((line, i) => ({
         subtotal: Number(linesData[i].subtotal),
         vatRate: line.vatRate,
+        total: Number(linesData[i].total),
       })),
       globalDiscount,
+      vatIncluded,
     );
 
     const invoiceTotal = invoiceSubtotal + invoiceVatAmount;
-    const totalBeforeDiscount = sumLineSubtotals;
+    const totalBeforeDiscount = discountBase;
     const discountTotal = totalLineDiscounts + globalDiscount;
 
     // Crear factura en transacción
@@ -1044,6 +1099,8 @@ export async function updateInvoice(id: string, data: unknown) {
     }
 
     // Calcular totales
+    // Factura B: el precio ingresado incluye IVA (Régimen de Transparencia Fiscal - Ley 27.743)
+    const vatIncluded = validatedData.voucherType.includes('_B');
     let totalLineDiscounts = 0;
 
     const linesData = validatedData.lines.map((line) => {
@@ -1053,6 +1110,7 @@ export async function updateInvoice(id: string, data: unknown) {
         line.vatRate,
         line.discountPercent,
         line.discountAmount,
+        vatIncluded,
       );
       totalLineDiscounts += amounts.discountValue;
 
@@ -1071,9 +1129,12 @@ export async function updateInvoice(id: string, data: unknown) {
     });
 
     const sumLineSubtotals = linesData.reduce((acc, l) => acc + Number(l.subtotal), 0);
+    const sumLineGross = linesData.reduce((acc, l) => acc + Number(l.total), 0);
+    // El descuento global se aplica sobre el neto (A/C) o sobre el gross (B)
+    const discountBase = vatIncluded ? sumLineGross : sumLineSubtotals;
 
     const globalDiscount = calculateGlobalDiscount(
-      sumLineSubtotals,
+      discountBase,
       validatedData.globalDiscountPercent,
       validatedData.globalDiscountAmount,
     );
@@ -1082,12 +1143,14 @@ export async function updateInvoice(id: string, data: unknown) {
       validatedData.lines.map((line, i) => ({
         subtotal: Number(linesData[i].subtotal),
         vatRate: line.vatRate,
+        total: Number(linesData[i].total),
       })),
       globalDiscount,
+      vatIncluded,
     );
 
     const invoiceTotal = invoiceSubtotal + invoiceVatAmount;
-    const totalBeforeDiscount = sumLineSubtotals;
+    const totalBeforeDiscount = discountBase;
     const discountTotal = totalLineDiscounts + globalDiscount;
 
     const result = await prisma.$transaction(async (tx) => {

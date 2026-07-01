@@ -22,10 +22,9 @@ interface InvoiceDetailProps {
 export async function InvoiceDetail({ id }: InvoiceDetailProps) {
   const invoice: Invoice = await getInvoiceById(id);
 
-  // Factura B: importes con IVA incluido (Régimen de Transparencia Fiscal - Ley 27.743)
+  // Factura B: importes con IVA incluido (Régimen de Transparencia Fiscal - Ley 27.743).
+  // El precio ingresado ya incluye IVA; el subtotal con IVA equivale al total.
   const isTypeB = invoice.voucherType.includes('_B');
-  const grossUnitPrice = (unitPrice: number, vatRate: number) =>
-    Math.round(unitPrice * (1 + vatRate / 100) * 100) / 100;
   const grossSubtotal = Number(invoice.subtotal) + Number(invoice.vatAmount);
 
   const getStatusBadge = (status: string) => {
@@ -193,11 +192,7 @@ export async function InvoiceDetail({ id }: InvoiceDetailProps) {
                     {Number(line.quantity).toFixed(3)} {line.product.unitOfMeasure}
                   </td>
                   <td className="py-3 text-right font-mono">
-                    $
-                    {(isTypeB
-                      ? grossUnitPrice(Number(line.unitPrice), Number(line.vatRate))
-                      : Number(line.unitPrice)
-                    ).toFixed(2)}
+                    ${Number(line.unitPrice).toFixed(2)}
                   </td>
                   <td className="py-3 text-right font-mono">
                     {line.discountPercent

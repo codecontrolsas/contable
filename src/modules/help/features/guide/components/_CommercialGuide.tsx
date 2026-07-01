@@ -296,12 +296,13 @@ export function _CommercialGuide() {
 
           <p className="mt-3 text-sm text-muted-foreground">
             <strong>Factura B (Régimen de Transparencia Fiscal - Ley 27.743):</strong>{' '}
-            en las facturas tipo B los importes se muestran con el{' '}
-            <strong>IVA incluido</strong> (como los ve el consumidor) y el sistema
-            informa por separado el <strong>IVA Contenido</strong> en el precio,
-            tanto en el detalle de la factura como en el PDF. Al cargar las líneas
-            seguís ingresando el <strong>precio sin IVA</strong>; el sistema calcula
-            el IVA contenido automáticamente.
+            en las facturas tipo B el <strong>precio que cargás ya incluye el IVA</strong>{' '}
+            (es el precio final que paga el consumidor), por lo que el{' '}
+            <strong>total del ítem es igual al precio unitario</strong>. El sistema
+            extrae y muestra por separado el <strong>IVA Contenido</strong> (ese IVA
+            se computa para tu posición de IVA pero no se le suma al cliente), tanto
+            en el detalle como en el PDF. En cambio, en Factura A el precio se carga
+            sin IVA y el sistema lo agrega.
           </p>
         </CardContent>
       </Card>

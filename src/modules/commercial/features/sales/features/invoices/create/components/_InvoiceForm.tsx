@@ -57,6 +57,7 @@ interface InvoiceLineRowProps {
   onProductSelect: (index: number, productId: string) => void;
   onRemove: () => void;
   isTypeC: boolean;
+  isTypeB: boolean;
 }
 
 function _InvoiceLineRow({
@@ -67,6 +68,7 @@ function _InvoiceLineRow({
   onProductSelect,
   onRemove,
   isTypeC,
+  isTypeB,
 }: InvoiceLineRowProps) {
   const line = useWatch({ control: form.control, name: `lines.${index}` });
 
@@ -85,9 +87,19 @@ function _InvoiceLineRow({
     discountValue = Math.round(Math.min(dtoAmount, baseAmount) * 100) / 100;
   }
 
-  const neto = Math.round((baseAmount - discountValue) * 100) / 100;
-  const iva = isNaN(vat) ? 0 : Math.round(neto * (vat / 100) * 100) / 100;
-  const total = Math.round((neto + iva) * 100) / 100;
+  // Factura B: el precio ingresado ya incluye IVA; el total = precio y el neto/IVA se extraen
+  let neto: number;
+  let iva: number;
+  let total: number;
+  if (isTypeB) {
+    total = Math.round((baseAmount - discountValue) * 100) / 100;
+    neto = isNaN(vat) ? total : Math.round((total / (1 + vat / 100)) * 100) / 100;
+    iva = Math.round((total - neto) * 100) / 100;
+  } else {
+    neto = Math.round((baseAmount - discountValue) * 100) / 100;
+    iva = isNaN(vat) ? 0 : Math.round(neto * (vat / 100) * 100) / 100;
+    total = Math.round((neto + iva) * 100) / 100;
+  }
 
   const selectedProduct = products.find((p) => p.id === line?.productId);
 
@@ -547,11 +559,15 @@ export function InvoiceForm({ customers, pointsOfSale, products, mode = 'create'
   useEffect(() => {
     const subscription = form.watch((value) => {
       if (value.lines) {
+        // Factura B: el precio ingresado ya incluye IVA (Ley 27.743)
+        const vatIncluded = (value.voucherType ?? '').includes('_B');
         let subtotalBeforeDiscount = 0;
         let totalLineDiscounts = 0;
         let vatAmount = 0;
+        let netSum = 0;
 
-        // Calcular subtotales por línea con descuentos
+        // Calcular importes por línea con descuentos.
+        // lineAmount = base - descuento (neto para A/C, gross para B)
         const lineDetails = value.lines.map((line) => {
           const qty = parseFloat(line?.quantity ?? '0');
           const price = parseFloat(line?.unitPrice ?? '0');
@@ -568,42 +584,49 @@ export function InvoiceForm({ customers, pointsOfSale, products, mode = 'create'
             discountValue = Math.round(Math.min(dtoAmount, baseAmount) * 100) / 100;
           }
 
-          const lineSubtotal = Math.round((baseAmount - discountValue) * 100) / 100;
+          const lineAmount = Math.round((baseAmount - discountValue) * 100) / 100;
 
           subtotalBeforeDiscount += baseAmount;
           totalLineDiscounts += discountValue;
 
-          return { lineSubtotal, vat: isNaN(vat) ? 0 : vat };
+          return { lineAmount, vat: isNaN(vat) ? 0 : vat };
         });
 
-        const sumLineSubtotals = Math.round(lineDetails.reduce((s, l) => s + l.lineSubtotal, 0) * 100) / 100;
+        const sumLineAmounts = Math.round(lineDetails.reduce((s, l) => s + l.lineAmount, 0) * 100) / 100;
 
-        // Descuento global
+        // Descuento global (sobre neto en A/C, sobre gross en B)
         const globalDtoPercent = parseFloat(value.globalDiscountPercent ?? '0');
         const globalDtoAmount = parseFloat(value.globalDiscountAmount ?? '0');
         let globalDiscount = 0;
         if (!isNaN(globalDtoPercent) && globalDtoPercent > 0) {
-          globalDiscount = Math.round(sumLineSubtotals * (globalDtoPercent / 100) * 100) / 100;
+          globalDiscount = Math.round(sumLineAmounts * (globalDtoPercent / 100) * 100) / 100;
         } else if (!isNaN(globalDtoAmount) && globalDtoAmount > 0) {
-          globalDiscount = Math.round(Math.min(globalDtoAmount, sumLineSubtotals) * 100) / 100;
+          globalDiscount = Math.round(Math.min(globalDtoAmount, sumLineAmounts) * 100) / 100;
         }
 
-        // Distribuir descuento global proporcionalmente para calcular IVA
+        // Distribuir descuento global proporcionalmente y calcular neto/IVA
         lineDetails.forEach((line) => {
-          const weight = sumLineSubtotals > 0 ? line.lineSubtotal / sumLineSubtotals : 0;
-          const lineGlobalDiscount = globalDiscount * weight;
-          const adjustedSubtotal = Math.max(line.lineSubtotal - lineGlobalDiscount, 0);
-          vatAmount += adjustedSubtotal * (line.vat / 100);
+          const weight = sumLineAmounts > 0 ? line.lineAmount / sumLineAmounts : 0;
+          const afterGlobal = Math.max(line.lineAmount - globalDiscount * weight, 0);
+          if (vatIncluded) {
+            const net = afterGlobal / (1 + line.vat / 100);
+            netSum += net;
+            vatAmount += afterGlobal - net;
+          } else {
+            netSum += afterGlobal;
+            vatAmount += afterGlobal * (line.vat / 100);
+          }
         });
 
-        const subtotal = Math.round((sumLineSubtotals - globalDiscount) * 100) / 100;
+        const subtotal = Math.round(netSum * 100) / 100;
+        vatAmount = Math.round(vatAmount * 100) / 100;
 
         setTotals({
           subtotalBeforeDiscount: Math.round(subtotalBeforeDiscount * 100) / 100,
           lineDiscounts: Math.round(totalLineDiscounts * 100) / 100,
           globalDiscount: Math.round(globalDiscount * 100) / 100,
-          subtotal: Math.round(subtotal * 100) / 100,
-          vatAmount: Math.round(vatAmount * 100) / 100,
+          subtotal,
+          vatAmount,
           total: Math.round((subtotal + vatAmount) * 100) / 100,
         });
       }
@@ -969,6 +992,7 @@ export function InvoiceForm({ customers, pointsOfSale, products, mode = 'create'
                     onProductSelect={handleProductSelect}
                     onRemove={() => remove(index)}
                     isTypeC={isTypeC}
+                    isTypeB={isTypeB}
                   />
                 ))}
               </div>
