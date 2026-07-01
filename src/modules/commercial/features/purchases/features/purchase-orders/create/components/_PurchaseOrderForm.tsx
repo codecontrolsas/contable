@@ -82,14 +82,6 @@ export function _PurchaseOrderForm({
 }: PurchaseOrderFormProps) {
   const router = useRouter();
   const [totals, setTotals] = useState({ subtotal: 0, vatAmount: 0, total: 0 });
-  const watchedSupplierId = form.watch('supplierId');
-
-  const sortedProducts = useMemo(() => {
-    if (!watchedSupplierId) return products;
-    const supplierProducts = products.filter((p: any) => p.supplierIds?.includes(watchedSupplierId));
-    const otherProducts = products.filter((p: any) => !p.supplierIds?.includes(watchedSupplierId));
-    return [...supplierProducts, ...otherProducts];
-  }, [products, watchedSupplierId]);
 
   const form = useForm<PurchaseOrderFormInput>({
     resolver: zodResolver(purchaseOrderFormSchema),
@@ -106,6 +98,15 @@ export function _PurchaseOrderForm({
       installments: [],
     },
   });
+
+  const watchedSupplierId = form.watch('supplierId');
+
+  const sortedProducts = useMemo(() => {
+    if (!watchedSupplierId) return products;
+    const supplierProducts = products.filter((p) => p.supplierIds?.includes(watchedSupplierId));
+    const otherProducts = products.filter((p) => !p.supplierIds?.includes(watchedSupplierId));
+    return [...supplierProducts, ...otherProducts];
+  }, [products, watchedSupplierId]);
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -326,7 +327,7 @@ export function _PurchaseOrderForm({
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent position="popper" className="max-h-[250px]">
-                            {sortedProducts.map((product: any) => {
+                            {sortedProducts.map((product) => {
                               const isSupplierProduct = watchedSupplierId && product.supplierIds?.includes(watchedSupplierId);
                               return (
                                 <SelectItem key={product.id} value={product.id}>
