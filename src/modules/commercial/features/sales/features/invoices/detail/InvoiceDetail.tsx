@@ -22,6 +22,12 @@ interface InvoiceDetailProps {
 export async function InvoiceDetail({ id }: InvoiceDetailProps) {
   const invoice: Invoice = await getInvoiceById(id);
 
+  // Factura B: importes con IVA incluido (Régimen de Transparencia Fiscal - Ley 27.743)
+  const isTypeB = invoice.voucherType.includes('_B');
+  const grossUnitPrice = (unitPrice: number, vatRate: number) =>
+    Math.round(unitPrice * (1 + vatRate / 100) * 100) / 100;
+  const grossSubtotal = Number(invoice.subtotal) + Number(invoice.vatAmount);
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'DRAFT':
@@ -169,10 +175,10 @@ export async function InvoiceDetail({ id }: InvoiceDetailProps) {
                 <th className="pb-3 text-right">Cantidad</th>
                 <th className="pb-3 text-right">Precio Unit.</th>
                 <th className="pb-3 text-right">Dto.</th>
-                <th className="pb-3 text-right">IVA %</th>
-                <th className="pb-3 text-right">Subtotal</th>
-                <th className="pb-3 text-right">IVA</th>
-                <th className="pb-3 text-right">Total</th>
+                {!isTypeB && <th className="pb-3 text-right">IVA %</th>}
+                {!isTypeB && <th className="pb-3 text-right">Subtotal</th>}
+                {!isTypeB && <th className="pb-3 text-right">IVA</th>}
+                <th className="pb-3 text-right">{isTypeB ? 'Subtotal' : 'Total'}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -187,7 +193,11 @@ export async function InvoiceDetail({ id }: InvoiceDetailProps) {
                     {Number(line.quantity).toFixed(3)} {line.product.unitOfMeasure}
                   </td>
                   <td className="py-3 text-right font-mono">
-                    ${Number(line.unitPrice).toFixed(2)}
+                    $
+                    {(isTypeB
+                      ? grossUnitPrice(Number(line.unitPrice), Number(line.vatRate))
+                      : Number(line.unitPrice)
+                    ).toFixed(2)}
                   </td>
                   <td className="py-3 text-right font-mono">
                     {line.discountPercent
@@ -196,15 +206,21 @@ export async function InvoiceDetail({ id }: InvoiceDetailProps) {
                         ? `$${Number(line.discountAmount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`
                         : '-'}
                   </td>
-                  <td className="py-3 text-right font-mono">
-                    {Number(line.vatRate).toFixed(2)}%
-                  </td>
-                  <td className="py-3 text-right font-mono">
-                    ${Number(line.subtotal).toFixed(2)}
-                  </td>
-                  <td className="py-3 text-right font-mono">
-                    ${Number(line.vatAmount).toFixed(2)}
-                  </td>
+                  {!isTypeB && (
+                    <td className="py-3 text-right font-mono">
+                      {Number(line.vatRate).toFixed(2)}%
+                    </td>
+                  )}
+                  {!isTypeB && (
+                    <td className="py-3 text-right font-mono">
+                      ${Number(line.subtotal).toFixed(2)}
+                    </td>
+                  )}
+                  {!isTypeB && (
+                    <td className="py-3 text-right font-mono">
+                      ${Number(line.vatAmount).toFixed(2)}
+                    </td>
+                  )}
                   <td className="py-3 text-right font-mono font-semibold">
                     ${Number(line.total).toFixed(2)}
                   </td>
@@ -246,18 +262,25 @@ export async function InvoiceDetail({ id }: InvoiceDetailProps) {
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Subtotal:</span>
               <span className="font-mono">
-                ${Number(invoice.subtotal).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                $
+                {(isTypeB ? grossSubtotal : Number(invoice.subtotal)).toLocaleString('es-AR', {
+                  minimumFractionDigits: 2,
+                })}
               </span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">IVA:</span>
-              <span className="font-mono">
-                ${Number(invoice.vatAmount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-              </span>
-            </div>
+            {!isTypeB && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">IVA:</span>
+                <span className="font-mono">
+                  ${Number(invoice.vatAmount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+            )}
             {Number(invoice.otherTaxes) > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Otros Impuestos:</span>
+                <span className="text-muted-foreground">
+                  {isTypeB ? 'Importe Otros Tributos:' : 'Otros Impuestos:'}
+                </span>
                 <span className="font-mono">
                   $
                   {Number(invoice.otherTaxes).toLocaleString('es-AR', {
@@ -273,6 +296,22 @@ export async function InvoiceDetail({ id }: InvoiceDetailProps) {
                 ${Number(invoice.total).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
               </span>
             </div>
+            {isTypeB && (
+              <div className="mt-2 border-t pt-2">
+                <p className="text-xs italic text-muted-foreground">
+                  Régimen de Transparencia Fiscal al Consumidor (Ley 27.743)
+                </p>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">IVA Contenido:</span>
+                  <span className="font-mono">
+                    $
+                    {Number(invoice.vatAmount).toLocaleString('es-AR', {
+                      minimumFractionDigits: 2,
+                    })}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </Card>
