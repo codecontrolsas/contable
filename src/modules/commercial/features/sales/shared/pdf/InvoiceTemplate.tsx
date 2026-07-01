@@ -42,10 +42,9 @@ export function InvoiceTemplate({ data }: InvoiceTemplateProps) {
     (l) => (l.discountPercent && l.discountPercent > 0) || (l.discountAmount && l.discountAmount > 0)
   );
   // Factura B: los importes se muestran con IVA incluido (Régimen de
-  // Transparencia Fiscal al Consumidor - Ley 27.743). El "IVA Contenido" es el
-  // IVA ya incluido en el precio final (totals.vatAmount).
-  const grossUnitPrice = (unitPrice: number, vatRate: number) =>
-    Math.round(unitPrice * (1 + vatRate / 100) * 100) / 100;
+  // Transparencia Fiscal al Consumidor - Ley 27.743). El precio ingresado ya
+  // incluye el IVA, por lo que el "IVA Contenido" (totals.vatAmount) se extrae
+  // del total. El subtotal mostrado (con IVA) equivale al total.
   const grossSubtotal = totals.subtotal + totals.vatAmount;
 
   return (
@@ -168,9 +167,7 @@ export function InvoiceTemplate({ data }: InvoiceTemplateProps) {
               <Text style={styles.col2}>{line.description}</Text>
               <Text style={styles.col3}>{fmtNum(line.quantity, 3)}</Text>
               <Text style={styles.col4}>{line.unitOfMeasure}</Text>
-              <Text style={styles.col5}>
-                ${fmtNum(isTypeB ? grossUnitPrice(line.unitPrice, line.vatRate) : line.unitPrice)}
-              </Text>
+              <Text style={styles.col5}>${fmtNum(line.unitPrice)}</Text>
               {hasAnyDiscount && (
                 <Text style={styles.colDto}>
                   {line.discountPercent && line.discountPercent > 0
