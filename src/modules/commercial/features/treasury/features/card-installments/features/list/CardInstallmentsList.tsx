@@ -2,7 +2,11 @@ import type { DataTableSearchParams } from '@/shared/components/common/DataTable
 import { PermissionGuard } from '@/shared/components/common/PermissionGuard';
 import { Card, CardContent } from '@/shared/components/ui/card';
 import { formatCurrency } from '@/shared/utils/formatters';
-import { getCardInstallments, getCardInstallmentsPendingTotal } from './actions.server';
+import {
+  getCardInstallmentFilterOptions,
+  getCardInstallments,
+  getCardInstallmentsPendingTotal,
+} from './actions.server';
 import { _CardInstallmentsTable } from './components/_CardInstallmentsTable';
 
 interface Props {
@@ -10,9 +14,10 @@ interface Props {
 }
 
 export async function CardInstallmentsList({ searchParams = {} }: Props) {
-  const [result, pendingTotal] = await Promise.all([
+  const [result, pendingTotal, filterOptions] = await Promise.all([
     getCardInstallments(searchParams),
-    getCardInstallmentsPendingTotal(),
+    getCardInstallmentsPendingTotal(searchParams),
+    getCardInstallmentFilterOptions(),
   ]);
 
   return (
@@ -38,6 +43,7 @@ export async function CardInstallmentsList({ searchParams = {} }: Props) {
           data={result.data}
           totalRows={result.pagination.total}
           searchParams={searchParams}
+          filterOptions={filterOptions}
         />
       </div>
     </PermissionGuard>

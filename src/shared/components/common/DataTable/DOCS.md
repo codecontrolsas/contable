@@ -497,6 +497,12 @@ const prismaParams = stateToPrismaParams(state);
 // }
 ```
 
+> ⚠️ `orderBy` usa el `sortBy` de la URL **tal cual**. Si la tabla tiene columnas derivadas
+> (ej: `cardName` sale de `card.name`), pasar ese `orderBy` a Prisma rompe la página con
+> `Unknown argument`. En esos casos, ignorar `orderBy` y traducir cada columna con un mapa
+> explícito, descartando las desconocidas. Ver ejemplo en
+> `modules/commercial/features/treasury/features/card-installments/features/list/query.ts`.
+
 #### `buildSearchWhere(search, fields)`
 
 Construye cláusula OR para búsqueda en múltiples campos:
