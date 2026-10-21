@@ -6,6 +6,7 @@ import {
   BadgeDollarSign,
   CheckSquare,
   Clock,
+  CreditCard,
   Download,
   FileCheck,
   Info,
@@ -782,6 +783,55 @@ export function _TreasuryGuide() {
           <p className="text-sm text-muted-foreground">
             Las proyecciones ayudan a anticipar necesidades de financiamiento o
             excedentes de liquidez.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Cuotas de Tarjeta */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            Cuotas de Tarjeta
+          </CardTitle>
+          <CardDescription>
+            Seguimiento de las cuotas generadas por pagos con tarjeta de crédito
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p>
+            Cuando una orden de pago se abona con tarjeta de crédito en cuotas,
+            cada cuota queda registrada como un egreso futuro. Si la tarjeta es
+            de la empresa se le paga al banco; si es de un socio, se le devuelve
+            al socio.
+          </p>
+          <p>
+            Desde <strong>Tesorería → Cuotas de Tarjeta</strong> ves el{' '}
+            <strong>total pendiente</strong> y el detalle de cada cuota. Puedes
+            ordenar por cualquier columna y filtrar por:
+          </p>
+          <ul className="list-disc pl-6 space-y-1 text-muted-foreground">
+            <li>
+              <strong>Estado</strong>: Pendiente o Pagada
+            </li>
+            <li>
+              <strong>Vencimiento</strong>: rango de fechas de vencimiento
+            </li>
+            <li>
+              <strong>Tarjeta</strong>: una o varias tarjetas
+            </li>
+            <li>
+              <strong>Titular</strong>: la empresa o un socio en particular
+            </li>
+            <li>
+              <strong>Origen</strong>: número de la orden de pago que generó la
+              cuota
+            </li>
+          </ul>
+          <p className="text-sm text-muted-foreground">
+            El total pendiente se recalcula según los filtros aplicados: por
+            ejemplo, filtrando por una tarjeta ves cuánto falta pagar de esa
+            tarjeta.
           </p>
         </CardContent>
       </Card>

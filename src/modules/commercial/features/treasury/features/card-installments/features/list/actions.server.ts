@@ -4,12 +4,9 @@ import { prisma } from '@/shared/lib/prisma';
 import { logger } from '@/shared/lib/logger';
 import { checkPermission } from '@/shared/lib/permissions';
 import { getActiveCompanyId } from '@/shared/lib/company';
-import {
-  buildFiltersWhere,
-  parseSearchParams,
-  stateToPrismaParams,
-} from '@/shared/components/common/DataTable/helpers';
+import { parseSearchParams, stateToPrismaParams } from '@/shared/components/common/DataTable/helpers';
 import type { DataTableSearchParams } from '@/shared/components/common/DataTable';
+import { buildCardInstallmentsOrderBy, buildCardInstallmentsWhere } from './query';
 
 /**
  * Obtiene el listado de cuotas de tarjeta de la empresa activa con paginación.
@@ -23,15 +20,12 @@ export async function getCardInstallments(searchParams: DataTableSearchParams = 
 
   try {
     const state = parseSearchParams(searchParams);
-    const { skip, take, orderBy } = stateToPrismaParams(state);
-
-    const filtersWhere = buildFiltersWhere(state.filters, {
-      status: 'status',
-    });
+    const { skip, take } = stateToPrismaParams(state);
+    const orderBy = buildCardInstallmentsOrderBy(state.sortBy, state.sortOrder);
 
     const where = {
       companyId,
-      ...filtersWhere,
+      ...buildCardInstallmentsWhere(state.filters),
     };
 
     const [installments, total] = await Promise.all([
@@ -47,7 +41,7 @@ export async function getCardInstallments(searchParams: DataTableSearchParams = 
           },
           paymentOrder: { select: { fullNumber: true } },
         },
-        orderBy: orderBy || [{ dueDate: 'asc' }],
+        orderBy,
         skip,
         take,
       }),
@@ -84,16 +78,21 @@ export async function getCardInstallments(searchParams: DataTableSearchParams = 
 }
 
 /**
- * Obtiene el total pendiente de pago de cuotas de tarjeta (status PENDING).
+ * Obtiene el total pendiente de pago (status PENDING) de las cuotas que cumplen los filtros
+ * del listado. Se combina con AND para que un filtro "Pagada" dé total 0 en vez de pisarse.
  */
-export async function getCardInstallmentsPendingTotal() {
+export async function getCardInstallmentsPendingTotal(searchParams: DataTableSearchParams = {}) {
   await checkPermission('commercial.treasury.cards', 'view', { redirect: true });
   const companyId = await getActiveCompanyId();
   if (!companyId) throw new Error('No hay empresa activa');
 
   try {
+    const state = parseSearchParams(searchParams);
     const result = await prisma.paymentOrderInstallment.aggregate({
-      where: { companyId, status: 'PENDING' },
+      where: {
+        companyId,
+        AND: [buildCardInstallmentsWhere(state.filters), { status: 'PENDING' }],
+      },
       _sum: { amount: true },
     });
 
@@ -101,5 +100,46 @@ export async function getCardInstallmentsPendingTotal() {
   } catch (error) {
     logger.error('Error al obtener total pendiente de cuotas', { data: { error } });
     throw new Error('Error al obtener total pendiente de cuotas');
+  }
+}
+
+/**
+ * Opciones para los filtros de Tarjeta y Titular: solo las tarjetas que tienen cuotas generadas
+ * y los socios titulares de esas tarjetas.
+ */
+export async function getCardInstallmentFilterOptions() {
+  await checkPermission('commercial.treasury.cards', 'view', { redirect: true });
+  const companyId = await getActiveCompanyId();
+  if (!companyId) throw new Error('No hay empresa activa');
+
+  try {
+    const cards = await prisma.card.findMany({
+      where: { companyId, installments: { some: {} } },
+      select: {
+        id: true,
+        name: true,
+        ownerType: true,
+        partner: { select: { id: true, name: true } },
+      },
+      orderBy: { name: 'asc' },
+    });
+
+    const partners = new Map<string, string>();
+    cards.forEach((card) => {
+      if (card.ownerType === 'PARTNER' && card.partner) {
+        partners.set(card.partner.id, card.partner.name);
+      }
+    });
+
+    return {
+      cards: cards.map((card) => ({ value: card.id, label: card.name })),
+      hasCompanyCards: cards.some((card) => card.ownerType === 'COMPANY'),
+      partners: Array.from(partners, ([value, label]) => ({ value, label })).sort((a, b) =>
+        a.label.localeCompare(b.label)
+      ),
+    };
+  } catch (error) {
+    logger.error('Error al obtener opciones de filtro de cuotas', { data: { error } });
+    throw new Error('Error al obtener opciones de filtro de cuotas');
   }
 }
