@@ -146,7 +146,15 @@ MONTHLY, BIMONTHLY, QUARTERLY, SEMIANNUAL, ANNUAL
 | Registro de Reversiones | Asientos REVERSED con metadata de reversion |
 | Trazabilidad Doc-Asiento | Cruce entre documentos comerciales y sus asientos |
 
-Todos los reportes solo consideran asientos POSTED.
+Todos los reportes (salvo los impositivos) solo consideran asientos POSTED.
+
+### Reportes Impositivos
+
+| Reporte | Descripcion |
+|---------|-------------|
+| Posicion Mensual de IVA (`monthly-vat`) | Debito Fiscal (ventas) - Credito Fiscal (compras) del mes, con detalle por alicuota y **detalle de comprobantes** (libro IVA Ventas / Compras) |
+
+`getMonthlyVATReport(companyId, year, month)` toma facturas de venta y compra en estado `CONFIRMED`, `PAID` o `PARTIAL_PAID` con `issueDate` dentro del mes. Ademas de los totales, devuelve `salesInvoices` y `purchaseInvoices` (`VATInvoiceDetail[]`: fecha, tipo, numero, contraparte + CUIT, neto, IVA, otros impuestos, total), ordenados por fecha. Los importes del detalle vienen **con signo** (NC en negativo), por lo que la suma del detalle coincide con los totales del reporte. El detalle se renderiza en `_MonthlyVATInvoicesDetail.tsx` (tabs Ventas/Compras, export a Excel por libro).
 
 ---
 
