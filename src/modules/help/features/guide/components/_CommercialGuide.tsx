@@ -304,6 +304,13 @@ export function _CommercialGuide() {
             en el detalle como en el PDF. En cambio, en Factura A el precio se carga
             sin IVA y el sistema lo agrega.
           </p>
+
+          <p className="mt-3 text-sm text-muted-foreground">
+            <strong>Listado de facturas:</strong> la tabla muestra para cada
+            comprobante el <strong>Neto</strong> (base imponible), el{' '}
+            <strong>IVA</strong> y el <strong>Total</strong>. Podés ordenar por
+            cualquiera de esas columnas.
+          </p>
         </CardContent>
       </Card>
 
@@ -328,6 +335,10 @@ export function _CommercialGuide() {
             <li>Mismo flujo: Borrador → Confirmada → Pagada</li>
             <li>Se puede indicar el <strong>número de comprobante</strong> del proveedor</li>
             <li>Al confirmar, genera asiento contable automático</li>
+            <li>
+              El listado muestra las columnas <strong>Neto</strong>,{' '}
+              <strong>IVA</strong> y <strong>Total</strong> de cada comprobante
+            </li>
           </ul>
           <p className="text-sm text-muted-foreground mt-2">
             Los pagos se registran desde <strong>Tesorería → Órdenes de

@@ -74,6 +74,22 @@ export function getColumns({ onView, onEdit, onConfirm, onCancel, loading }: Col
       ),
     },
     {
+      accessorKey: 'subtotal',
+      meta: { title: 'Neto' },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Neto" className="justify-end" />,
+      cell: ({ row }) => (
+        <div className="text-right font-mono">{formatCurrency(Number(row.original.subtotal))}</div>
+      ),
+    },
+    {
+      accessorKey: 'vatAmount',
+      meta: { title: 'IVA' },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="IVA" className="justify-end" />,
+      cell: ({ row }) => (
+        <div className="text-right font-mono">{formatCurrency(Number(row.original.vatAmount))}</div>
+      ),
+    },
+    {
       accessorKey: 'total',
       meta: { title: 'Total' },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Total" className="justify-end" />,

@@ -292,7 +292,13 @@ export function _AccountingGuide() {
             <li>
               <strong>Posicion Mensual de IVA</strong>: calcula el IVA Debito
               Fiscal (ventas) menos el IVA Credito Fiscal (compras) para estimar
-              el IVA a pagar o a favor del periodo, con detalle por alicuota
+              el IVA a pagar o a favor del periodo, con detalle por alicuota.
+              Debajo incluye el <strong>Detalle de Comprobantes</strong> que
+              componen el libro IVA del mes, en dos pestañas (Ventas y
+              Compras): fecha, comprobante, cliente/proveedor con CUIT, Neto,
+              IVA, Otros impuestos y Total. Las notas de crédito se muestran en
+              negativo para que los totales coincidan con la posición. Cada
+              pestaña se puede exportar a Excel (Libro IVA Ventas / Compras)
             </li>
           </ul>
 

@@ -5,7 +5,7 @@ import { prisma } from '@/shared/lib/prisma';
 import { Prisma } from '@/generated/prisma/client';
 import { logger } from '@/shared/lib/logger';
 import { checkPermission } from '@/shared/lib/permissions';
-import { AccountNature, AccountType, BudgetStatus, JournalEntryStatus } from '@/generated/prisma/enums';
+import { AccountNature, AccountType, BudgetStatus, JournalEntryStatus, VoucherType } from '@/generated/prisma/enums';
 import moment from 'moment';
 import {
   calculateAllAccountBalances,
@@ -1341,9 +1341,25 @@ interface VATRateSummary {
   balance: number;
 }
 
+export interface VATInvoiceDetail {
+  id: string;
+  issueDate: Date;
+  voucherType: VoucherType;
+  fullNumber: string;
+  counterpartyName: string;
+  counterpartyTaxId: string | null;
+  /** Importes con signo: las Notas de Crédito se informan en negativo */
+  subtotal: number;
+  vatAmount: number;
+  otherTaxes: number;
+  total: number;
+}
+
 interface MonthlyVATResult {
   month: number;
   year: number;
+  salesInvoices: VATInvoiceDetail[];
+  purchaseInvoices: VATInvoiceDetail[];
   salesSummary: {
     subtotal: number;
     vatAmount: number;
@@ -1389,11 +1405,17 @@ export async function getMonthlyVATReport(
         issueDate: { gte: startDate, lte: endDate },
         status: { in: ['CONFIRMED', 'PAID', 'PARTIAL_PAID'] },
       },
+      orderBy: [{ issueDate: 'asc' }, { fullNumber: 'asc' }],
       select: {
+        id: true,
+        issueDate: true,
+        fullNumber: true,
         voucherType: true,
         subtotal: true,
         vatAmount: true,
+        otherTaxes: true,
         total: true,
+        customer: { select: { name: true, taxId: true } },
         lines: {
           select: {
             vatRate: true,
@@ -1411,11 +1433,17 @@ export async function getMonthlyVATReport(
         issueDate: { gte: startDate, lte: endDate },
         status: { in: ['CONFIRMED', 'PAID', 'PARTIAL_PAID'] },
       },
+      orderBy: [{ issueDate: 'asc' }, { fullNumber: 'asc' }],
       select: {
+        id: true,
+        issueDate: true,
+        fullNumber: true,
         voucherType: true,
         subtotal: true,
         vatAmount: true,
+        otherTaxes: true,
         total: true,
+        supplier: { select: { businessName: true, tradeName: true, taxId: true } },
         lines: {
           select: {
             vatRate: true,
@@ -1496,6 +1524,38 @@ export async function getMonthlyVATReport(
       }))
       .sort((a, b) => b.rate - a.rate);
 
+    const salesDetail: VATInvoiceDetail[] = salesInvoices.map((inv) => {
+      const sign = isCreditNote(inv.voucherType) ? -1 : 1;
+      return {
+        id: inv.id,
+        issueDate: inv.issueDate,
+        voucherType: inv.voucherType,
+        fullNumber: inv.fullNumber,
+        counterpartyName: inv.customer.name,
+        counterpartyTaxId: inv.customer.taxId,
+        subtotal: Number(inv.subtotal) * sign,
+        vatAmount: Number(inv.vatAmount) * sign,
+        otherTaxes: Number(inv.otherTaxes) * sign,
+        total: Number(inv.total) * sign,
+      };
+    });
+
+    const purchasesDetail: VATInvoiceDetail[] = purchaseInvoices.map((inv) => {
+      const sign = isCreditNote(inv.voucherType) ? -1 : 1;
+      return {
+        id: inv.id,
+        issueDate: inv.issueDate,
+        voucherType: inv.voucherType,
+        fullNumber: inv.fullNumber,
+        counterpartyName: inv.supplier.tradeName || inv.supplier.businessName,
+        counterpartyTaxId: inv.supplier.taxId,
+        subtotal: Number(inv.subtotal) * sign,
+        vatAmount: Number(inv.vatAmount) * sign,
+        otherTaxes: Number(inv.otherTaxes) * sign,
+        total: Number(inv.total) * sign,
+      };
+    });
+
     const totalSalesVAT = salesSummary.vatAmount;
     const totalPurchasesVAT = purchasesSummary.vatAmount;
     const vatBalance = totalSalesVAT - totalPurchasesVAT;
@@ -1515,6 +1575,8 @@ export async function getMonthlyVATReport(
     return {
       month,
       year,
+      salesInvoices: salesDetail,
+      purchaseInvoices: purchasesDetail,
       salesSummary,
       purchasesSummary,
       vatByRate,

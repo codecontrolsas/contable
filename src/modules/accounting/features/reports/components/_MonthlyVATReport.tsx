@@ -12,6 +12,7 @@ import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
 import { Separator } from '@/shared/components/ui/separator';
 import { getMonthlyVATReport } from '../actions.server';
+import { _MonthlyVATInvoicesDetail } from './_MonthlyVATInvoicesDetail';
 import { formatAmount } from '../../../shared/utils';
 import { useState } from 'react';
 import { Loader2, Download, TrendingUp, TrendingDown, ArrowRight } from 'lucide-react';
@@ -311,6 +312,15 @@ export function _MonthlyVATReport({ companyId }: MonthlyVATReportProps) {
                 </CardContent>
               </Card>
             </div>
+
+            <Separator />
+
+            <_MonthlyVATInvoicesDetail
+              salesInvoices={data.salesInvoices}
+              purchaseInvoices={data.purchaseInvoices}
+              periodLabel={`${MONTH_NAMES[data.month]} ${data.year}`}
+              filePeriod={`${data.year}-${String(data.month + 1).padStart(2, '0')}`}
+            />
           </div>
         )}
       </CardContent>
