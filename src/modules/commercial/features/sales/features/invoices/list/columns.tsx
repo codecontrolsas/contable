@@ -108,6 +108,26 @@ export function getColumns({ onView, onEdit, onConfirm, onCancel, onAttach }: Co
       ),
     },
     {
+      accessorKey: 'subtotal',
+      meta: { title: 'Neto' },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Neto" className="justify-end" />,
+      cell: ({ row }) => (
+        <div className="text-right">
+          ${Number(row.original.subtotal).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'vatAmount',
+      meta: { title: 'IVA' },
+      header: ({ column }) => <DataTableColumnHeader column={column} title="IVA" className="justify-end" />,
+      cell: ({ row }) => (
+        <div className="text-right">
+          ${Number(row.original.vatAmount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+        </div>
+      ),
+    },
+    {
       accessorKey: 'total',
       meta: { title: 'Total' },
       header: ({ column }) => <DataTableColumnHeader column={column} title="Total" className="justify-end" />,
